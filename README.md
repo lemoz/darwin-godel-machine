@@ -405,4 +405,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+## 👨‍💻 Author
+
+**Implementation by**: [@cdossman](https://x.com/cdossman)
+
 **Disclaimer**: This is an independent implementation based on the research paper. Not officially affiliated with Sakana AI.
