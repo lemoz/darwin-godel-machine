@@ -1,0 +1,89 @@
+# DGM MVP Configuration
+# Foundation Model Provider Settings
+fm_providers:
+  # Primary provider for MVP
+  primary: anthropic
+  
+  # Gemini Configuration
+  gemini:
+    model: gemini-2.5-flash-preview-05-20
+    api_key: ${GEMINI_API_KEY}
+    max_tokens: 8192
+    temperature: 0.1
+    timeout: 60
+  
+  # Anthropic Configuration
+  anthropic:
+    model: claude-sonnet-4-20250514
+    api_key: ${ANTHROPIC_API_KEY}
+    max_tokens: 8192
+    temperature: 0.1
+    timeout: 60
+  
+  # OpenAI Configuration (placeholder)
+  openai:
+    model: gpt-4
+    api_key: ${OPENAI_API_KEY}
+    max_tokens: 8192
+    temperature: 0.1
+    timeout: 60
+
+# DGM System Settings
+dgm_settings:
+  max_iterations: 100
+  pause_after_iteration: true
+  sandbox_timeout: 300
+  max_concurrent_evaluations: 1
+  
+# Archive Settings
+archive:
+  path: archive/agents
+  max_size: 1000
+  novelty_threshold: 0.1
+  
+# Parent Selection Configuration
+parent_selection:
+  performance_weight: 0.7    # Weight for performance score
+  novelty_weight: 0.3        # Weight for novelty score
+  
+# Evaluation Settings
+evaluation:
+  benchmarks_dir: config/benchmarks
+  results_dir: results
+  timeout_seconds: 30
+  
+# Agent Settings
+agents:
+  workspace_dir: agents/workspace
+  initial_agent_path: agent/agent.py
+  
+# Benchmarks Configuration
+benchmarks:
+  timeout_default: 30
+  max_attempts: 3
+  enabled:
+    - string_manipulation
+    - list_processing
+    - simple_algorithm
+
+# Logging Configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: logs/dgm.log
+
+# Safety Settings
+safety:
+  max_modification_size: 10000  # Max characters in a single modification
+  backup_generations: 5         # Keep N backups of each agent
+  allowed_imports:              # Restricted import list for safety
+    - os
+    - sys
+    - json
+    - yaml
+    - typing
+    - dataclasses
+    - pathlib
+    - subprocess
+    - time
+    - datetime

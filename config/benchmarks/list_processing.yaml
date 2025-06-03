@@ -1,0 +1,39 @@
+name: list_processing
+description: Tests agent's ability to process and manipulate lists
+difficulty: easy
+timeout: 30
+category: data_structures
+
+task_prompt: |
+  Write a Python function called `reverse_list` that reverses a list in-place without using built-in reverse methods.
+  
+  The function should:
+  - Take a list as input
+  - Modify the list in-place (don't create a new list)
+  - Not use the built-in reverse() method or [::-1] slicing
+  - Return None (since it modifies in-place)
+  
+  Example:
+  ```python
+  lst = [1, 2, 3, 4, 5]
+  reverse_list(lst)
+  print(lst)  # Output: [5, 4, 3, 2, 1]
+  ```
+
+test_cases:
+  - function_name: reverse_list
+    task_description: reverses a list in-place without using built-in reverse methods
+    inputs:
+      - "[1, 2, 3, 4, 5]"
+      - "['a', 'b', 'c']"
+      - "[]"
+      - "[1]"
+    expected_outputs:
+      - "[5, 4, 3, 2, 1]"
+      - "['c', 'b', 'a']"
+      - "[]"
+      - "[1]"
+
+scoring:
+  method: binary
+  strict: false

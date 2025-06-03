@@ -1,0 +1,33 @@
+# DGM MVP Requirements
+# Foundation Model Providers
+google-generativeai>=0.3.0
+anthropic>=0.18.0
+openai>=1.10.0
+
+# Configuration and YAML
+PyYAML>=6.0
+python-dotenv>=1.0.0
+
+# Docker for sandboxing
+docker>=6.1.0
+
+# HTTP requests and async
+aiohttp>=3.8.0
+requests>=2.28.0
+
+# Data structures and utilities
+pydantic>=2.0.0
+typing-extensions>=4.5.0
+
+# Logging and monitoring
+structlog>=23.1.0
+
+# Testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0
+
+# Development
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0

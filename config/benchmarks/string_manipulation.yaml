@@ -1,0 +1,58 @@
+# String Manipulation Benchmark
+name: string_manipulation
+title: "String Reversal with Constraints"
+description: |
+  Write a function `reverse_with_numbers(s: str) -> str` that reverses a string 
+  but keeps numbers in their original positions.
+  
+  Example:
+  - Input: "abc123def" -> Output: "fed123cba"
+  - Input: "hello5world" -> Output: "dlrow5olleh"
+
+task_prompt: |
+  Implement a function called `reverse_with_numbers` that takes a string and returns
+  a new string where all alphabetic characters are reversed, but numeric characters
+  remain in their original positions.
+
+test_cases:
+  - function_name: reverse_with_numbers
+    task_description: reverses alphabetic characters while keeping numeric characters in original positions
+    inputs:
+      - "abc123def"
+      - "hello5world"
+      - "123"
+      - "abc"
+    expected_outputs:
+      - "fed123cba"
+      - "dlrow5olleh"
+      - "123"
+      - "cba"
+
+timeout: 30
+max_attempts: 3
+total_points: 10
+
+# Validation script that will be run to check the solution
+validation_code: |
+  def validate_solution():
+      try:
+          # Test basic functionality
+          result1 = reverse_with_numbers("abc123def")
+          if result1 != "fed123cba":
+              return False, f"Expected 'fed123cba', got '{result1}'"
+          
+          result2 = reverse_with_numbers("hello5world")
+          if result2 != "dlrow5olleh":
+              return False, f"Expected 'dlrow5olleh', got '{result2}'"
+          
+          result3 = reverse_with_numbers("123")
+          if result3 != "123":
+              return False, f"Expected '123', got '{result3}'"
+          
+          result4 = reverse_with_numbers("abc")
+          if result4 != "cba":
+              return False, f"Expected 'cba', got '{result4}'"
+          
+          return True, "All tests passed"
+      except Exception as e:
+          return False, f"Error during validation: {str(e)}"
