@@ -2,6 +2,7 @@
 
 **A Self-Improving AI System for Evolutionary Code Enhancement**
 
+[![GitHub](https://img.shields.io/badge/GitHub-lemoz%2Fdarwin--godel--machine-blue?logo=github)](https://github.com/lemoz/darwin-godel-machine)
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-beta-orange.svg)
@@ -10,7 +11,9 @@
 
 The Darwin Gödel Machine (DGM) is an innovative implementation of self-improving AI agents that iteratively modify their own Python codebase to enhance their coding capabilities. Unlike traditional approaches that rely on formal proofs, DGM uses empirical validation through coding benchmarks to drive evolutionary improvement.
 
-Based on the research paper "Darwin Gödel Machine: Open-Ended Evolution of Self-Improving Agents", this implementation demonstrates how AI systems can achieve self-referential self-improvement through population-based exploration and empirical validation.
+Based on the research paper **"Darwin Gödel Machine: Open-Ended Evolution of Self-Improving Agents"** ([arXiv:2505.22954](https://arxiv.org/abs/2505.22954)), this implementation demonstrates how AI systems can achieve self-referential self-improvement through population-based exploration and empirical validation.
+
+For more details, see the [official blog post](https://sakana.ai/dgm/) from Sakana AI.
 
 ### 🔑 Key Features
 
@@ -35,8 +38,8 @@ Based on the research paper "Darwin Gödel Machine: Open-Ended Evolution of Self
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/your-org/darwin_godel_machine.git
-cd darwin_godel_machine
+git clone https://github.com/lemoz/darwin-godel-machine.git
+cd darwin-godel-machine
 ```
 
 2. **Install dependencies:**
@@ -378,3 +381,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Ready to evolve some AI? Start with `python run_dgm.py` and watch your agents improve themselves!** 🚀
+## 📚 References
+
+### Original Research
+- **Paper**: [Darwin Gödel Machine: Open-Ended Evolution of Self-Improving Agents](https://arxiv.org/abs/2505.22954)
+- **Authors**: Sakana AI Research Team
+- **Published**: arXiv:2505.22954 (2025)
+
+### Additional Resources
+- **Official Blog Post**: [Sakana AI - Darwin Gödel Machine](https://sakana.ai/dgm/)
+- **Implementation**: This repository provides a complete open-source implementation
+- **Related Work**: Gödel machine framework and self-improving artificial general intelligence
+
+### Citation
+```bibtex
+@article{sakana2025dgm,
+  title={Darwin G{\"o}del Machine: Open-Ended Evolution of Self-Improving Agents},
+  author={Sakana AI Research Team},
+  journal={arXiv preprint arXiv:2505.22954},
+  year={2025}
+}
+```
+
+---
+
+**Disclaimer**: This is an independent implementation based on the research paper. Not officially affiliated with Sakana AI.
