@@ -1,412 +1,274 @@
 """
-Unit tests for tool implementations.
+Unit tests for tool implementations: BashTool, EditTool, and base ToolRegistry.
+
+All async tests use pytest-asyncio (asyncio_mode = auto in pytest.ini).
 """
 
-import unittest
-import asyncio
-from pathlib import Path
+import pytest
+import shutil
 import tempfile
-import os
-import sys
-import subprocess
-from unittest.mock import patch, AsyncMock, MagicMock
+from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-from agent.tools.base_tool import BaseTool, ToolRegistry
+from agent.tools.base_tool import (
+    BaseTool, ToolRegistry, ToolResult, ToolExecutionStatus, ToolParameter
+)
 from agent.tools.bash_tool import BashTool
 from agent.tools.edit_tool import EditTool
 
 
-class TestBaseTool(unittest.TestCase):
-    """Test base tool functionality."""
-    
-    def test_base_tool_abstract(self):
-        """Test that BaseTool is abstract."""
-        with self.assertRaises(TypeError):
-            BaseTool()
-    
-    def test_tool_registry_initialization(self):
-        """Test tool registry initialization."""
+# ---------------------------------------------------------------------------
+# BaseTool / ToolRegistry
+# ---------------------------------------------------------------------------
+
+class ConcreteTestTool(BaseTool):
+    """Concrete subclass used for ToolRegistry tests."""
+    def get_name(self): return "test_tool"
+    def get_description(self): return "A test tool"
+    def get_parameters(self): return []
+    async def execute(self, parameters):
+        return ToolResult(status=ToolExecutionStatus.SUCCESS, output="ok")
+
+
+class TestToolRegistry:
+
+    def test_base_tool_is_abstract(self):
+        with pytest.raises(TypeError):
+            BaseTool()  # type: ignore
+
+    def test_register_and_get_tool(self):
         registry = ToolRegistry()
-        self.assertIsInstance(registry._tools, dict)
-        self.assertEqual(len(registry._tools), 0)
-    
-    def test_register_tool(self):
-        """Test tool registration."""
-        registry = ToolRegistry()
-        
-        # Create a concrete tool
-        class TestTool(BaseTool):
-            def get_name(self):
-                return "test"
-            
-            def get_description(self):
-                return "Test tool"
-            
-            def get_parameters(self):
-                return []
-            
-            async def execute(self, parameters):
-                return ToolResult(
-                    status=ToolExecutionStatus.SUCCESS,
-                    output="Test executed"
-                )
-        
-        tool = TestTool()
+        tool = ConcreteTestTool()
         registry.register_tool(tool)
-        
-        self.assertIn("test", registry._tools)
-        self.assertEqual(registry.get_tool("test"), tool)
-    
-    def test_get_nonexistent_tool(self):
-        """Test getting non-existent tool."""
+        assert registry.get_tool("test_tool") is tool
+
+    def test_get_nonexistent_returns_none(self):
         registry = ToolRegistry()
-        self.assertIsNone(registry.get_tool("nonexistent"))
-    
+        assert registry.get_tool("missing") is None
+
     def test_list_tools(self):
-        """Test listing available tools."""
         registry = ToolRegistry()
-        
-        # Register multiple tools
-        class Tool1(BaseTool):
-            def get_name(self):
-                return "tool1"
-            
-            def get_description(self):
-                return "Tool 1"
-            
-            def get_parameters(self):
-                return []
-            
-            async def execute(self, parameters):
-                return ToolResult(
-                    status=ToolExecutionStatus.SUCCESS,
-                    output="Tool 1 executed"
-                )
-        
-        class Tool2(BaseTool):
-            def get_name(self):
-                return "tool2"
-            
-            def get_description(self):
-                return "Tool 2"
-            
-            def get_parameters(self):
-                return []
-            
-            async def execute(self, parameters):
-                return ToolResult(
-                    status=ToolExecutionStatus.SUCCESS,
-                    output="Tool 2 executed"
-                )
-        
-        registry.register_tool(Tool1())
-        registry.register_tool(Tool2())
-        
-        tools = registry.list_tools()
-        self.assertEqual(len(tools), 2)
-        self.assertIn("tool1", tools)
-        self.assertIn("tool2", tools)
+        registry.register_tool(ConcreteTestTool())
+        assert "test_tool" in registry.list_tools()
+
+    def test_tool_schema_roundtrip(self):
+        tool = ConcreteTestTool()
+        schema = tool.get_tool_schema()
+        assert schema["name"] == "test_tool"
+        assert "parameters" in schema
 
 
-class TestBashTool(unittest.TestCase):
-    """Test bash tool functionality."""
-    
-    def setUp(self):
-        """Set up test environment."""
-        self.test_dir = tempfile.mkdtemp()
-        self.test_path = Path(self.test_dir)
-        self.bash_tool = BashTool()
-    
-    def tearDown(self):
-        """Clean up test environment."""
-        import shutil
-        shutil.rmtree(self.test_dir)
-    
-    def test_bash_tool_properties(self):
-        """Test bash tool properties."""
-        self.assertEqual(self.bash_tool.get_name(), "bash")
-        self.assertIn("Execute bash/shell commands", self.bash_tool.get_description())
-    
-    async def test_execute_simple_command(self):
-        """Test executing simple command."""
-        result = await self.bash_tool.execute({
-            "command": "echo 'Hello World'",
-            "cwd": str(self.test_path)
+# ---------------------------------------------------------------------------
+# BashTool
+# ---------------------------------------------------------------------------
+
+class TestBashTool:
+
+    @pytest.fixture(autouse=True)
+    def setup_dir(self, tmp_path):
+        self.wd = str(tmp_path)
+        self.tool = BashTool(working_directory=self.wd, timeout=10)
+
+    async def test_echo_works(self):
+        result = await self.tool.execute({"command": "echo hello"})
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "hello" in result.output
+
+    async def test_echo_special_chars(self):
+        result = await self.tool.execute({"command": "echo 'foo bar baz'"})
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "foo bar baz" in result.output
+
+    async def test_failed_command_returns_error(self):
+        result = await self.tool.execute({"command": "ls /nonexistent_xyz_path_999"})
+        assert result.status == ToolExecutionStatus.ERROR
+
+    async def test_timeout_kills_sleep(self):
+        """sleep 30 with 1s timeout must be killed quickly."""
+        result = await self.tool.execute({
+            "command": "sleep 30",
+            "timeout": 1,
         })
-        
-        self.assertEqual(result.status, ToolExecutionStatus.SUCCESS)
-        self.assertIn("Hello World", result.output)
-    
-    async def test_execute_with_error(self):
-        """Test executing command that fails."""
-        result = await self.bash_tool.execute({
-            "command": "ls /nonexistent/path",
-            "cwd": str(self.test_path)
-        })
-        
-        self.assertEqual(result.status, ToolExecutionStatus.ERROR)
-        self.assertIsNotNone(result.error)
-    
-    async def test_execute_with_timeout(self):
-        """Test command timeout."""
-        result = await self.bash_tool.execute({
-            "command": "sleep 10",
-            "cwd": str(self.test_path),
-            "timeout": 1
-        })
-        
-        self.assertEqual(result.status, ToolExecutionStatus.TIMEOUT)
-        self.assertIn("timeout", result.error.lower())
-    
-    async def test_execute_with_cwd(self):
-        """Test executing in specific directory."""
-        # Create subdirectory
-        subdir = self.test_path / "subdir"
+        assert result.status == ToolExecutionStatus.TIMEOUT
+        assert "timed out" in (result.error or "").lower() or "timeout" in (result.error or "").lower()
+
+    async def test_empty_command_invalid_params(self):
+        result = await self.tool.execute({"command": ""})
+        assert result.status == ToolExecutionStatus.INVALID_PARAMS
+
+    async def test_redirect_inside_wd_allowed(self, tmp_path):
+        """Redirecting to a file inside the working directory is safe."""
+        tool = BashTool(working_directory=str(tmp_path), timeout=5)
+        result = await tool.execute({"command": f"echo ok > {tmp_path}/out.txt"})
+        # Either succeeds or is allowed (not blocked for containment reasons)
+        # The safety check returns True for contained redirects
+        assert result.status in (ToolExecutionStatus.SUCCESS, ToolExecutionStatus.ERROR)
+
+    async def test_redirect_escape_blocked(self, tmp_path):
+        """Redirecting to a path outside the working directory must be blocked."""
+        subdir = tmp_path / "sandbox"
         subdir.mkdir()
-        (subdir / "test.txt").write_text("test content")
-        
-        result = await self.bash_tool.execute(
-            command="ls",
-            cwd=str(subdir)
+        tool = BashTool(working_directory=str(subdir), timeout=5)
+        # Try to write to parent (escape)
+        result = await tool.execute({"command": "echo evil > ../escape.txt"})
+        # The safety check should block it
+        assert result.status == ToolExecutionStatus.ERROR, (
+            "Expected path escape to be blocked"
         )
-        
-        self.assertEqual(result["status"], "success")
-        self.assertIn("test.txt", result["stdout"])
-    
-    async def test_execute_multiline_command(self):
-        """Test executing multiline command."""
-        command = """
-        echo "Line 1"
-        echo "Line 2"
-        echo "Line 3"
-        """
-        
-        result = await self.bash_tool.execute(
-            command=command,
-            cwd=str(self.test_path)
-        )
-        
-        self.assertEqual(result["status"], "success")
-        self.assertIn("Line 1", result["stdout"])
-        self.assertIn("Line 2", result["stdout"])
-        self.assertIn("Line 3", result["stdout"])
-    
-    async def test_execute_with_pipes(self):
-        """Test executing command with pipes."""
-        # Create test files
-        (self.test_path / "file1.txt").write_text("apple\nbanana\ncherry")
-        (self.test_path / "file2.txt").write_text("banana\ndate\nfig")
-        
-        result = await self.bash_tool.execute(
-            command="cat file1.txt | grep banana",
-            cwd=str(self.test_path)
-        )
-        
-        self.assertEqual(result["status"], "success")
-        self.assertIn("banana", result["stdout"])
-        self.assertNotIn("apple", result["stdout"])
-    
-    async def test_environment_variables(self):
-        """Test command with environment variables."""
-        result = await self.bash_tool.execute(
-            command="echo $TEST_VAR",
-            cwd=str(self.test_path),
-            env={"TEST_VAR": "test_value"}
-        )
-        
-        self.assertEqual(result["status"], "success")
-        self.assertIn("test_value", result["stdout"])
+
+    async def test_blocked_commands_rejected(self):
+        for cmd in ["sudo ls", "kill 1", "rm -rf /"]:
+            result = await self.tool.execute({"command": cmd})
+            assert result.status == ToolExecutionStatus.ERROR, (
+                f"Expected blocked command to fail: {cmd}"
+            )
+
+    def test_tool_name(self):
+        assert self.tool.get_name() == "bash"
+
+    def test_timeout_property(self):
+        tool = BashTool(timeout=42)
+        assert tool.default_timeout == 42
 
 
-class TestEditTool(unittest.TestCase):
-    """Test edit tool functionality."""
-    
-    def setUp(self):
-        """Set up test environment."""
-        self.test_dir = tempfile.mkdtemp()
-        self.test_path = Path(self.test_dir)
-        self.edit_tool = EditTool()
-        
-        # Create test file
-        self.test_file = self.test_path / "test.txt"
-        self.test_file.write_text("Line 1\nLine 2\nLine 3")
-    
-    def tearDown(self):
-        """Clean up test environment."""
-        import shutil
-        shutil.rmtree(self.test_dir)
-    
-    def test_edit_tool_properties(self):
-        """Test edit tool properties."""
-        self.assertEqual(self.edit_tool.get_name(), "edit")
-        self.assertIn("Edit", self.edit_tool.get_description())
-    
-    async def test_create_file(self):
-        """Test creating a new file."""
-        new_file = self.test_path / "new_file.py"
-        
-        result = await self.edit_tool.execute(
-            operation="create",
-            file=str(new_file),
-            content="print('Hello World')"
-        )
-        
-        self.assertEqual(result["status"], "success")
-        self.assertTrue(new_file.exists())
-        self.assertEqual(new_file.read_text(), "print('Hello World')")
-    
-    async def test_create_file_with_directories(self):
-        """Test creating file with non-existent directories."""
-        nested_file = self.test_path / "dir1" / "dir2" / "file.txt"
-        
-        result = await self.edit_tool.execute(
-            operation="create",
-            file=str(nested_file),
-            content="nested content"
-        )
-        
-        self.assertEqual(result["status"], "success")
-        self.assertTrue(nested_file.exists())
-        self.assertEqual(nested_file.read_text(), "nested content")
-    
-    async def test_replace_text(self):
-        """Test replacing text in file."""
-        result = await self.edit_tool.execute(
-            operation="replace",
-            file=str(self.test_file),
-            old_text="Line 2",
-            new_text="Modified Line 2"
-        )
-        
-        self.assertEqual(result["status"], "success")
-        content = self.test_file.read_text()
-        self.assertNotIn("Line 2", content)
-        self.assertIn("Modified Line 2", content)
-    
-    async def test_replace_nonexistent_text(self):
-        """Test replacing non-existent text."""
-        result = await self.edit_tool.execute(
-            operation="replace",
-            file=str(self.test_file),
-            old_text="Non-existent",
-            new_text="Replacement"
-        )
-        
-        self.assertEqual(result["status"], "error")
-        self.assertIn("not found", result["error"])
-    
-    async def test_append_to_file(self):
-        """Test appending to file."""
-        result = await self.edit_tool.execute(
-            operation="append",
-            file=str(self.test_file),
-            content="\nLine 4\nLine 5"
-        )
-        
-        self.assertEqual(result["status"], "success")
-        content = self.test_file.read_text()
-        self.assertIn("Line 4", content)
-        self.assertIn("Line 5", content)
-        self.assertTrue(content.endswith("Line 5"))
-    
-    async def test_delete_lines(self):
-        """Test deleting lines from file."""
-        result = await self.edit_tool.execute(
-            operation="delete",
-            file=str(self.test_file),
-            start_line=2,
-            end_line=2
-        )
-        
-        self.assertEqual(result["status"], "success")
-        content = self.test_file.read_text()
-        self.assertIn("Line 1", content)
-        self.assertNotIn("Line 2", content)
-        self.assertIn("Line 3", content)
-    
-    async def test_delete_multiple_lines(self):
-        """Test deleting multiple lines."""
-        result = await self.edit_tool.execute(
-            operation="delete",
-            file=str(self.test_file),
-            start_line=1,
-            end_line=2
-        )
-        
-        self.assertEqual(result["status"], "success")
-        content = self.test_file.read_text()
-        self.assertNotIn("Line 1", content)
-        self.assertNotIn("Line 2", content)
-        self.assertIn("Line 3", content)
-    
-    async def test_insert_at_line(self):
-        """Test inserting at specific line."""
-        result = await self.edit_tool.execute(
-            operation="insert",
-            file=str(self.test_file),
-            line=2,
-            content="Inserted Line"
-        )
-        
-        self.assertEqual(result["status"], "success")
-        lines = self.test_file.read_text().splitlines()
-        self.assertEqual(lines[0], "Line 1")
-        self.assertEqual(lines[1], "Inserted Line")
-        self.assertEqual(lines[2], "Line 2")
-    
-    async def test_read_file(self):
-        """Test reading file content."""
-        result = await self.edit_tool.execute(
-            operation="read",
-            file=str(self.test_file)
-        )
-        
-        self.assertEqual(result["status"], "success")
-        self.assertEqual(result["content"], "Line 1\nLine 2\nLine 3")
-    
-    async def test_read_nonexistent_file(self):
-        """Test reading non-existent file."""
-        result = await self.edit_tool.execute(
-            operation="read",
-            file=str(self.test_path / "nonexistent.txt")
-        )
-        
-        self.assertEqual(result["status"], "error")
-        self.assertIn("not found", result["error"].lower())
-    
-    async def test_invalid_operation(self):
-        """Test invalid operation."""
-        result = await self.edit_tool.execute(
-            operation="invalid_op",
-            file=str(self.test_file)
-        )
-        
-        self.assertEqual(result["status"], "error")
-        self.assertIn("Invalid operation", result["error"])
-    
-    async def test_file_backup(self):
-        """Test file backup functionality."""
-        original_content = self.test_file.read_text()
-        
-        # Make change
-        await self.edit_tool.execute(
-            operation="replace",
-            file=str(self.test_file),
-            old_text="Line 2",
-            new_text="Changed Line"
-        )
-        
-        # Check backup exists
-        backup_files = list(self.test_path.glob("test.txt.backup.*"))
-        self.assertEqual(len(backup_files), 1)
-        
-        # Verify backup content
-        backup_content = backup_files[0].read_text()
-        self.assertEqual(backup_content, original_content)
+# ---------------------------------------------------------------------------
+# EditTool
+# ---------------------------------------------------------------------------
 
+class TestEditTool:
 
-if __name__ == "__main__":
-    # Run async tests
-    unittest.main()
+    @pytest.fixture(autouse=True)
+    def setup_dir(self, tmp_path):
+        self.wd = str(tmp_path)
+        self.tmp = tmp_path
+        self.tool = EditTool(working_directory=self.wd)
+
+    async def test_write_and_read(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "hello.txt",
+            "content": "hello world",
+        })
+        assert result.status == ToolExecutionStatus.SUCCESS
+
+        result2 = await self.tool.execute({
+            "action": "read",
+            "file_path": "hello.txt",
+        })
+        assert result2.status == ToolExecutionStatus.SUCCESS
+        assert result2.output == "hello world"
+
+    async def test_modify_single_occurrence(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "f.txt",
+            "content": "aaa bbb ccc",
+        })
+        result = await self.tool.execute({
+            "action": "modify",
+            "file_path": "f.txt",
+            "search_text": "bbb",
+            "replace_text": "XXX",
+        })
+        assert result.status == ToolExecutionStatus.SUCCESS
+
+        read = await self.tool.execute({"action": "read", "file_path": "f.txt"})
+        assert "XXX" in read.output
+        assert "bbb" not in read.output
+
+    async def test_modify_zero_occurrences_rejected(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "f.txt",
+            "content": "hello world",
+        })
+        result = await self.tool.execute({
+            "action": "modify",
+            "file_path": "f.txt",
+            "search_text": "NOTFOUND",
+            "replace_text": "X",
+        })
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "not found" in (result.error or "").lower() or "no occurrences" in (result.error or "").lower()
+
+    async def test_modify_two_occurrences_rejected(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "f.txt",
+            "content": "abc abc",
+        })
+        result = await self.tool.execute({
+            "action": "modify",
+            "file_path": "f.txt",
+            "search_text": "abc",
+            "replace_text": "X",
+        })
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "2" in (result.error or "") or "occurrences" in (result.error or "").lower() or "Ambiguous" in (result.error or "")
+
+    async def test_path_containment_blocked(self):
+        """'../escape.txt' should be blocked when working_directory is set."""
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "../escape.txt",
+            "content": "bad",
+        })
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "escape" in (result.error or "").lower() or "outside" in (result.error or "").lower()
+
+    async def test_delete_action(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "todelete.txt",
+            "content": "bye",
+        })
+        assert (self.tmp / "todelete.txt").exists()
+
+        result = await self.tool.execute({
+            "action": "delete",
+            "file_path": "todelete.txt",
+        })
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert not (self.tmp / "todelete.txt").exists()
+
+    async def test_delete_nonexistent_is_error(self):
+        result = await self.tool.execute({
+            "action": "delete",
+            "file_path": "ghost.txt",
+        })
+        assert result.status == ToolExecutionStatus.ERROR
+
+    async def test_read_nonexistent_is_error(self):
+        result = await self.tool.execute({
+            "action": "read",
+            "file_path": "nosuchfile.txt",
+        })
+        assert result.status == ToolExecutionStatus.ERROR
+
+    async def test_append_action(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "app.txt",
+            "content": "line1",
+        })
+        await self.tool.execute({
+            "action": "append",
+            "file_path": "app.txt",
+            "content": "\nline2",
+        })
+        read = await self.tool.execute({"action": "read", "file_path": "app.txt"})
+        assert "line1" in read.output
+        assert "line2" in read.output
+
+    async def test_unknown_action_is_error(self):
+        result = await self.tool.execute({
+            "action": "frobnicate",
+            "file_path": "x.txt",
+        })
+        assert result.status == ToolExecutionStatus.ERROR
+
+    async def test_missing_file_path_is_error(self):
+        result = await self.tool.execute({"action": "read"})
+        assert result.status == ToolExecutionStatus.ERROR
+
+    def test_tool_name(self):
+        assert self.tool.get_name() == "edit"

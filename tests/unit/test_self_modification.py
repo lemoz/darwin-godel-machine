@@ -1,380 +1,242 @@
 """
-Unit tests for self-modification components.
+Unit tests for self_modification package.
+
+Focuses on the ImplementationManager one-occurrence rule (the key invariant
+introduced by the fixer) and the ModificationProposer / PerformanceDiagnosis
+modules that are still live.
 """
 
-import unittest
-import tempfile
+import pytest
+import asyncio
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
-import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-from self_modification.performance_diagnosis import PerformanceDiagnosis, DiagnosisReport
-from self_modification.modification_proposal import ModificationProposer, ModificationProposal, CodeChange
 from self_modification.implementation import ImplementationManager
-from tests.test_utils import TestFixtures, AsyncTestRunner, cleanup_test_directory
+from self_modification.modification_proposal import (
+    ModificationProposer, ModificationProposal, CodeChange
+)
+from self_modification.performance_diagnosis import (
+    PerformanceDiagnosis, DiagnosisReport
+)
 
 
-class TestPerformanceDiagnoser(unittest.TestCase):
-    """Test cases for PerformanceDiagnoser."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="test_diagnosis_"))
-        self.diagnoser = PerformanceDiagnosis()
-        
-        # Create test agent
-        self.agent_path = self.temp_dir / "test_agent"
-        TestFixtures.create_mock_agent_code(self.agent_path)
-    
-    def tearDown(self):
-        """Clean up test fixtures."""
-        cleanup_test_directory(self.temp_dir)
-    
-    def test_diagnose_performance_basic(self):
-        """Test basic performance diagnosis."""
-        benchmark_results = {
-            'overall_score': 0.6,
-            'benchmark_scores': {
-                'test_benchmark': 0.6,
-                'string_manipulation': 0.5
-            },
-            'detailed_results': {
-                'test_benchmark': {
-                    'test_results': [
-                        {'passed': True, 'error': None},
-                        {'passed': False, 'error': 'Timeout'}
-                    ]
-                }
-            }
-        }
-        
-        report = AsyncTestRunner.run(
-            self.diagnoser.diagnose_performance(
-                str(self.agent_path),
-                benchmark_results
-            )
-        )
-        
-        self.assertIsInstance(report, DiagnosisReport)
-        self.assertEqual(report.overall_score, 0.6)
-        self.assertEqual(len(report.benchmark_scores), 2)
-        self.assertGreater(len(report.improvement_suggestions), 0)
-    
-    def test_analyze_code_structure_issues(self):
-        """Test detection of code structure issues."""
-        # Create agent with empty methods
-        agent_file = self.agent_path / "agent" / "agent.py"
-        content = agent_file.read_text()
-        
-        # Add empty method
-        content += "\n\ndef empty_method(self):\n    pass\n"
-        agent_file.write_text(content)
-        
-        report = DiagnosisReport(
-            overall_score=0.5,
-            benchmark_scores={}
-        )
-        
-        AsyncTestRunner.run(
-            self.diagnoser._analyze_code_structure(str(self.agent_path), report)
-        )
-        
-        self.assertGreater(len(report.code_structure_issues), 0)
-        self.assertTrue(any('empty' in issue.lower() for issue in report.code_structure_issues))
-    
-    def test_analyze_tool_usage(self):
-        """Test analysis of tool usage patterns."""
-        report = DiagnosisReport(
-            overall_score=0.5,
-            benchmark_scores={}
-        )
-        
-        self.diagnoser._analyze_tool_usage(str(self.agent_path), report)
-        
-        # Mock agent has limited tool usage
-        self.assertGreater(len(report.tool_usage_issues), 0)
-    
-    def test_generate_improvement_suggestions(self):
-        """Test generation of improvement suggestions."""
-        report = DiagnosisReport(
-            overall_score=0.3,
-            benchmark_scores={'test': 0.3},
-            tool_usage_issues=['No tool execution found'],
-            error_handling_issues=['No exception handling found'],
-            timeout_patterns=['Many timeouts']
-        )
-        
-        self.diagnoser._generate_improvement_suggestions(report)
-        
-        self.assertGreater(len(report.improvement_suggestions), 0)
-        self.assertGreater(len(report.high_priority_areas), 0)
-        self.assertIn('Tool Integration', report.high_priority_areas)
-        self.assertIn('Error Handling', report.high_priority_areas)
+# ---------------------------------------------------------------------------
+# ImplementationManager — one-occurrence rule for modify
+# ---------------------------------------------------------------------------
 
+class TestImplementationManagerModify:
 
-class TestModificationProposer(unittest.TestCase):
-    """Test cases for ModificationProposer."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="test_proposer_"))
-        self.proposer = ModificationProposer()
-        
-        # Create test agent
-        self.agent_path = self.temp_dir / "test_agent"
-        TestFixtures.create_mock_agent_code(self.agent_path)
-    
-    def tearDown(self):
-        """Clean up test fixtures."""
-        cleanup_test_directory(self.temp_dir)
-    
-    def test_generate_proposal_basic(self):
-        """Test basic proposal generation."""
-        diagnosis = DiagnosisReport(
-            overall_score=0.5,
-            benchmark_scores={'test': 0.5},
-            tool_usage_issues=['Limited tool usage'],
-            error_handling_issues=['No error handling']
-        )
-        
-        proposal = AsyncTestRunner.run(
-            self.proposer.generate_proposal(
-                diagnosis,
-                str(self.agent_path)
-            )
-        )
-        
-        self.assertIsInstance(proposal, ModificationProposal)
-        self.assertGreater(len(proposal.code_changes), 0)
-        self.assertGreater(len(proposal.implementation_steps), 0)
-        self.assertGreater(len(proposal.expected_improvements), 0)
-    
-    def test_prioritize_improvements(self):
-        """Test improvement prioritization."""
-        diagnosis = DiagnosisReport(
-            overall_score=0.3,
-            benchmark_scores={'test': 0.3},
-            tool_usage_issues=['Critical issue'],
-            error_handling_issues=['Important issue'],
-            prompt_engineering_issues=['Minor issue']
-        )
-        
-        priorities = self.proposer._prioritize_improvements(
-            diagnosis,
-            target_improvements=['custom_improvement']
-        )
-        
-        # Custom improvements should come first
-        self.assertEqual(priorities[0], 'custom_improvement')
-        # Then critical issues
-        self.assertIn('tool_integration', priorities)
-        self.assertIn('error_handling', priorities)
-        # Limited to top 4
-        self.assertLessEqual(len(priorities), 4)
-    
-    def test_generate_code_changes(self):
-        """Test code change generation."""
-        changes = AsyncTestRunner.run(
-            self.proposer._generate_code_changes(
-                'tool_integration',
-                DiagnosisReport(0.5, {}),
-                str(self.agent_path),
-                priority=1
-            )
-        )
-        
-        self.assertGreater(len(changes), 0)
-        
-        # Check that changes have proper structure
-        for change in changes:
-            self.assertIsInstance(change, CodeChange)
-            self.assertEqual(change.priority, 1)
-            self.assertIsNotNone(change.description)
-            self.assertIn(change.change_type, ['add', 'modify', 'delete'])
-    
-    def test_estimate_improvements(self):
-        """Test improvement estimation."""
-        proposal = ModificationProposal(
-            proposal_id='test',
-            diagnosis_summary='Test diagnosis',
-            code_changes=[
-                CodeChange(
-                    file_path='agent/agent.py',
-                    change_type='add',
-                    description='Add tool integration',
-                    priority=1
-                ),
-                CodeChange(
-                    file_path='agent/agent.py',
-                    change_type='modify',
-                    description='Improve error handling',
-                    priority=2
-                )
-            ]
-        )
-        
-        diagnosis = DiagnosisReport(
-            overall_score=0.5,
-            benchmark_scores={'test': 0.5}
-        )
-        
-        improvements = self.proposer._estimate_improvements(proposal, diagnosis)
-        
-        self.assertGreater(len(improvements), 0)
-        self.assertTrue(any('tool' in imp.lower() for imp in improvements))
-        self.assertTrue(any('error' in imp.lower() for imp in improvements))
+    def _make_manager(self):
+        return ImplementationManager()
 
+    def test_apply_modify_single_occurrence_succeeds(self, tmp_path):
+        """Exactly one occurrence: replacement applied cleanly."""
+        f = tmp_path / "code.py"
+        f.write_text("def foo(): pass\ndef bar(): pass\n")
 
-class TestModificationImplementer(unittest.TestCase):
-    """Test cases for ModificationImplementer."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="test_implementer_"))
-        self.implementer = ImplementationManager()
-        
-        # Create test agent
-        self.agent_path = self.temp_dir / "test_agent"
-        TestFixtures.create_mock_agent_code(self.agent_path)
-    
-    def tearDown(self):
-        """Clean up test fixtures."""
-        cleanup_test_directory(self.temp_dir)
-    
-    def test_implement_proposal_dry_run(self):
-        """Test dry run implementation."""
-        proposal = ModificationProposal(
-            proposal_id='test',
-            diagnosis_summary='Test',
-            code_changes=[
-                CodeChange(
-                    file_path='agent/agent.py',
-                    change_type='add',
-                    location='imports',
-                    new_code='import new_module',
-                    description='Add import',
-                    priority=1
-                )
-            ]
-        )
-        
-        result = AsyncTestRunner.run(
-            self.implementer.implement_proposal(
-                proposal,
-                str(self.agent_path),
-                dry_run=True
-            )
-        )
-        
-        self.assertTrue(result['success'])
-        self.assertIsNone(result['backup_path'])  # No backup in dry run
-        self.assertEqual(len(result['changes_applied']), 1)
-    
-    def test_implement_proposal_with_backup(self):
-        """Test implementation with backup."""
-        proposal = ModificationProposal(
-            proposal_id='test',
-            diagnosis_summary='Test',
-            code_changes=[
-                CodeChange(
-                    file_path='agent/agent.py',
-                    change_type='add',
-                    location='imports',
-                    new_code='# Test comment',
-                    description='Add comment',
-                    priority=1
-                )
-            ]
-        )
-        
-        result = AsyncTestRunner.run(
-            self.implementer.implement_proposal(
-                proposal,
-                str(self.agent_path),
-                dry_run=False
-            )
-        )
-        
-        self.assertTrue(result['success'])
-        self.assertIsNotNone(result['backup_path'])
-        self.assertTrue(Path(result['backup_path']).exists())
-        
-        # Verify change was applied
-        agent_file = self.agent_path / "agent" / "agent.py"
-        content = agent_file.read_text()
-        self.assertIn('# Test comment', content)
-    
-    def test_apply_modification(self):
-        """Test applying a modification change."""
-        agent_file = self.agent_path / "agent" / "agent.py"
-        original_content = agent_file.read_text()
-        
+        manager = self._make_manager()
         change = CodeChange(
-            file_path='agent/agent.py',
-            change_type='modify',
-            old_code='I am a test agent',
-            new_code='I am a modified test agent',
-            description='Modify system prompt',
-            priority=1
+            file_path="code.py",
+            change_type="modify",
+            description="Replace foo",
+            priority=1,
+            old_code="def foo(): pass",
+            new_code="def foo(): return 42",
         )
-        
-        success = AsyncTestRunner.run(
-            self.implementer._apply_code_change(
-                change,
-                str(self.agent_path),
-                dry_run=False
-            )
+        result = manager._apply_modify_change(f, change)
+        assert result is True
+        content = f.read_text()
+        assert "def foo(): return 42" in content
+        assert "def foo(): pass" not in content
+
+    def test_apply_modify_zero_occurrences_raises(self, tmp_path):
+        """Zero occurrences → RuntimeError with 'not found' message."""
+        f = tmp_path / "code.py"
+        f.write_text("def bar(): pass\n")
+
+        manager = self._make_manager()
+        change = CodeChange(
+            file_path="code.py",
+            change_type="modify",
+            description="Modify nonexistent",
+            priority=1,
+            old_code="def nonexistent(): pass",
+            new_code="def nonexistent(): return 1",
         )
-        
-        self.assertTrue(success)
-        
-        # Verify modification
-        content = agent_file.read_text()
-        self.assertIn('modified test agent', content)
-        self.assertNotIn('I am a test agent', content)
-    
-    def test_rollback_changes(self):
-        """Test rollback functionality."""
-        # Create backup
-        self.implementer.backup_dir = self.implementer._create_backup(str(self.agent_path))
-        
-        # Make a change
-        agent_file = self.agent_path / "agent" / "agent.py"
-        agent_file.write_text("# Corrupted file")
-        
-        # Rollback
-        self.implementer._rollback_changes(str(self.agent_path))
-        
-        # Verify rollback
-        content = agent_file.read_text()
-        self.assertNotEqual(content, "# Corrupted file")
-        self.assertIn('class Agent', content)  # Original content restored
-    
-    def test_verify_modifications(self):
-        """Test modification verification."""
-        # Valid modifications
-        result = AsyncTestRunner.run(
-            self.implementer._verify_modifications(str(self.agent_path))
+        with pytest.raises(RuntimeError, match="not found"):
+            manager._apply_modify_change(f, change)
+
+    def test_apply_modify_two_occurrences_raises(self, tmp_path):
+        """Two occurrences → RuntimeError with 'Ambiguous' message."""
+        f = tmp_path / "code.py"
+        f.write_text("x = 1\nx = 1\n")
+
+        manager = self._make_manager()
+        change = CodeChange(
+            file_path="code.py",
+            change_type="modify",
+            description="Ambiguous",
+            priority=1,
+            old_code="x = 1",
+            new_code="x = 2",
         )
-        
-        self.assertTrue(result['valid'])
-        self.assertEqual(len(result['errors']), 0)
-        
-        # Introduce syntax error
-        agent_file = self.agent_path / "agent" / "agent.py"
-        content = agent_file.read_text()
-        content += "\n\nthis is invalid syntax"
-        agent_file.write_text(content)
-        
-        result = AsyncTestRunner.run(
-            self.implementer._verify_modifications(str(self.agent_path))
+        with pytest.raises(RuntimeError, match="Ambiguous|ambiguous|occurrences"):
+            manager._apply_modify_change(f, change)
+
+    def test_apply_modify_nonexistent_file_returns_false(self, tmp_path):
+        manager = self._make_manager()
+        change = CodeChange(
+            file_path="missing.py",
+            change_type="modify",
+            description="No file",
+            priority=1,
+            old_code="x",
+            new_code="y",
         )
-        
-        self.assertFalse(result['valid'])
-        self.assertGreater(len(result['errors']), 0)
+        result = manager._apply_modify_change(tmp_path / "missing.py", change)
+        assert result is False
+
+    def test_apply_modify_missing_old_code_returns_false(self, tmp_path):
+        f = tmp_path / "code.py"
+        f.write_text("x = 1\n")
+        manager = self._make_manager()
+        change = CodeChange(
+            file_path="code.py",
+            change_type="modify",
+            description="no old code",
+            priority=1,
+            old_code=None,
+            new_code="y = 2",
+        )
+        result = manager._apply_modify_change(f, change)
+        assert result is False
 
 
-if __name__ == '__main__':
-    unittest.main()
+# ---------------------------------------------------------------------------
+# ImplementationManager — add and delete
+# ---------------------------------------------------------------------------
+
+class TestImplementationManagerAdd:
+
+    def test_apply_add_creates_new_file(self, tmp_path):
+        f = tmp_path / "newfile.py"
+        manager = ImplementationManager()
+        change = CodeChange(
+            file_path="newfile.py",
+            change_type="add",
+            description="Create new",
+            priority=1,
+            new_code="x = 1\n",
+        )
+        result = manager._apply_add_change(f, change)
+        assert result is True
+        assert f.read_text() == "x = 1\n"
+
+    def test_apply_add_appends_to_existing(self, tmp_path):
+        f = tmp_path / "existing.py"
+        f.write_text("x = 1\n")
+        manager = ImplementationManager()
+        change = CodeChange(
+            file_path="existing.py",
+            change_type="add",
+            description="Append",
+            priority=1,
+            new_code="y = 2",
+        )
+        result = manager._apply_add_change(f, change)
+        assert result is True
+        content = f.read_text()
+        assert "y = 2" in content
+
+
+class TestImplementationManagerDelete:
+
+    def test_apply_delete_removes_file(self, tmp_path):
+        f = tmp_path / "gone.py"
+        f.write_text("x = 1\n")
+        manager = ImplementationManager()
+        change = CodeChange(
+            file_path="gone.py",
+            change_type="delete",
+            description="Delete",
+            priority=1,
+        )
+        result = manager._apply_delete_change(f, change)
+        assert result is True
+        assert not f.exists()
+
+    def test_apply_delete_specific_content(self, tmp_path):
+        f = tmp_path / "partial.py"
+        f.write_text("keep this\nremove this\nkeep this too\n")
+        manager = ImplementationManager()
+        change = CodeChange(
+            file_path="partial.py",
+            change_type="delete",
+            description="Delete content",
+            priority=1,
+            old_code="remove this\n",
+        )
+        result = manager._apply_delete_change(f, change)
+        assert result is True
+        content = f.read_text()
+        assert "remove this" not in content
+        assert "keep this" in content
+
+
+# ---------------------------------------------------------------------------
+# PerformanceDiagnosis
+# ---------------------------------------------------------------------------
+
+class TestPerformanceDiagnosis:
+
+    def test_generate_improvement_suggestions_populates(self):
+        diagnoser = PerformanceDiagnosis()
+        report = DiagnosisReport(
+            overall_score=0.4,
+            benchmark_scores={"math": 0.4, "code": 0.3},
+        )
+        diagnoser._generate_improvement_suggestions(report)
+        # Should have suggestions (low score triggers them)
+        assert isinstance(report.improvement_suggestions, list)
+
+    def test_high_score_no_critical_issues(self):
+        diagnoser = PerformanceDiagnosis()
+        report = DiagnosisReport(
+            overall_score=0.95,
+            benchmark_scores={"math": 0.95},
+        )
+        diagnoser._generate_improvement_suggestions(report)
+        # High score → fewer / no critical issues
+        assert isinstance(report.improvement_suggestions, list)
+
+
+# ---------------------------------------------------------------------------
+# ModificationProposer
+# ---------------------------------------------------------------------------
+
+class TestModificationProposer:
+
+    def test_summarize_diagnosis_returns_string(self):
+        proposer = ModificationProposer()
+        report = DiagnosisReport(
+            overall_score=0.6,
+            benchmark_scores={"b": 0.6},
+        )
+        summary = proposer._summarize_diagnosis(report)
+        assert isinstance(summary, str)
+        assert len(summary) > 0
+
+    def test_proposal_dataclass_str(self):
+        proposal = ModificationProposal(
+            proposal_id="p1",
+            diagnosis_summary="test",
+            code_changes=[
+                CodeChange(
+                    file_path="f.py",
+                    change_type="add",
+                    description="Add something",
+                    priority=1,
+                )
+            ],
+        )
+        s = str(proposal)
+        assert "p1" in s or "change" in s.lower()

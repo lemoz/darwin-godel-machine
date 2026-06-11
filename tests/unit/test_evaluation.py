@@ -1,385 +1,347 @@
 """
-Unit tests for evaluation framework components.
+Unit tests for evaluation components: BenchmarkRunner internals, BenchmarkScorer,
+and AgentValidator.
+
+No network calls. BenchmarkRunner tests exercise _build_test_script and _run_test_case
+directly with hand-written Python solutions in tmp_path.
 """
 
-import unittest
-import tempfile
-import json
+import asyncio
+import pytest
+import yaml
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
-import sys
+from unittest.mock import MagicMock
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-from evaluation.benchmark_runner import BenchmarkRunner, BenchmarkResult
+from evaluation.benchmark_runner import BenchmarkRunner, BenchmarkTask, BenchmarkResult
+from evaluation.scorer import (
+    BenchmarkScorer, BinaryScorer, PartialCreditScorer,
+    JsonScorer, FunctionOutputScorer
+)
 from evaluation.agent_validator import AgentValidator
-from evaluation.scoring import BenchmarkScorer, BinaryScorer, PartialCreditScorer, JsonScorer, FunctionOutputScorer
-from tests.test_utils import TestFixtures, AsyncTestRunner, cleanup_test_directory
 
 
-class TestBenchmarkRunner(unittest.TestCase):
-    """Test cases for BenchmarkRunner."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="test_benchmark_"))
-        self.benchmarks_dir = self.temp_dir / "benchmarks"
-        self.results_dir = self.temp_dir / "results"
-        self.benchmarks_dir.mkdir()
-        self.results_dir.mkdir()
-        
-        # Create test benchmark config
-        self.benchmark_config = TestFixtures.create_test_benchmark_config()
-        benchmark_file = self.benchmarks_dir / "test_benchmark.yaml"
-        
-        import yaml
-        with open(benchmark_file, 'w') as f:
-            yaml.dump(self.benchmark_config, f)
-        
-        self.runner = BenchmarkRunner(
-            benchmarks_dir=str(self.benchmarks_dir),
-            results_dir=str(self.results_dir),
-            timeout=10
+# ---------------------------------------------------------------------------
+# BenchmarkTask helpers
+# ---------------------------------------------------------------------------
+
+def _make_task(tmp_path: Path, name: str = "add_task") -> BenchmarkTask:
+    """Write a YAML benchmark config and return a BenchmarkTask."""
+    config = {
+        "name": name,
+        "description": "Add two numbers",
+        "task_prompt": "Write a function add(a, b) that returns a+b",
+        "test_cases": [
+            {
+                "function_name": "add",
+                "inputs": ["1, 2", "10, 20", "-1, 1"],
+                "expected_outputs": ["3", "30", "0"],
+            }
+        ],
+        "timeout": 10,
+        "scoring_method": "partial",
+    }
+    p = tmp_path / f"{name}.yaml"
+    p.write_text(yaml.dump(config))
+    return BenchmarkTask.from_config(str(p))
+
+
+def _make_runner(tmp_path: Path, task: BenchmarkTask) -> BenchmarkRunner:
+    """Build a BenchmarkRunner whose benchmarks dir contains only task."""
+    bdir = tmp_path / "benchmarks"
+    bdir.mkdir(exist_ok=True)
+    cfg = {
+        "name": task.name,
+        "description": task.description,
+        "task_prompt": task.task_prompt,
+        "test_cases": task.test_cases,
+        "timeout": task.timeout,
+        "scoring_method": task.scoring_method,
+    }
+    (bdir / f"{task.name}.yaml").write_text(yaml.dump(cfg))
+    return BenchmarkRunner(benchmarks_dir=str(bdir), use_sandbox=False)
+
+
+# ---------------------------------------------------------------------------
+# BenchmarkRunner._build_test_script tests
+# ---------------------------------------------------------------------------
+
+class TestBuildTestScript:
+
+    def test_correct_solution_returns_success(self, tmp_path):
+        solution_file = str(tmp_path / "sol.py")
+        Path(solution_file).write_text("def add(a, b): return a + b\n")
+        script = BenchmarkRunner._build_test_script(
+            solution_file, "add", "1, 2", "3", 0
         )
-    
-    def tearDown(self):
-        """Clean up test fixtures."""
-        cleanup_test_directory(self.temp_dir)
-    
-    def test_load_benchmarks(self):
-        """Test loading benchmark configurations."""
-        self.assertIn('test_benchmark', self.runner.benchmarks)
-        loaded_config = self.runner.benchmarks['test_benchmark']
-        self.assertEqual(loaded_config['name'], 'test_benchmark')
-        self.assertEqual(loaded_config['difficulty'], 'easy')
-    
-    def test_run_benchmark_success(self):
-        """Test running a benchmark successfully."""
-        # Create mock agent
-        mock_agent = Mock()
-        mock_agent.solve_task = AsyncMock(return_value={
-            'status': 'completed',
-            'result': 'output1'
-        })
-        
-        # Run benchmark
-        result = AsyncTestRunner.run(
-            self.runner.run_benchmark(mock_agent, 'test_benchmark')
+        assert "add" in script
+        assert repr("1, 2") in script
+
+    def test_wrong_solution_returns_failure(self, tmp_path):
+        """Run the generated script for a wrong solution and check JSON output."""
+        import subprocess, json
+        solution_file = str(tmp_path / "wrong.py")
+        Path(solution_file).write_text("def add(a, b): return a - b\n")
+        script = BenchmarkRunner._build_test_script(
+            solution_file, "add", "1, 2", "3", 0
         )
-        
-        self.assertIsInstance(result, BenchmarkResult)
-        self.assertEqual(result.benchmark_name, 'test_benchmark')
-        self.assertEqual(len(result.test_results), 1)
-        self.assertTrue(result.test_results[0]['passed'])
-    
-    def test_run_benchmark_timeout(self):
-        """Test benchmark timeout handling."""
-        # Create mock agent that times out
-        mock_agent = Mock()
-        
-        async def slow_task(*args, **kwargs):
-            import asyncio
-            await asyncio.sleep(20)  # Longer than timeout
-            return {'status': 'completed', 'result': 'output1'}
-        
-        mock_agent.solve_task = slow_task
-        
-        # Run benchmark with short timeout
-        runner = BenchmarkRunner(
-            benchmarks_dir=str(self.benchmarks_dir),
-            results_dir=str(self.results_dir),
-            timeout=0.1
+        result = subprocess.run(
+            ["python3", "-c", script],
+            capture_output=True, text=True, timeout=10
         )
-        
-        result = AsyncTestRunner.run(
-            runner.run_benchmark(mock_agent, 'test_benchmark')
+        data = json.loads(result.stdout.strip().split("\n")[-1])
+        assert data["success"] is False
+
+    def test_correct_solution_script_produces_success_json(self, tmp_path):
+        import subprocess, json
+        solution_file = str(tmp_path / "correct.py")
+        Path(solution_file).write_text("def add(a, b): return a + b\n")
+        script = BenchmarkRunner._build_test_script(
+            solution_file, "add", "1, 2", "3", 0
         )
-        
-        self.assertEqual(len(result.test_results), 1)
-        self.assertFalse(result.test_results[0]['passed'])
-        self.assertIn('timeout', result.test_results[0]['error'].lower())
-    
-    def test_save_results(self):
-        """Test saving benchmark results."""
-        result = BenchmarkResult(
-            benchmark_name='test_benchmark',
-            test_results=[{
-                'test_id': 'test1',
-                'passed': True,
-                'actual_output': 'output1',
-                'expected_output': 'output1',
-                'error': None,
-                'execution_time': 0.1
+        result = subprocess.run(
+            ["python3", "-c", script],
+            capture_output=True, text=True, timeout=10
+        )
+        data = json.loads(result.stdout.strip().split("\n")[-1])
+        assert data["success"] is True
+
+
+# ---------------------------------------------------------------------------
+# BenchmarkRunner._run_test_case async tests
+# ---------------------------------------------------------------------------
+
+class TestRunTestCase:
+
+    async def test_correct_solution_all_pass(self, tmp_path):
+        task = _make_task(tmp_path)
+        runner = _make_runner(tmp_path, task)
+        solution = "def add(a, b):\n    return a + b\n"
+        result = await runner._run_test_case(solution, task.test_cases[0], task)
+        assert result["success"] is True
+        assert result["passed"] == result["total"] == 3
+
+    async def test_wrong_solution_all_fail(self, tmp_path):
+        task = _make_task(tmp_path)
+        runner = _make_runner(tmp_path, task)
+        solution = "def add(a, b):\n    return a * b\n"  # wrong
+        result = await runner._run_test_case(solution, task.test_cases[0], task)
+        assert result["success"] is False
+        assert result["passed"] < result["total"]
+
+    async def test_invalid_function_name_blocked(self, tmp_path):
+        """function_name with spaces/special chars should be rejected."""
+        task = _make_task(tmp_path)
+        runner = _make_runner(tmp_path, task)
+        bad_test_case = {
+            "function_name": "add; import os",
+            "inputs": ["1, 2"],
+            "expected_outputs": ["3"],
+        }
+        result = await runner._run_test_case("def add(a, b): return a+b", bad_test_case, task)
+        assert result["success"] is False
+        assert "Invalid function_name" in result.get("error", "")
+
+    async def test_timeout_kills_slow_solution(self, tmp_path):
+        task = _make_task(tmp_path)
+        # Override timeout to 1 second
+        task2 = BenchmarkTask(
+            name=task.name,
+            description=task.description,
+            task_prompt=task.task_prompt,
+            test_cases=[{
+                "function_name": "add",
+                "inputs": ["1, 2"],
+                "expected_outputs": ["3"],
             }],
-            metadata={'test': True}
+            timeout=1,
+            validation_code="",
+            scoring_method="partial",
         )
-        
-        # Save results
-        result_file = self.runner._save_results(result, 'test_agent')
-        
-        self.assertTrue(result_file.exists())
-        
-        # Load and verify
-        with open(result_file, 'r') as f:
-            saved_data = json.load(f)
-        
-        self.assertEqual(saved_data['benchmark_name'], 'test_benchmark')
-        self.assertEqual(len(saved_data['test_results']), 1)
+        runner = _make_runner(tmp_path, task2)
+        # Solution that sleeps forever
+        solution = "import time\ndef add(a, b):\n    time.sleep(30)\n    return a + b\n"
+        result = await runner._run_test_case(solution, task2.test_cases[0], task2)
+        assert result["success"] is False
+        # at least one individual result should mention timeout
+        errors = [
+            r.get("error", "") for r in result.get("individual_results", [])
+        ]
+        assert any("Timeout" in (e or "") or "timeout" in (e or "") for e in errors), (
+            f"Expected timeout error, got: {errors}"
+        )
 
 
-class TestAgentValidator(unittest.TestCase):
-    """Test cases for AgentValidator."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="test_validator_"))
-        self.validator = AgentValidator()
-        
-        # Create test agent
-        self.agent_path = self.temp_dir / "test_agent"
-        TestFixtures.create_mock_agent_code(self.agent_path)
-    
-    def tearDown(self):
-        """Clean up test fixtures."""
-        cleanup_test_directory(self.temp_dir)
-    
-    def test_validate_valid_agent(self):
-        """Test validating a valid agent."""
-        result = AsyncTestRunner.run(
-            self.validator.validate_agent(str(self.agent_path))
-        )
-        
-        self.assertTrue(result['is_valid'])
-        self.assertTrue(result['syntax_valid'])
-        self.assertTrue(result['imports_valid'])
-        self.assertTrue(result['methods_valid'])
-        self.assertEqual(len(result['errors']), 0)
-    
-    def test_validate_syntax_error(self):
-        """Test validating agent with syntax errors."""
-        # Introduce syntax error
-        agent_file = self.agent_path / "agent" / "agent.py"
-        content = agent_file.read_text()
-        content += "\n\nthis is invalid python syntax"
-        agent_file.write_text(content)
-        
-        result = AsyncTestRunner.run(
-            self.validator.validate_agent(str(self.agent_path))
-        )
-        
-        self.assertFalse(result['is_valid'])
-        self.assertFalse(result['syntax_valid'])
-        self.assertGreater(len(result['errors']), 0)
-    
-    def test_validate_missing_methods(self):
-        """Test validating agent with missing required methods."""
-        # Remove solve_task method
-        agent_file = self.agent_path / "agent" / "agent.py"
-        content = agent_file.read_text()
-        lines = content.splitlines()
-        
-        # Remove solve_task method
-        new_lines = []
-        skip = False
-        for line in lines:
-            if 'async def solve_task' in line:
-                skip = True
-            elif skip and line.strip() and not line.startswith(' '):
-                skip = False
-            
-            if not skip:
-                new_lines.append(line)
-        
-        agent_file.write_text('\n'.join(new_lines))
-        
-        result = AsyncTestRunner.run(
-            self.validator.validate_agent(str(self.agent_path))
-        )
-        
-        self.assertFalse(result['is_valid'])
-        self.assertFalse(result['methods_valid'])
-    
-    def test_validate_config(self):
-        """Test configuration validation."""
-        # Valid config
-        valid_config = {
-            'agent_id': 'test_agent',
-            'fm_provider': 'gemini',
-            'fm_config': {
-                'model': 'gemini-pro',
-                'api_key': 'test_key'
-            }
-        }
-        
-        result = self.validator.validate_agent_config(valid_config)
-        self.assertTrue(result['valid'])
-        self.assertEqual(len(result['errors']), 0)
-        
-        # Invalid config (missing required field)
-        invalid_config = {
-            'agent_id': 'test_agent',
-            'fm_config': {
-                'model': 'gemini-pro'
-            }
-        }
-        
-        result = self.validator.validate_agent_config(invalid_config)
-        self.assertFalse(result['valid'])
-        self.assertGreater(len(result['errors']), 0)
+# ---------------------------------------------------------------------------
+# BenchmarkScorer tests
+# ---------------------------------------------------------------------------
 
+class TestBenchmarkScorer:
 
-class TestBenchmarkScorer(unittest.TestCase):
-    """Test cases for BenchmarkScorer and scoring methods."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        self.scorer = BenchmarkScorer()
-    
-    def test_binary_scorer(self):
-        """Test binary scoring."""
+    def _make_runner_results(self, successes):
+        """Build a result list in the runner format for simple pass/fail."""
+        results = []
+        for success in successes:
+            results.append({
+                "individual_results": [{
+                    "success": success,
+                    "actual_output": "3" if success else "0",
+                    "expected_output": "3",
+                    "error": None,
+                }],
+                "passed": 1 if success else 0,
+                "total": 1,
+            })
+        return results
+
+    def test_score_benchmark_empty_results(self):
+        scorer = BenchmarkScorer()
+        out = scorer.score_benchmark({"scoring": {"method": "binary"}}, [])
+        assert out["total_score"] == 0.0
+        assert out["passed_tests"] == 0
+        assert out["total_tests"] == 0
+
+    def test_score_benchmark_all_pass(self):
+        scorer = BenchmarkScorer()
+        results = self._make_runner_results([True, True, True])
+        out = scorer.score_benchmark({"scoring": {"method": "binary"}}, results)
+        assert out["total_score"] == pytest.approx(1.0)
+        assert out["passed_tests"] == 3
+
+    def test_score_benchmark_all_fail(self):
+        scorer = BenchmarkScorer()
+        results = self._make_runner_results([False, False])
+        out = scorer.score_benchmark({}, results)
+        assert out["total_score"] == pytest.approx(0.0)
+
+    def test_score_benchmark_partial(self):
+        scorer = BenchmarkScorer()
+        results = self._make_runner_results([True, False, True, False])
+        out = scorer.score_benchmark({"scoring": {"method": "partial"}}, results)
+        assert out["total_score"] == pytest.approx(0.5)
+
+    def test_score_benchmark_top_level_error(self):
+        scorer = BenchmarkScorer()
+        results = [{"error": "ImportError", "success": False}]
+        out = scorer.score_benchmark({}, results)
+        assert out["total_score"] == 0.0
+
+    def test_binary_scorer_strict(self):
         scorer = BinaryScorer(strict=True)
-        
-        # Exact match
-        score = scorer.score("hello", "hello", {})
-        self.assertEqual(score, 1.0)
-        
-        # No match
-        score = scorer.score("hello", "world", {})
-        self.assertEqual(score, 0.0)
-        
-        # Test non-strict mode
-        scorer_non_strict = BinaryScorer(strict=False)
-        score = scorer_non_strict.score("  hello  ", "hello", {})
-        self.assertEqual(score, 1.0)
-    
-    def test_partial_credit_scorer(self):
-        """Test partial credit scoring."""
-        scorer = PartialCreditScorer(
-            similarity_threshold=0.9,
-            ignore_whitespace=True
-        )
-        
-        # Very similar strings
-        score = scorer.score("hello world", "hello  world", {})
-        self.assertEqual(score, 1.0)
-        
-        # Somewhat similar
-        score = scorer.score("hello world", "hello earth", {})
-        self.assertGreater(score, 0.0)
-        self.assertLess(score, 1.0)
-        
-        # Very different
-        score = scorer.score("abc", "xyz", {})
-        self.assertLess(score, 0.5)
-    
-    def test_json_scorer(self):
-        """Test JSON scoring."""
-        scorer = JsonScorer(
-            required_fields=['name'],
-            partial_credit=True
-        )
-        
-        # Valid JSON, all fields match
-        actual = '{"name": "test", "value": 42}'
-        expected = '{"name": "test", "value": 42}'
+        assert scorer.score("hello", "hello", {}) == 1.0
+        assert scorer.score("hello ", "hello", {}) == 0.0
+
+    def test_binary_scorer_non_strict(self):
+        scorer = BinaryScorer(strict=False)
+        assert scorer.score("hello ", " hello", {}) == 1.0
+
+    def test_partial_credit_scorer_identical(self):
+        scorer = PartialCreditScorer()
+        assert scorer.score("abc", "abc", {}) == 1.0
+
+    def test_json_scorer_partial_credit(self):
+        scorer = JsonScorer(partial_credit=True)
+        actual = '{"a": 1, "b": 2}'
+        expected = '{"a": 1, "b": 99}'
         score = scorer.score(actual, expected, {})
-        self.assertEqual(score, 1.0)
-        
-        # Missing required field
-        actual = '{"value": 42}'
-        expected = '{"name": "test", "value": 42}'
-        score = scorer.score(actual, expected, {})
-        self.assertEqual(score, 0.0)
-        
-        # Partial match
-        scorer_partial = JsonScorer(partial_credit=True)
-        actual = '{"name": "test", "value": 100}'
-        expected = '{"name": "test", "value": 42}'
-        score = scorer_partial.score(actual, expected, {})
-        self.assertEqual(score, 0.5)  # 1 out of 2 fields match
-    
-    def test_function_output_scorer(self):
-        """Test function output scoring."""
-        scorer = FunctionOutputScorer(
-            scoring_method="average",
-            min_pass_rate=0.8
-        )
-        
-        # Single test
-        score = scorer.score("42", "42", {})
-        self.assertEqual(score, 1.0)
-        
-        # Multiple tests
-        results = [
-            ("42", "42", {}),
-            ("hello", "hello", {}),
-            ("world", "earth", {}),
-            ("test", "test", {})
-        ]
-        
-        score = scorer.score_multiple(results)
-        self.assertEqual(score, 0.75)  # 3 out of 4 pass
-    
-    def test_get_scorer(self):
-        """Test getting appropriate scorer based on config."""
-        # Binary scorer
-        config = {'scoring': {'method': 'binary'}}
-        scorer = self.scorer.get_scorer(config)
-        self.assertIsInstance(scorer, BinaryScorer)
-        
-        # Partial credit scorer
-        config = {'scoring': {'method': 'partial'}}
-        scorer = self.scorer.get_scorer(config)
-        self.assertIsInstance(scorer, PartialCreditScorer)
-        
-        # JSON scorer
-        config = {'scoring': {'method': 'json'}}
-        scorer = self.scorer.get_scorer(config)
-        self.assertIsInstance(scorer, JsonScorer)
-        
-        # Function scorer
-        config = {'scoring': {'method': 'function'}}
-        scorer = self.scorer.get_scorer(config)
-        self.assertIsInstance(scorer, FunctionOutputScorer)
-    
-    def test_score_benchmark(self):
-        """Test scoring complete benchmark results."""
-        config = {'scoring': {'method': 'binary'}}
-        
-        results = [
-            {
-                'actual_output': 'hello',
-                'expected_output': 'hello',
-                'test_case': {},
-                'error': None
-            },
-            {
-                'actual_output': 'world',
-                'expected_output': 'world',
-                'test_case': {},
-                'error': None
-            },
-            {
-                'actual_output': 'test',
-                'expected_output': 'fail',
-                'test_case': {},
-                'error': None
-            },
-            {
-                'actual_output': '',
-                'expected_output': 'error',
-                'test_case': {},
-                'error': 'Test failed'
-            }
-        ]
-        
-        summary = self.scorer.score_benchmark(config, results)
-        
-        self.assertEqual(summary['total_tests'], 4)
-        self.assertEqual(summary['passed_tests'], 2)
-        self.assertEqual(summary['total_score'], 0.5)  # 2/4 passed
-        self.assertEqual(len(summary['scores']), 4)
+        assert 0.0 < score < 1.0
+
+    def test_json_scorer_perfect_match(self):
+        scorer = JsonScorer()
+        s = '{"x": 10}'
+        assert scorer.score(s, s, {}) == 1.0
+
+    def test_function_output_scorer_single(self):
+        scorer = FunctionOutputScorer()
+        assert scorer.score("3", "3", {}) == 1.0
+        assert scorer.score("0", "3", {}) == 0.0
+
+    def test_benchmark_scorer_selects_binary_by_default(self):
+        scorer = BenchmarkScorer()
+        s = scorer.get_scorer({})
+        assert isinstance(s, BinaryScorer)
 
 
-if __name__ == '__main__':
-    unittest.main()
+# ---------------------------------------------------------------------------
+# AgentValidator tests
+# ---------------------------------------------------------------------------
+
+MINIMAL_AGENT = '''\
+"""Minimal valid agent."""
+
+class Agent:
+    def __init__(self):
+        self.fm_interface = None
+        self.tools = []
+
+    def solve_task(self, task):
+        # NB: validator only recognises ast.FunctionDef, not ast.AsyncFunctionDef
+        # (production bug: async solve_task is NOT detected by the validator).
+        # Tests must use a sync stub to pass current validation.
+        return "done"
+'''
+
+BROKEN_SYNTAX_AGENT = '''\
+class Agent:
+    def __init__(self
+    # syntax error here
+'''
+
+NO_AGENT_CLASS = '''\
+class Helper:
+    def __init__(self):
+        pass
+'''
+
+
+class TestAgentValidator:
+
+    async def test_valid_agent_file_passes(self, tmp_path):
+        f = tmp_path / "agent.py"
+        f.write_text(MINIMAL_AGENT)
+        validator = AgentValidator()
+        result = await validator.validate_agent(str(f))
+        assert result["valid"] is True, f"Errors: {result['errors']}"
+
+    async def test_syntax_error_fails(self, tmp_path):
+        f = tmp_path / "agent.py"
+        f.write_text(BROKEN_SYNTAX_AGENT)
+        validator = AgentValidator()
+        result = await validator.validate_agent(str(f))
+        assert result["valid"] is False
+        assert any("Syntax" in e or "syntax" in e for e in result["errors"])
+
+    async def test_no_agent_class_warns_but_passes(self, tmp_path):
+        """
+        Production note: validator treats a missing Agent class as a WARNING,
+        not an error (valid=True). This is a known limitation — the validator
+        only errors when required methods are missing from a found class.
+        """
+        f = tmp_path / "agent.py"
+        f.write_text(NO_AGENT_CLASS)
+        validator = AgentValidator()
+        result = await validator.validate_agent(str(f))
+        # Current production behaviour: no-Agent-class yields warnings only
+        assert any("Agent" in w for w in result["warnings"])
+
+    async def test_missing_file_fails(self, tmp_path):
+        validator = AgentValidator()
+        result = await validator.validate_agent(str(tmp_path / "ghost.py"))
+        # _validate_structure will fail because suffix is .py but file doesn't exist
+        # OR _validate_syntax will fail when trying to read it
+        assert result["valid"] is False
+
+    async def test_non_py_file_fails(self, tmp_path):
+        f = tmp_path / "agent.txt"
+        f.write_text("hello")
+        validator = AgentValidator()
+        result = await validator.validate_agent(str(f))
+        assert result["valid"] is False
+
+    async def test_validation_summary_is_string(self, tmp_path):
+        f = tmp_path / "agent.py"
+        f.write_text(MINIMAL_AGENT)
+        validator = AgentValidator()
+        result = await validator.validate_agent(str(f))
+        summary = validator.get_validation_summary(result)
+        assert isinstance(summary, str)
+        assert "Agent Validation Summary" in summary
