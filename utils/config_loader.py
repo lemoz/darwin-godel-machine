@@ -17,13 +17,14 @@ class ConfigLoader:
         """
         self.config_path = Path(config_path)
         
-        # Load .env file if it exists
-        env_path = Path(".env")
+        # Load .env file if it exists — resolve relative to repo root, not CWD
+        _repo_root = Path(__file__).resolve().parents[1]
+        env_path = _repo_root / ".env"
         if env_path.exists():
             load_dotenv(env_path)
         else:
             # Try .env.example as fallback (for testing)
-            env_example_path = Path(".env.example")
+            env_example_path = _repo_root / ".env.example"
             if env_example_path.exists():
                 load_dotenv(env_example_path)
     

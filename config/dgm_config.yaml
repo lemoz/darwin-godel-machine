@@ -14,7 +14,7 @@ fm_providers:
   
   # Anthropic Configuration
   anthropic:
-    model: claude-sonnet-4-20250514
+    model: claude-sonnet-4-6
     api_key: ${ANTHROPIC_API_KEY}
     max_tokens: 8192
     temperature: 0.1
@@ -38,13 +38,11 @@ dgm_settings:
 # Archive Settings
 archive:
   path: archive/agents
-  max_size: 1000
-  novelty_threshold: 0.1
-  
-# Parent Selection Configuration
+
+# Parent Selection Configuration (paper formula parameters)
 parent_selection:
-  performance_weight: 0.7    # Weight for performance score
-  novelty_weight: 0.3        # Weight for novelty score
+  lambda: 10
+  alpha_0: 0.5
   
 # Evaluation Settings
 evaluation:
@@ -56,6 +54,7 @@ evaluation:
 agents:
   workspace_dir: agents/workspace
   initial_agent_path: agent/agent.py
+  max_steps: 20
   
 # Benchmarks Configuration
 benchmarks:

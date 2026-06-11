@@ -8,6 +8,7 @@ performance scores, and lineage information.
 import json
 import os
 import shutil
+import tempfile
 import uuid
 from dataclasses import dataclass, asdict
 from datetime import datetime
@@ -72,17 +73,29 @@ class AgentArchive:
                 self.agents = {}
     
     def _save_archive(self) -> None:
-        """Save archive metadata to disk."""
+        """Save archive metadata to disk atomically."""
         try:
             data = {
                 'agents': {
-                    agent_id: agent.to_dict() 
+                    agent_id: agent.to_dict()
                     for agent_id, agent in self.agents.items()
                 },
                 'last_updated': datetime.now().isoformat()
             }
-            with open(self.metadata_file, 'w') as f:
-                json.dump(data, f, indent=2)
+            # Write to a temp file in the same directory, then atomically replace.
+            dir_ = self.metadata_file.parent
+            fd, tmp_path = tempfile.mkstemp(dir=str(dir_), suffix='.tmp')
+            try:
+                with os.fdopen(fd, 'w') as f:
+                    json.dump(data, f, indent=2)
+                os.replace(tmp_path, self.metadata_file)
+            except Exception:
+                # Clean up temp file on failure
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
             logger.info("Archive metadata saved")
         except Exception as e:
             logger.error(f"Failed to save archive: {e}")
@@ -115,16 +128,27 @@ class AgentArchive:
         if parent_id and parent_id in self.agents:
             generation = self.agents[parent_id].generation + 1
         
-        # Copy agent code to archive
+        # Copy agent code to archive. The unit of evolution is the whole
+        # agent package (agent.py plus any subpackages it imports), so an
+        # agent.py that lives inside a package (parent has __init__.py)
+        # archives its parent directory — otherwise the archived agent
+        # loses its relative imports and can never run again. A standalone
+        # single-file agent is archived as just that file.
         agent_archive_path = self.archive_dir / agent_id
+        ignore = shutil.ignore_patterns('__pycache__', '*.pyc', '.git')
         if os.path.exists(agent_path):
             if os.path.isfile(agent_path):
-                # If it's a single file, create directory and copy file
-                agent_archive_path.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(agent_path, agent_archive_path / os.path.basename(agent_path))
+                parent_dir = os.path.dirname(os.path.abspath(agent_path))
+                if os.path.exists(os.path.join(parent_dir, '__init__.py')):
+                    shutil.copytree(parent_dir, agent_archive_path, ignore=ignore)
+                else:
+                    agent_archive_path.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(
+                        agent_path,
+                        agent_archive_path / os.path.basename(agent_path)
+                    )
             else:
-                # If it's a directory, copy the whole directory
-                shutil.copytree(agent_path, agent_archive_path)
+                shutil.copytree(agent_path, agent_archive_path, ignore=ignore)
         
         # Calculate average score
         scores = benchmark_scores or {}
