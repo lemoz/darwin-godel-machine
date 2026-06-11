@@ -3,21 +3,19 @@ Evaluation components for the Darwin Gödel Machine.
 
 This module contains components for evaluating agent performance,
 running benchmarks, and validating agent implementations.
+
+Live modules:
+  - benchmark_runner.py  -> BenchmarkRunner (runs agents on YAML benchmark tasks)
+  - scorer.py            -> BenchmarkScorer (scoring helpers)
+  - agent_validator.py   -> AgentValidator (validates agent implementations)
 """
 
+from .benchmark_runner import BenchmarkRunner
+from .scorer import BenchmarkScorer
 from .agent_validator import AgentValidator
-from .benchmark import Benchmark, BenchmarkConfig
-from .evaluator import Evaluator
-
-# Aliases for backwards compatibility
-BenchmarkRunner = Evaluator
-BenchmarkScorer = Evaluator
 
 __all__ = [
-    'AgentValidator',
-    'Benchmark',
-    'BenchmarkConfig',
-    'Evaluator',
     'BenchmarkRunner',
-    'BenchmarkScorer'
+    'BenchmarkScorer',
+    'AgentValidator',
 ]

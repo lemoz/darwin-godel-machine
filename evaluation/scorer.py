@@ -322,52 +322,101 @@ class BenchmarkScorer:
     ) -> Dict[str, Any]:
         """
         Score complete benchmark results.
-        
+
+        Consumes the result structure emitted by BenchmarkRunner._run_test_case.
+        Each element of *results* is one test-case group and may contain:
+
+        - ``'error'``: top-level error string -> scores 0
+        - ``'success'``: bool (overall pass for this group)
+        - ``'individual_results'``: list of per-input dicts, each with:
+            - ``'success'``: bool
+            - ``'actual_output'``: repr string or None
+            - ``'expected_output'``: repr string
+            - ``'error'``: error string or None
+        - ``'passed'`` / ``'total'``: counts within the group
+
+        Falls back gracefully to the flat ``'actual_output'`` /
+        ``'expected_output'`` keys for callers that pass manually-constructed
+        flat result dicts.
+
+        An empty *results* list returns ``total_score = 0.0`` (not 1.0,
+        and no ZeroDivisionError).
+
         Args:
-            benchmark_config: Benchmark configuration
-            results: List of test results
-            
+            benchmark_config: Benchmark configuration dict (may contain
+                ``'scoring'`` sub-dict with ``'method'`` and ``'strict'``).
+            results: List of test-case result dicts from BenchmarkRunner.
+
         Returns:
-            Benchmark scoring summary
+            Dict with keys: ``total_score``, ``passed_tests``, ``total_tests``,
+            ``scores``, ``scoring_method``.
         """
         if not results:
             return {
                 'total_score': 0.0,
                 'passed_tests': 0,
                 'total_tests': 0,
-                'scores': []
+                'scores': [],
+                'scoring_method': benchmark_config.get('scoring', {}).get('method', 'binary')
             }
-        
+
         scorer = self.get_scorer(benchmark_config)
-        scores = []
-        
+
+        # Collect per-input scores directly (not as empty-string sentinels).
+        # Failures are always 0.0; successes are scored by the chosen scorer.
+        scores: List[float] = []
+        score_pairs: List[Tuple[str, str, Dict[str, Any]]] = []  # for FunctionOutputScorer
+
+        def _score_sub(sub: Dict[str, Any]) -> float:
+            """Score one individual result from the runner."""
+            if sub.get('error') and not sub.get('success', False):
+                return 0.0
+            if not sub.get('success', False):
+                return 0.0
+            actual = str(sub.get('actual_output', '') or '')
+            expected = str(sub.get('expected_output', '') or '')
+            score_pairs.append((actual, expected, {}))
+            return scorer.score(actual, expected, {})
+
         for result in results:
-            if result.get('error'):
+            if result.get('error') and 'individual_results' not in result:
+                # Top-level hard failure with no sub-results.
                 scores.append(0.0)
+                continue
+
+            if 'individual_results' in result:
+                # New runner format: iterate the per-input sub-results.
+                for sub in result['individual_results']:
+                    scores.append(_score_sub(sub))
             else:
-                score = scorer.score(
-                    result.get('actual_output', ''),
-                    result.get('expected_output', ''),
-                    result.get('test_case', {})
-                )
-                scores.append(score)
-        
-        # Calculate aggregate score based on method
+                # Flat format (manually constructed dicts / legacy callers).
+                if result.get('error') or not result.get('success', False):
+                    scores.append(0.0)
+                else:
+                    actual = str(result.get('actual_output', '') or '')
+                    expected = str(result.get('expected_output', '') or '')
+                    score_pairs.append((actual, expected, {}))
+                    scores.append(scorer.score(actual, expected, {}))
+
+        if not scores:
+            return {
+                'total_score': 0.0,
+                'passed_tests': 0,
+                'total_tests': 0,
+                'scores': [],
+                'scoring_method': benchmark_config.get('scoring', {}).get('method', 'binary')
+            }
+
+        # Aggregate.
         if isinstance(scorer, FunctionOutputScorer):
-            # Use function scorer's aggregation method
-            test_results = [
-                (r.get('actual_output', ''), r.get('expected_output', ''), r.get('test_case', {}))
-                for r in results if not r.get('error')
-            ]
-            total_score = scorer.score_multiple(test_results) if test_results else 0.0
+            total_score = scorer.score_multiple(score_pairs) if score_pairs else 0.0
         else:
-            # Average all scores
-            total_score = sum(scores) / len(scores) if scores else 0.0
-        
+            total_score = sum(scores) / len(scores)
+
         return {
             'total_score': total_score,
             'passed_tests': sum(1 for s in scores if s == 1.0),
-            'total_tests': len(results),
+            'total_tests': len(scores),
             'scores': scores,
             'scoring_method': benchmark_config.get('scoring', {}).get('method', 'binary')
         }

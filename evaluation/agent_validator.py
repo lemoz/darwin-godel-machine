@@ -11,6 +11,7 @@ import ast
 import inspect
 import importlib.util
 import sys
+import time
 
 from utils.agent_loader import AgentLoader
 
@@ -151,8 +152,13 @@ class AgentValidator:
             else:
                 results['agent_info']['classes'] = [cls.name for cls in classes]
                 
-                # Find Agent class
+                # Find Agent class. Prefer an exact 'Agent' match, then names
+                # ending in 'Agent' (e.g. ImprovedAgent), so helper classes
+                # like AgentConfig are never mistaken for the agent itself.
                 agent_classes = [cls for cls in classes if 'Agent' in cls.name]
+                agent_classes.sort(
+                    key=lambda c: (c.name != 'Agent', not c.name.endswith('Agent'))
+                )
                 if agent_classes:
                     results['agent_info']['agent_class'] = agent_classes[0].name
                 else:
@@ -170,60 +176,148 @@ class AgentValidator:
     async def _validate_implementation(self, agent_path: str, results: Dict[str, Any]) -> bool:
         """
         Validate agent implementation details.
-        
+
+        Loads and inspects the agent file that was *actually passed* (not the
+        live source tree) using ``importlib.util.spec_from_file_location`` with
+        a unique module name per load so repeated calls don't collide.
+
+        Checks:
+        - File exists
+        - Parses as valid Python (AST)
+        - Defines a class named ``Agent`` (or containing "Agent")
+        - That class has ``solve_task`` and ``__init__`` methods
+
         Args:
-            agent_path: Path to agent
-            results: Results dictionary to update
-            
+            agent_path: Path string passed to ``validate_agent``
+            results: Results dictionary to update (mutated in place)
+
         Returns:
-            bool: True if implementation is valid
+            bool: True if implementation is valid, False otherwise
         """
         main_file = results['agent_info'].get('main_file')
         agent_class_name = results['agent_info'].get('agent_class')
-        
-        if not main_file or not agent_class_name:
-            results['warnings'].append("Cannot validate implementation without agent class")
-            return True  # Not a failure, just can't validate
-        
+
+        if not main_file:
+            results['errors'].append("No main agent file resolved; cannot validate implementation")
+            return False
+        if not agent_class_name:
+            results['errors'].append("No class with 'Agent' in name found in file")
+            return False
+
+        file_path = Path(main_file)
+
+        # --- Gate 1: file exists ---
+        if not file_path.exists():
+            results['errors'].append(f"Agent file does not exist: {main_file}")
+            return False
+
+        # --- Gate 2: parses as valid Python ---
         try:
-            # Use AgentLoader to properly load the agent
-            agent_path = Path(main_file)
-            
-            # Determine if this is from archive or source
-            if 'archive' in str(agent_path):
-                # Loading from archive
-                agent_class = self.agent_loader.load_from_archive(agent_path)
+            source = file_path.read_text(encoding='utf-8')
+            tree = ast.parse(source)
+        except SyntaxError as e:
+            results['errors'].append(f"Agent file has syntax errors: {e}")
+            return False
+        except Exception as e:
+            results['errors'].append(f"Failed to read agent file: {e}")
+            return False
+
+        # --- Gate 3: defines an Agent class with required methods (via AST) ---
+        agent_classes = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.ClassDef) and 'Agent' in node.name
+        ]
+        if not agent_classes:
+            results['errors'].append("No class with 'Agent' in name found in file")
+            return False
+
+        # Same preference order as _validate_syntax: exact 'Agent', then
+        # *Agent suffix, so AgentConfig-style helpers are never selected.
+        agent_classes.sort(
+            key=lambda c: (c.name != 'Agent', not c.name.endswith('Agent'))
+        )
+        target_class = agent_classes[0]
+        defined_methods = {
+            node.name
+            for node in ast.walk(target_class)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+
+        missing = []
+        for method_name in self.required_methods:
+            if method_name in defined_methods:
+                results['checks_passed'].append(f"Has method: {method_name}")
             else:
-                # Loading from source
-                agent_class = self.agent_loader.load_from_source()
-            
-            if not agent_class:
-                results['errors'].append(f"Failed to load agent class")
+                missing.append(method_name)
+                results['errors'].append(f"Missing required method: {method_name}")
+
+        if missing:
+            return False
+
+        # --- Gate 4: try to load the actual file via importlib ---
+        # Use a unique module name to avoid collisions with cached modules.
+        unique_name = f"_dgm_agent_validate_{id(file_path)}_{int(time.time() * 1e6)}"
+        try:
+            # Prefer agent_loader.load_from_path if the parallel fixer has
+            # added it; fall back to importlib directly.
+            agent_class = None
+            if hasattr(self.agent_loader, 'load_from_path'):
+                try:
+                    agent_class = self.agent_loader.load_from_path(file_path)
+                except Exception:
+                    agent_class = None  # fall through to importlib
+
+            if agent_class is None:
+                spec = importlib.util.spec_from_file_location(unique_name, file_path)
+                if spec is None or spec.loader is None:
+                    results['warnings'].append(
+                        "Cannot create module spec — skipping runtime load check"
+                    )
+                    results['checks_passed'].append("Agent class can be referenced (AST only)")
+                    return True
+
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[unique_name] = module
+                try:
+                    spec.loader.exec_module(module)  # type: ignore[union-attr]
+                finally:
+                    # Clean up so we don't pollute sys.modules indefinitely.
+                    sys.modules.pop(unique_name, None)
+
+                agent_class = getattr(module, agent_class_name, None)
+                if agent_class is None:
+                    # Try any class with 'Agent' in the name.
+                    for attr_name in dir(module):
+                        if 'Agent' in attr_name:
+                            agent_class = getattr(module, attr_name)
+                            break
+
+            if agent_class is None:
+                results['errors'].append(
+                    f"Class '{agent_class_name}' not found after loading {main_file}"
+                )
                 return False
-            
-            # Check required methods
+
+            # Verify methods are present at the class level.
             for method_name in self.required_methods:
                 if not hasattr(agent_class, method_name):
-                    results['errors'].append(f"Missing required method: {method_name}")
-                else:
-                    results['checks_passed'].append(f"Has method: {method_name}")
-            
-            # Check method signatures
+                    results['errors'].append(
+                        f"Loaded class missing required method: {method_name}"
+                    )
+                    return False
+
+            # Check solve_task signature.
             if hasattr(agent_class, 'solve_task'):
                 sig = inspect.signature(agent_class.solve_task)
                 params = list(sig.parameters.keys())
                 if 'task' not in params:
-                    results['warnings'].append("solve_task should have 'task' parameter")
-            
-            # Try to instantiate (with mock dependencies)
-            try:
-                # This would need proper mocking in production
-                results['checks_passed'].append("Agent class can be referenced")
-            except Exception as e:
-                results['warnings'].append(f"Cannot instantiate agent: {str(e)}")
-            
-            return len([e for e in results['errors'] if 'Missing required method' in e]) == 0
-            
+                    results['warnings'].append(
+                        "solve_task should have 'task' parameter"
+                    )
+
+            results['checks_passed'].append("Agent class loaded and verified successfully")
+            return True
+
         except Exception as e:
             results['errors'].append(f"Implementation validation failed: {str(e)}")
             return False
