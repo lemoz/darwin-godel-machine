@@ -20,15 +20,19 @@ cp .env.example .env
 
 ## 🛡️ Security Measures
 
-### Sandboxing
-- All agent code execution happens in Docker containers
-- File system access is restricted to agent workspace
-- Network access is controlled
-- Time limits prevent infinite loops
+### Execution Guards (current)
+- File edits are path-resolved and confined to the agent's workspace; traversal escapes (`../`) are rejected
+- Bash output redirects are resolved against the workspace and blocked if they escape it; dangerous commands are filtered
+- Benchmark and tool subprocesses run under hard timeouts, and the entire process group is killed on expiry
+- Agent modifications must parse, define a working Agent class, and load successfully before archive admission
+
+### Isolation (planned, NOT yet implemented)
+- Docker-based container isolation is stubbed in `sandbox/` and not wired in — agent code currently executes as host subprocesses
+- Until it lands, treat every evolution run as executing model-written code on your machine: run inside a container or VM if that is not acceptable
 
 ### Input Validation
 - All agent modifications are validated before execution
-- Import restrictions prevent dangerous system calls
+- Generated benchmark harness code validates function names before embedding them
 - Code size limits prevent excessive modifications
 
 ### Monitoring
@@ -39,7 +43,7 @@ cp .env.example .env
 ## ⚠️ Security Warnings
 
 ### Development Environment
-- Never run untrusted agent code outside sandbox
+- Agent execution is guarded but not fully isolated — run untrusted experiments in a container or VM
 - Keep API usage within reasonable limits
 - Monitor agent behavior for unexpected patterns
 
