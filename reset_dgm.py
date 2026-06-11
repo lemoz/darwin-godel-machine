@@ -21,16 +21,20 @@ def reset_dgm():
     # 1. Clear and reset archive
     print("Clearing archive...")
     archive_dir = Path("archive/agents")
-    
-    # Remove all agent directories
-    for item in archive_dir.iterdir():
-        if item.is_dir():
-            shutil.rmtree(item)
-            print(f"  Removed: {item}")
-        elif item.name != "archive_metadata.json":
-            item.unlink()
-            print(f"  Removed: {item}")
-    
+
+    if not archive_dir.exists():
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        print("  Created archive directory (was missing)")
+    else:
+        # Remove all agent directories
+        for item in archive_dir.iterdir():
+            if item.is_dir():
+                shutil.rmtree(item)
+                print(f"  Removed: {item}")
+            elif item.name != "archive_metadata.json":
+                item.unlink()
+                print(f"  Removed: {item}")
+
     # Reset archive metadata
     metadata_path = archive_dir / "archive_metadata.json"
     with open(metadata_path, 'w') as f:
@@ -39,11 +43,13 @@ def reset_dgm():
             "last_updated": None
         }, f, indent=2)
     print("  Reset archive_metadata.json")
-    
+
     # 2. Clear agent workspaces
     print("\nClearing agent workspaces...")
     workspace_dir = Path("agents/workspace")
-    if workspace_dir.exists():
+    if not workspace_dir.exists():
+        print("  Workspace directory does not exist, skipping")
+    else:
         for item in workspace_dir.iterdir():
             if item.is_dir():
                 shutil.rmtree(item)

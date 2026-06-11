@@ -1,16 +1,16 @@
 """
 Archive management for the Darwin Gödel Machine.
 
-This module provides functionality for managing a population archive
-of agent variants, including parent selection and novelty calculation.
+Exports AgentArchive + ArchivedAgent (from agent_archive) and
+ParentSelector (from parent_selector).  archive_manager and
+novelty_calculator are deleted dead code.
 """
 
-from .agent_archive import AgentArchive
+from .agent_archive import AgentArchive, ArchivedAgent
 from .parent_selector import ParentSelector
-from .novelty_calculator import NoveltyCalculator
 
 __all__ = [
     'AgentArchive',
+    'ArchivedAgent',
     'ParentSelector',
-    'NoveltyCalculator'
 ]

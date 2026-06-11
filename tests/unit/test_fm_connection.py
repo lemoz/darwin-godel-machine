@@ -1,143 +1,121 @@
 """
-Test script to verify Foundation Model API connections.
+Tests for FM provider handler construction and format methods.
 
-This script tests that API keys are properly configured and that we can 
-successfully communicate with both Gemini and Anthropic APIs.
+No real API calls — all network is monkeypatched.
 """
 
-import asyncio
-import sys
-from pathlib import Path
+import pytest
+from unittest.mock import AsyncMock, patch, MagicMock
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
-
-from utils.config_loader import config_loader
-from agent.fm_interface.providers.gemini import GeminiHandler
-from agent.fm_interface.providers.anthropic import AnthropicHandler
 from agent.fm_interface.api_handler import (
-    CompletionRequest, Message, MessageRole, ApiError, AuthenticationError
+    Message, MessageRole, CompletionRequest, CompletionResponse, ToolCall
 )
+from agent.fm_interface.providers.anthropic import AnthropicHandler
+from agent.fm_interface.message_formatter import MessageFormatter
 
 
-async def test_provider(provider_name: str, handler_class):
-    """Test a specific FM provider connection."""
-    print(f"\n{'='*50}")
-    print(f"Testing {provider_name.upper()} Connection")
-    print('='*50)
-    
-    try:
-        # Load configuration
-        config = config_loader.get_fm_config(provider_name)
-        print(f"✓ Configuration loaded successfully")
-        print(f"  Model: {config.get('model')}")
-        print(f"  Max tokens: {config.get('max_tokens')}")
-        print(f"  Temperature: {config.get('temperature')}")
-        
-        # Check API key
-        api_key = config.get('api_key', '')
-        if api_key.startswith('${') or api_key == 'your-' + provider_name + '-api-key-here':
-            print(f"✗ API key not set - please set {provider_name.upper()}_API_KEY in .env file")
-            return False
-        else:
-            print(f"✓ API key found (length: {len(api_key)})")
-        
-        # Initialize handler
-        handler = handler_class(config)
-        print(f"✓ Handler initialized successfully")
-        
-        # Create test request
-        request = CompletionRequest(
-            messages=[
-                Message(
-                    role=MessageRole.USER,
-                    content="Please respond with exactly: 'Hello from " + provider_name.capitalize() + "!'"
-                )
-            ],
-            max_tokens=50,
-            temperature=0
+def _make_handler(model="claude-sonnet-4-6"):
+    return AnthropicHandler({
+        "api_key": "sk-ant-test-dummy",
+        "model": model,
+        "max_tokens": 256,
+        "temperature": 0.1,
+        "timeout": 10,
+    })
+
+
+class TestAnthropicHandlerFormat:
+
+    def test_format_tools_standard_schema(self):
+        h = _make_handler()
+        tools = [
+            {
+                "name": "bash",
+                "description": "Run bash",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"command": {"type": "string"}},
+                    "required": ["command"],
+                },
+            }
+        ]
+        formatted = h.format_tools(tools)
+        assert len(formatted) == 1
+        assert formatted[0]["name"] == "bash"
+        assert "input_schema" in formatted[0]
+        assert formatted[0]["input_schema"]["type"] == "object"
+
+    def test_format_messages_user_role(self):
+        h = _make_handler()
+        msgs = [Message(role=MessageRole.USER, content="hello")]
+        formatted = h.format_messages(msgs)
+        assert formatted[0]["role"] == "user"
+        assert "hello" in formatted[0]["content"]
+
+    def test_format_messages_tool_results_merged(self):
+        """Two consecutive TOOL messages should be merged into one user message."""
+        h = _make_handler()
+        msgs = [
+            Message(
+                role=MessageRole.TOOL,
+                content="result1",
+                metadata={"tool_use_id": "toolu_001"},
+            ),
+            Message(
+                role=MessageRole.TOOL,
+                content="result2",
+                metadata={"tool_use_id": "toolu_002"},
+            ),
+        ]
+        formatted = h.format_messages(msgs)
+        assert len(formatted) == 1
+        assert formatted[0]["role"] == "user"
+        content = formatted[0]["content"]
+        assert isinstance(content, list)
+        tool_ids = [b["tool_use_id"] for b in content if b.get("type") == "tool_result"]
+        assert "toolu_001" in tool_ids
+        assert "toolu_002" in tool_ids
+
+    def test_format_messages_system_extracted(self):
+        """SYSTEM messages should be separated, not in the messages array."""
+        h = _make_handler()
+        sys_msg = Message(role=MessageRole.SYSTEM, content="You are a helper.")
+        user_msg = Message(role=MessageRole.USER, content="Hi")
+        system_text, rest = h._extract_system([sys_msg, user_msg])
+        assert "helper" in (system_text or "")
+        assert len(rest) == 1
+        assert rest[0].role == MessageRole.USER
+
+    async def test_get_completion_raises_api_error_on_failure(self):
+        """A failed API call should raise ApiError (not leak the raw exception)."""
+        from agent.fm_interface.api_handler import ApiError
+
+        h = _make_handler()
+        with patch.object(h.client.messages, "create", side_effect=Exception("boom")):
+            request = CompletionRequest(
+                messages=[Message(role=MessageRole.USER, content="hi")],
+                max_tokens=10,
+            )
+            with pytest.raises(ApiError):
+                await h.get_completion(request)
+
+    def test_validate_config_missing_key_raises(self):
+        with pytest.raises(ValueError):
+            AnthropicHandler({
+                "model": "claude-sonnet-4-6",
+                # no api_key
+            })
+
+
+class TestMessageFormatter:
+
+    def test_format_task_message_returns_message(self):
+        fmt = MessageFormatter()
+        msg = fmt.format_task_message(
+            task_description="do the thing",
+            test_description=None,
+            constraints=[],
+            examples=[],
         )
-        
-        print(f"⏳ Sending test request...")
-        
-        # Test completion
-        response = await handler.get_completion(request)
-        
-        print(f"✓ Response received successfully!")
-        print(f"  Content: {response.content.strip()}")
-        print(f"  Model: {response.model}")
-        if response.usage:
-            print(f"  Tokens used: {response.usage.get('total_tokens', 'N/A')}")
-        
-        return True
-        
-    except AuthenticationError as e:
-        print(f"✗ Authentication failed: {e}")
-        print(f"  Please check your API key in the .env file")
-        return False
-    except ApiError as e:
-        print(f"✗ API error: {e}")
-        return False
-    except Exception as e:
-        print(f"✗ Unexpected error: {type(e).__name__}: {e}")
-        return False
-
-
-async def main():
-    """Run connection tests for all configured providers."""
-    print("Darwin Gödel Machine - FM Provider Connection Test")
-    print("="*50)
-    
-    # Check if .env file exists
-    env_path = Path(".env")
-    if not env_path.exists():
-        print("⚠️  Warning: .env file not found!")
-        print("   Creating .env from .env.example...")
-        
-        env_example = Path(".env.example")
-        if env_example.exists():
-            env_path.write_text(env_example.read_text())
-            print("   ✓ Created .env file - please add your API keys")
-        else:
-            print("   ✗ .env.example not found - cannot create .env")
-    
-    # Test providers
-    providers = [
-        ("gemini", GeminiHandler),
-        ("anthropic", AnthropicHandler)
-    ]
-    
-    results = {}
-    for provider_name, handler_class in providers:
-        success = await test_provider(provider_name, handler_class)
-        results[provider_name] = success
-    
-    # Summary
-    print(f"\n{'='*50}")
-    print("SUMMARY")
-    print('='*50)
-    
-    all_success = True
-    for provider, success in results.items():
-        status = "✓ PASS" if success else "✗ FAIL"
-        print(f"{provider.capitalize():10} {status}")
-        if not success:
-            all_success = False
-    
-    if all_success:
-        print("\n✓ All providers are properly configured!")
-        print("  You can now proceed with Phase 4.2 - Benchmark Dataset Integration")
-    else:
-        print("\n⚠️  Some providers failed - please check your API keys in .env")
-        print("  You can still proceed with working providers")
-    
-    # Check primary provider
-    print(f"\nPrimary provider: {config_loader.get_primary_provider()}")
-    if results.get(config_loader.get_primary_provider(), False):
-        print("✓ Primary provider is working correctly")
-    else:
-        print("✗ Primary provider is not working - please fix before proceeding")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        assert msg.role == MessageRole.USER
+        assert "do the thing" in msg.content

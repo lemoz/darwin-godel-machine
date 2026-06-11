@@ -6,9 +6,12 @@ with safety restrictions and timeout handling.
 """
 
 import asyncio
-import subprocess
 import os
+import re
 import shlex
+import signal
+import subprocess
+from pathlib import Path
 from typing import Dict, Any, List
 import time
 
@@ -190,73 +193,97 @@ class BashTool(BaseTool):
     def _is_safe_usage(self, command: str, pattern: str) -> bool:
         """
         Check if a potentially dangerous pattern is used safely.
-        
+
+        For redirect operators (``>`` / ``>>``), the target path is resolved
+        against the working directory and checked for containment — a relative
+        path like ``../../outside`` will be blocked.
+
         Args:
             command: Full command
             pattern: Dangerous pattern found
-            
+
         Returns:
             bool: True if usage appears safe
         """
-        # Simple heuristics for common safe patterns
-        if pattern in ['>', '>>']:
-            # Allow redirecting to files in current directory
-            parts = command.split(pattern)
+        if pattern in [">", ">>"]:
+            # Find redirect target: text after the operator.
+            # Use a simple split on the operator (first occurrence only).
+            idx = command.find(pattern)
+            if idx == -1:
+                return False
+            output_file = command[idx + len(pattern):].strip().split()[0] if command[idx + len(pattern):].strip() else ""
+            if not output_file:
+                return False
+
+            # Resolve the target against the working directory.
+            wd = Path(self.working_directory).resolve()
+            if Path(output_file).is_absolute():
+                target = Path(output_file).resolve()
+            else:
+                target = (wd / output_file).resolve()
+
+            # Containment check.
+            try:
+                contained = target.is_relative_to(wd)
+            except AttributeError:  # pragma: no cover — Python < 3.9
+                try:
+                    contained = os.path.commonpath([str(target), str(wd)]) == str(wd)
+                except ValueError:
+                    contained = False
+
+            return contained
+
+        if pattern == "|":
+            # Allow basic pipes to common safe commands.
+            safe_pipe_targets = ["grep", "sort", "uniq", "head", "tail", "wc"]
+            parts = command.split("|")
             if len(parts) == 2:
-                output_file = parts[1].strip()
-                if output_file and not output_file.startswith('/'):
-                    return True
-        
-        if pattern == '|':
-            # Allow basic pipes to common safe commands
-            safe_pipe_targets = ['grep', 'sort', 'uniq', 'head', 'tail', 'wc']
-            parts = command.split('|')
-            if len(parts) == 2:
-                target_cmd = parts[1].strip().split()[0]
+                target_cmd = parts[1].strip().split()[0] if parts[1].strip() else ""
                 if target_cmd in safe_pipe_targets:
                     return True
-        
+
         return False
     
     async def _execute_command(
-        self, 
-        command: str, 
-        timeout: int, 
-        capture_output: bool
+        self,
+        command: str,
+        timeout: int,
+        capture_output: bool,
     ) -> ToolResult:
         """
         Execute a shell command.
-        
+
+        The subprocess is started in its own process group (``start_new_session=True``).
+        On timeout the entire process group is killed with SIGKILL so that child
+        processes spawned by ``/bin/sh`` do not leak.
+
         Args:
             command: Command to execute
             timeout: Timeout in seconds
             capture_output: Whether to capture output
-            
+
         Returns:
             ToolResult: Execution result
         """
         try:
-            # Prepare the subprocess
             process = await asyncio.create_subprocess_shell(
                 command,
                 stdout=subprocess.PIPE if capture_output else None,
                 stderr=subprocess.PIPE if capture_output else None,
                 cwd=self.working_directory,
-                env=os.environ.copy()
+                env=os.environ.copy(),
+                start_new_session=True,  # puts the shell in its own process group
             )
-            
-            # Wait for completion with timeout
+
             try:
                 stdout, stderr = await asyncio.wait_for(
-                    process.communicate(), 
-                    timeout=timeout
+                    process.communicate(),
+                    timeout=timeout,
                 )
-                
-                # Decode output
-                stdout_text = stdout.decode('utf-8', errors='replace') if stdout else ""
-                stderr_text = stderr.decode('utf-8', errors='replace') if stderr else ""
-                
-                # Determine status based on return code
+
+                stdout_text = stdout.decode("utf-8", errors="replace") if stdout else ""
+                stderr_text = stderr.decode("utf-8", errors="replace") if stderr else ""
+
                 if process.returncode == 0:
                     status = ToolExecutionStatus.SUCCESS
                     output = stdout_text
@@ -265,30 +292,33 @@ class BashTool(BaseTool):
                     status = ToolExecutionStatus.ERROR
                     output = stdout_text
                     error = f"Command failed with exit code {process.returncode}: {stderr_text}"
-                
+
                 return ToolResult(
                     status=status,
                     output=output,
                     error=error,
-                    metadata={"exit_code": process.returncode}
+                    metadata={"exit_code": process.returncode},
                 )
-                
+
             except asyncio.TimeoutError:
-                # Kill the process if it times out
-                process.kill()
+                # Kill the entire process group so child processes don't leak.
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass  # Process already exited.
                 await process.wait()
-                
+
                 return ToolResult(
                     status=ToolExecutionStatus.TIMEOUT,
                     output="",
-                    error=f"Command timed out after {timeout} seconds"
+                    error=f"Command timed out after {timeout} seconds",
                 )
-                
+
         except Exception as e:
             return ToolResult(
                 status=ToolExecutionStatus.ERROR,
                 output="",
-                error=f"Failed to execute command: {str(e)}"
+                error=f"Failed to execute command: {str(e)}",
             )
     
     # Special command handlers

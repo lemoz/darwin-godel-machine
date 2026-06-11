@@ -24,15 +24,14 @@ For more details, see the [official blog post](https://sakana.ai/dgm/) from Saka
 - **🛠️ Tool-Equipped Agents**: Agents use Bash and file editing tools to solve problems
 - **🏪 Agent Archive System**: Stores successful agents with performance and novelty metrics
 - **🎯 Benchmark-Driven Evolution**: Uses custom coding challenges to measure improvement
-- **🔒 Sandboxed Execution**: Safe agent execution with resource limits and monitoring
+- **🔒 Guarded Execution**: Workspace-scoped file access, command filtering, and hard timeouts with process-group cleanup (Docker isolation is planned, not yet implemented)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.9+
 - API keys for supported Foundation Models (Claude, Gemini, or OpenAI)
-- Docker (for sandboxed execution)
 
 ### Installation
 
@@ -67,7 +66,7 @@ The system uses YAML configuration files to control behavior:
 fm_providers:
   primary: anthropic  # or 'gemini', 'openai'
   anthropic:
-    model: claude-sonnet-4-20250514
+    model: claude-sonnet-4-6
     api_key: ${ANTHROPIC_API_KEY}
   gemini:
     model: gemini-2.5-flash-preview-05-20
@@ -103,9 +102,8 @@ LLM-powered coding agents with:
 - Task solving and self-modification abilities
 
 #### 3. **Archive Management** (`archive/`)
-- **Agent Archive**: Stores all valid agents with scores
-- **Parent Selector**: Chooses agents based on performance + novelty
-- **Novelty Calculator**: Measures agent diversity
+- **Agent Archive**: Stores every valid agent (unbounded, per the paper) with full lineage
+- **Parent Selector**: Implements the paper's selection rule — sigmoid-scaled performance times a 1/(1+children) exploration bonus, sampled categorically
 
 #### 4. **Evaluation System** (`evaluation/`)
 - **Benchmark Runner**: Executes agents on coding challenges
@@ -235,12 +233,12 @@ tail -f dgm_run.log
 
 ### Testing Components
 ```bash
-# Run full test suite
-python test_harness.py
+# Run the full test suite (155 tests, no API keys needed)
+python -m pytest
 
 # Test specific components
 python -m pytest tests/unit/test_agent.py
-python -m pytest tests/integration/
+python -m pytest tests/integration/   # includes a full no-network DGM generation
 ```
 
 ## 📈 Performance Tracking
@@ -256,12 +254,14 @@ Results are stored in the `results/` directory with detailed JSON reports.
 
 ## 🔒 Safety Features
 
-- **Sandboxed Execution**: All agent code runs in isolated Docker containers
-- **Resource Limits**: CPU, memory, and time constraints
-- **Validation Checks**: Ensure agents maintain core capabilities
+- **Workspace Containment**: File edits and bash redirects are resolved and confined to the agent's workspace; path-traversal escapes are rejected
+- **Command Filtering**: Dangerous commands are blocked before execution
+- **Hard Timeouts**: Benchmark and tool subprocesses are killed (entire process group) on timeout
+- **Validation Checks**: Modified agents must parse, define a working Agent class, and load before admission to the archive
 - **Human Oversight**: Optional pause points for review
-- **Rollback Capability**: Revert problematic modifications
 - **Comprehensive Logging**: Full audit trail of all changes
+
+> **Note**: execution is guarded but not fully isolated — Docker-based sandboxing is planned (`sandbox/` contains the stub). Run untrusted evolution experiments inside a container or VM.
 
 ## 🐛 Troubleshooting
 
@@ -269,27 +269,19 @@ Results are stored in the `results/` directory with detailed JSON reports.
 
 **API Connection Errors**
 ```bash
-# Verify API keys
-python test_fm_connection.py
+# Verify message formatting and provider config (no network needed)
+python -m pytest tests/unit/test_fm_connection.py
 
 # Check rate limits in provider console
 ```
 
 **Agent Scoring 0.0**
 ```bash
-# Check benchmark format compatibility
-python test_benchmark_flow.py
+# Check the benchmark harness end to end
+python -m pytest tests/integration/test_benchmark_evaluation.py
 
-# Verify agent code generation
-python test_agent_code_extraction.py
-```
-
-**Memory Issues**
-```bash
-# Monitor Docker container resources
-docker stats
-
-# Adjust limits in dgm_config.yaml
+# Verify agent code extraction
+python -m pytest tests/unit/test_agent_code_extraction.py
 ```
 
 ### Debug Mode
@@ -298,7 +290,8 @@ docker stats
 export PYTHONPATH=.
 python run_dgm.py --log-level DEBUG
 
-# Check conversation history
+# Dump full agent conversations to debug/ (set in config/dgm_config.yaml
+# under the active provider): debug_conversation_dump: true
 ls debug/conversation_history_*
 ```
 
@@ -316,11 +309,11 @@ We welcome contributions! Please see our contributing guidelines:
 ### Development Setup
 
 ```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
+# Install dependencies (includes pytest)
+pip install -r requirements.txt
 
 # Run tests
-python test_harness.py
+python -m pytest
 
 # Update Memory Bank
 # Edit memory-bank/*.md files as needed
@@ -385,7 +378,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Original Research
 - **Paper**: [Darwin Gödel Machine: Open-Ended Evolution of Self-Improving Agents](https://arxiv.org/abs/2505.22954)
-- **Authors**: Sakana AI Research Team
+- **Authors**: Jenny Zhang, Shengran Hu, Cong Lu, Robert Lange, Jeff Clune (Sakana AI, UBC, Vector Institute)
 - **Published**: arXiv:2505.22954 (2025)
 
 ### Additional Resources
@@ -395,9 +388,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Citation
 ```bibtex
-@article{sakana2025dgm,
+@article{zhang2025darwin,
   title={Darwin G{\"o}del Machine: Open-Ended Evolution of Self-Improving Agents},
-  author={Sakana AI Research Team},
+  author={Zhang, Jenny and Hu, Shengran and Lu, Cong and Lange, Robert Tjarko and Clune, Jeff},
   journal={arXiv preprint arXiv:2505.22954},
   year={2025}
 }

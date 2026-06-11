@@ -1,12 +1,47 @@
 """
-Edit tool implementation for file manipulation (placeholder).
+Edit tool implementation for file manipulation.
 
 This tool allows the DGM agent to read, write, and modify files.
-This is a placeholder implementation for Phase 1 MVP.
 """
 
+import os
+from pathlib import Path
 from typing import Dict, Any, List
 from .base_tool import BaseTool, ToolResult, ToolExecutionStatus, ToolParameter
+
+
+def _resolve_and_check(
+    file_path_str: str, working_directory: str
+) -> "tuple[Path, ToolResult | None]":
+    """
+    Resolve *file_path_str* relative to *working_directory* and verify that the
+    result is contained within it (path-traversal guard).
+
+    Returns ``(resolved_path, None)`` on success, or
+    ``(Path('.'), ToolResult(error=...))`` when the path escapes the sandbox.
+    """
+    wd = Path(working_directory).resolve()
+    full = (wd / file_path_str).resolve()
+
+    # Python 3.9+: Path.is_relative_to; fall back to os.path.commonpath for 3.8.
+    try:
+        contained = full.is_relative_to(wd)
+    except AttributeError:  # pragma: no cover — Python < 3.9
+        try:
+            contained = os.path.commonpath([str(full), str(wd)]) == str(wd)
+        except ValueError:
+            contained = False
+
+    if not contained:
+        return Path("."), ToolResult(
+            status=ToolExecutionStatus.ERROR,
+            output="",
+            error=(
+                f"Path escape detected: '{file_path_str}' resolves outside the "
+                f"working directory '{wd}'"
+            ),
+        )
+    return full, None
 
 
 class EditTool(BaseTool):
@@ -42,9 +77,9 @@ class EditTool(BaseTool):
             ToolParameter(
                 name="action",
                 type="string",
-                description="Action to perform: 'read', 'write', 'append', or 'modify'",
+                description="Action to perform: 'read', 'write', 'append', 'modify', or 'delete'",
                 required=True,
-                enum_values=["read", "write", "append", "modify"]
+                enum_values=["read", "write", "append", "modify", "delete"],
             ),
             ToolParameter(
                 name="file_path",
@@ -81,138 +116,157 @@ class EditTool(BaseTool):
     async def execute(self, parameters: Dict[str, Any]) -> ToolResult:
         """
         Execute the edit operation.
-        
+
+        All file paths are resolved relative to the working directory and
+        checked for containment to prevent path-traversal attacks.
+
         Args:
             parameters: Dictionary containing edit parameters
-            
+
         Returns:
             ToolResult: Result of the edit operation
         """
-        import os
-        from pathlib import Path
-        
         action = parameters.get("action")
-        file_path = parameters.get("file_path")
+        file_path_str = parameters.get("file_path")
         content = parameters.get("content", "")
-        
+
         if not action:
             return ToolResult(
                 status=ToolExecutionStatus.ERROR,
                 output="",
-                error="Action parameter is required"
+                error="Action parameter is required",
             )
-        
-        if not file_path:
+
+        if not file_path_str:
             return ToolResult(
                 status=ToolExecutionStatus.ERROR,
                 output="",
-                error="File path parameter is required"
+                error="File path parameter is required",
             )
-        
-        # Resolve file path relative to working directory
+
+        # Resolve path and verify containment.
         if self.working_directory:
-            full_path = Path(self.working_directory) / file_path
+            full_path, escape_error = _resolve_and_check(
+                file_path_str, self.working_directory
+            )
+            if escape_error is not None:
+                return escape_error
         else:
-            full_path = Path(file_path)
-        
+            full_path = Path(file_path_str)
+
         try:
             if action == "write":
-                # Create parent directories if they don't exist
                 full_path.parent.mkdir(parents=True, exist_ok=True)
-                
-                # Write content to file
-                full_path.write_text(content, encoding='utf-8')
-                
+                full_path.write_text(content, encoding="utf-8")
                 return ToolResult(
                     status=ToolExecutionStatus.SUCCESS,
-                    output=f"Successfully wrote {len(content)} characters to {file_path}",
-                    error=""
+                    output=f"Successfully wrote {len(content)} characters to {file_path_str}",
+                    error="",
                 )
-                
+
             elif action == "read":
                 if not full_path.exists():
                     return ToolResult(
                         status=ToolExecutionStatus.ERROR,
                         output="",
-                        error=f"File not found: {file_path}"
+                        error=f"File not found: {file_path_str}",
                     )
-                
-                content = full_path.read_text(encoding='utf-8')
+                content = full_path.read_text(encoding="utf-8")
                 return ToolResult(
                     status=ToolExecutionStatus.SUCCESS,
                     output=content,
-                    error=""
+                    error="",
                 )
-                
+
             elif action == "append":
-                # Create file if it doesn't exist
                 if not full_path.exists():
                     full_path.parent.mkdir(parents=True, exist_ok=True)
                     full_path.touch()
-                
-                # Append content
-                with open(full_path, 'a', encoding='utf-8') as f:
+                with open(full_path, "a", encoding="utf-8") as f:
                     f.write(content)
-                
                 return ToolResult(
                     status=ToolExecutionStatus.SUCCESS,
-                    output=f"Successfully appended {len(content)} characters to {file_path}",
-                    error=""
+                    output=f"Successfully appended {len(content)} characters to {file_path_str}",
+                    error="",
                 )
-                
+
             elif action == "modify":
                 if not full_path.exists():
                     return ToolResult(
                         status=ToolExecutionStatus.ERROR,
                         output="",
-                        error=f"File not found: {file_path}"
+                        error=f"File not found: {file_path_str}",
                     )
-                
+
                 search_text = parameters.get("search_text")
                 replace_text = parameters.get("replace_text", "")
-                
+
                 if not search_text:
                     return ToolResult(
                         status=ToolExecutionStatus.ERROR,
                         output="",
-                        error="search_text parameter is required for modify action"
+                        error="search_text parameter is required for modify action",
                     )
-                
-                # Read current content
-                current_content = full_path.read_text(encoding='utf-8')
-                
-                # Perform replacement
-                new_content = current_content.replace(search_text, replace_text)
-                
-                if new_content == current_content:
-                    return ToolResult(
-                        status=ToolExecutionStatus.SUCCESS,
-                        output=f"No occurrences of '{search_text}' found in {file_path}",
-                        error=""
-                    )
-                
-                # Write modified content
-                full_path.write_text(new_content, encoding='utf-8')
-                
+
+                current_content = full_path.read_text(encoding="utf-8")
                 occurrences = current_content.count(search_text)
+
+                if occurrences == 0:
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error=f"old_code not found in {file_path_str}: no occurrences of the search text",
+                    )
+
+                if occurrences > 1:
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error=(
+                            f"Ambiguous match in {file_path_str}: "
+                            f"{occurrences} occurrences of search text found; "
+                            "provide more context to make the match unique"
+                        ),
+                    )
+
+                # Exactly one occurrence — safe to replace.
+                new_content = current_content.replace(search_text, replace_text, 1)
+                full_path.write_text(new_content, encoding="utf-8")
                 return ToolResult(
                     status=ToolExecutionStatus.SUCCESS,
-                    output=f"Successfully replaced {occurrences} occurrences in {file_path}",
-                    error=""
+                    output=f"Successfully replaced 1 occurrence in {file_path_str}",
+                    error="",
                 )
-                
+
+            elif action == "delete":
+                if not full_path.exists():
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error=f"File not found: {file_path_str}",
+                    )
+                full_path.unlink()
+                return ToolResult(
+                    status=ToolExecutionStatus.SUCCESS,
+                    output=f"Successfully deleted {file_path_str}",
+                    error="",
+                )
+
             else:
                 return ToolResult(
                     status=ToolExecutionStatus.ERROR,
                     output="",
-                    error=f"Unknown action: {action}. Valid actions are: read, write, append, modify"
+                    error=(
+                        f"Unknown action: {action}. "
+                        "Valid actions are: read, write, append, modify, delete"
+                    ),
                 )
-                
+
         except Exception as e:
             return ToolResult(
                 status=ToolExecutionStatus.ERROR,
                 output="",
-                error=f"Error executing {action} on {file_path}: {str(e)}"
+                error=f"Error executing {action} on {file_path_str}: {str(e)}",
             )
 
 

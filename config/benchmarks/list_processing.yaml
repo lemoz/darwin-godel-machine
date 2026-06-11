@@ -5,24 +5,18 @@ timeout: 30
 category: data_structures
 
 task_prompt: |
-  Write a Python function called `reverse_list` that reverses a list in-place without using built-in reverse methods.
-  
-  The function should:
-  - Take a list as input
-  - Modify the list in-place (don't create a new list)
-  - Not use the built-in reverse() method or [::-1] slicing
-  - Return None (since it modifies in-place)
-  
+  Write a Python function called `reverse_list` that reverses a list and returns
+  the reversed list. Do not use the built-in reverse() method or [::-1] slicing.
+
   Example:
   ```python
-  lst = [1, 2, 3, 4, 5]
-  reverse_list(lst)
-  print(lst)  # Output: [5, 4, 3, 2, 1]
+  result = reverse_list([1, 2, 3, 4, 5])
+  print(result)  # Output: [5, 4, 3, 2, 1]
   ```
 
 test_cases:
   - function_name: reverse_list
-    task_description: reverses a list in-place without using built-in reverse methods
+    task_description: reverses a list and returns the reversed result without using built-in reverse methods
     inputs:
       - "[1, 2, 3, 4, 5]"
       - "['a', 'b', 'c']"

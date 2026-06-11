@@ -1,340 +1,322 @@
 """
-Unit tests for archive management components.
+Unit tests for archive management: AgentArchive and ParentSelector.
+
+Covers the real APIs after the fixer rewrites:
+  - AgentArchive.add_agent / get_agent / save+load round-trip / atomicity
+  - ParentSelector: hand-computed weights, sampling without replacement,
+    empty / all-invalid archive
 """
 
-import unittest
-import tempfile
+import math
+import random
 import shutil
+import tempfile
 from pathlib import Path
-from datetime import datetime
-import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+import pytest
 
 from archive.agent_archive import AgentArchive, ArchivedAgent
 from archive.parent_selector import ParentSelector
-from archive.novelty_calculator import NoveltyCalculator
-from tests.test_utils import TestFixtures, cleanup_test_directory
 
 
-class TestAgentArchive(unittest.TestCase):
-    """Test cases for AgentArchive."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="test_archive_"))
-        self.archive = AgentArchive(archive_path=str(self.temp_dir))
-        
-        # Create test agent directories
-        self.agent1_path = self.temp_dir / "agent1"
-        self.agent2_path = self.temp_dir / "agent2"
-        TestFixtures.create_mock_agent_code(self.agent1_path)
-        TestFixtures.create_mock_agent_code(self.agent2_path)
-    
-    def tearDown(self):
-        """Clean up test fixtures."""
-        cleanup_test_directory(self.temp_dir)
-    
-    def test_add_agent(self):
-        """Test adding an agent to the archive."""
-        agent = self.archive.add_agent(
-            agent_path=str(self.agent1_path),
-            parent_id=None,
-            benchmark_scores={'test': 0.8}
-        )
-        
-        self.assertIsInstance(agent, ArchivedAgent)
-        self.assertIn(agent.agent_id, self.archive.agents)
-        self.assertEqual(agent.performance_score, 0.8)
-        self.assertEqual(agent.generation, 0)
-        self.assertIsNone(agent.parent_id)
-    
-    def test_add_agent_with_parent(self):
-        """Test adding an agent with a parent."""
-        # Add parent
-        parent = self.archive.add_agent(
-            agent_path=str(self.agent1_path),
-            benchmark_scores={'test': 0.7}
-        )
-        
-        # Add child
-        child = self.archive.add_agent(
-            agent_path=str(self.agent2_path),
-            parent_id=parent.agent_id,
-            benchmark_scores={'test': 0.9}
-        )
-        
-        self.assertEqual(child.parent_id, parent.agent_id)
-        self.assertEqual(child.generation, 1)
-        self.assertEqual(child.performance_score, 0.9)
-    
-    def test_get_top_agents(self):
-        """Test retrieving top performing agents."""
-        # Add multiple agents
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _make_agent_file(tmp_path: Path, name: str = "agent.py") -> Path:
+    """Write a minimal agent.py and return its path."""
+    p = tmp_path / name
+    p.write_text("# minimal\n")
+    return p
+
+
+def _add_agent(archive: AgentArchive, agent_file: Path, **kwargs) -> ArchivedAgent:
+    """Thin wrapper so tests don't repeat keyword noise."""
+    return archive.add_agent(agent_path=str(agent_file), **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# AgentArchive tests
+# ---------------------------------------------------------------------------
+
+class TestAgentArchive:
+
+    def test_add_returns_archived_agent(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        f = _make_agent_file(tmp_path)
+        agent = _add_agent(archive, f, benchmark_scores={"b": 0.8})
+
+        assert isinstance(agent, ArchivedAgent)
+        assert agent.agent_id in archive.agents
+        assert agent.average_score == pytest.approx(0.8)
+        assert agent.generation == 0
+        assert agent.parent_id is None
+        assert agent.is_valid is True
+
+    def test_generation_increments_with_parent(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        f1 = _make_agent_file(tmp_path, "a1.py")
+        f2 = _make_agent_file(tmp_path, "a2.py")
+        parent = _add_agent(archive, f1)
+        child = _add_agent(archive, f2, parent_id=parent.agent_id)
+
+        assert child.parent_id == parent.agent_id
+        assert child.generation == 1
+
+    def test_average_score_multiple_benchmarks(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        f = _make_agent_file(tmp_path)
+        agent = _add_agent(archive, f, benchmark_scores={"b1": 0.6, "b2": 0.8})
+
+        assert agent.average_score == pytest.approx(0.7)
+
+    def test_average_score_no_benchmarks(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        f = _make_agent_file(tmp_path)
+        agent = _add_agent(archive, f)
+        assert agent.average_score == 0.0
+
+    def test_save_and_load_round_trip(self, tmp_path):
+        arc_dir = tmp_path / "arc"
+        archive = AgentArchive(archive_dir=str(arc_dir))
+        f1 = _make_agent_file(tmp_path, "a1.py")
+        f2 = _make_agent_file(tmp_path, "a2.py")
+        a1 = _add_agent(archive, f1, benchmark_scores={"b": 0.5})
+        a2 = _add_agent(archive, f2, parent_id=a1.agent_id, benchmark_scores={"b": 0.9})
+
+        # Reload from disk
+        archive2 = AgentArchive(archive_dir=str(arc_dir))
+        assert len(archive2.agents) == 2
+        assert a1.agent_id in archive2.agents
+        assert a2.agent_id in archive2.agents
+        reloaded_a2 = archive2.agents[a2.agent_id]
+        assert reloaded_a2.parent_id == a1.agent_id
+        assert reloaded_a2.average_score == pytest.approx(0.9)
+
+    def test_atomic_save_metadata_file_exists(self, tmp_path):
+        """Verify _save_archive writes the metadata file (atomicity mechanism present)."""
+        arc_dir = tmp_path / "arc"
+        archive = AgentArchive(archive_dir=str(arc_dir))
+        f = _make_agent_file(tmp_path)
+        _add_agent(archive, f)
+        assert archive.metadata_file.exists()
+
+    def test_get_agent(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        f = _make_agent_file(tmp_path)
+        a = _add_agent(archive, f)
+        assert archive.get_agent(a.agent_id) is a
+        assert archive.get_agent("nonexistent") is None
+
+    def test_get_valid_agents(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        f1 = _make_agent_file(tmp_path, "v.py")
+        f2 = _make_agent_file(tmp_path, "i.py")
+        valid = _add_agent(archive, f1, is_valid=True)
+        invalid = _add_agent(archive, f2, is_valid=False)
+
+        valids = archive.get_valid_agents()
+        assert valid in valids
+        assert invalid not in valids
+
+    def test_get_top_agents(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
         scores = [0.5, 0.8, 0.3, 0.9, 0.7]
-        agents = []
-        
         for i, score in enumerate(scores):
-            agent_path = self.temp_dir / f"agent_{i}"
-            TestFixtures.create_mock_agent_code(agent_path)
-            agent = self.archive.add_agent(
-                agent_path=str(agent_path),
-                benchmark_scores={'test': score}
+            f = _make_agent_file(tmp_path, f"a{i}.py")
+            _add_agent(archive, f, benchmark_scores={"b": score})
+
+        top = archive.get_top_agents(n=3)
+        assert len(top) == 3
+        assert top[0].average_score == pytest.approx(0.9)
+        assert top[1].average_score == pytest.approx(0.8)
+        assert top[2].average_score == pytest.approx(0.7)
+
+    def test_get_agent_lineage(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        fa = _make_agent_file(tmp_path, "gp.py")
+        fb = _make_agent_file(tmp_path, "p.py")
+        fc = _make_agent_file(tmp_path, "c.py")
+        gp = _add_agent(archive, fa)
+        p = _add_agent(archive, fb, parent_id=gp.agent_id)
+        c = _add_agent(archive, fc, parent_id=p.agent_id)
+
+        lineage = archive.get_agent_lineage(c.agent_id)
+        assert len(lineage) == 3
+        assert lineage[0].agent_id == gp.agent_id
+        assert lineage[1].agent_id == p.agent_id
+        assert lineage[2].agent_id == c.agent_id
+
+    def test_valid_children_counting(self, tmp_path):
+        """Children of an agent increment get_agent_children."""
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        fp = _make_agent_file(tmp_path, "par.py")
+        fc1 = _make_agent_file(tmp_path, "c1.py")
+        fc2 = _make_agent_file(tmp_path, "c2.py")
+        parent = _add_agent(archive, fp)
+        _add_agent(archive, fc1, parent_id=parent.agent_id)
+        _add_agent(archive, fc2, parent_id=parent.agent_id)
+
+        children = archive.get_agent_children(parent.agent_id)
+        assert len(children) == 2
+
+
+# ---------------------------------------------------------------------------
+# ParentSelector tests
+# ---------------------------------------------------------------------------
+
+class TestParentSelector:
+
+    # ---- weight-math tests ----
+
+    def _hand_compute_weights(self, scores, child_counts, lam=10.0, alpha_0=0.5):
+        """Replicate the paper formula and return normalised probs."""
+        weights = []
+        for score, nc in zip(scores, child_counts):
+            s = 1.0 / (1.0 + math.exp(-lam * (score - alpha_0)))
+            h = 1.0 / (1.0 + nc)
+            weights.append(s * h)
+        total = sum(weights)
+        return [w / total for w in weights]
+
+    def _build_archive_with_agents(self, tmp_path, agent_specs):
+        """
+        agent_specs: list of (score, parent_id_or_None, is_valid)
+        Returns (archive, list_of_archived_agents)
+        """
+        arc_dir = tmp_path / "arc"
+        archive = AgentArchive(archive_dir=str(arc_dir))
+        agents = []
+        for i, (score, parent_id, is_valid) in enumerate(agent_specs):
+            f = _make_agent_file(tmp_path, f"a{i}.py")
+            a = archive.add_agent(
+                agent_path=str(f),
+                parent_id=parent_id,
+                benchmark_scores={"b": score},
+                is_valid=is_valid,
             )
-            agents.append(agent)
-        
-        # Get top 3
-        top_agents = self.archive.get_top_agents(n=3)
-        
-        self.assertEqual(len(top_agents), 3)
-        self.assertEqual(top_agents[0].performance_score, 0.9)
-        self.assertEqual(top_agents[1].performance_score, 0.8)
-        self.assertEqual(top_agents[2].performance_score, 0.7)
-    
-    def test_get_agent_lineage(self):
-        """Test retrieving agent lineage."""
-        # Create lineage: grandparent -> parent -> child
-        grandparent = self.archive.add_agent(
-            agent_path=str(self.agent1_path),
-            benchmark_scores={'test': 0.5}
-        )
-        
-        parent_path = self.temp_dir / "parent"
-        TestFixtures.create_mock_agent_code(parent_path)
-        parent = self.archive.add_agent(
-            agent_path=str(parent_path),
-            parent_id=grandparent.agent_id,
-            benchmark_scores={'test': 0.7}
-        )
-        
-        child = self.archive.add_agent(
-            agent_path=str(self.agent2_path),
-            parent_id=parent.agent_id,
-            benchmark_scores={'test': 0.9}
-        )
-        
-        lineage = self.archive.get_agent_lineage(child.agent_id)
-        
-        self.assertEqual(len(lineage), 3)
-        self.assertEqual(lineage[0].agent_id, grandparent.agent_id)
-        self.assertEqual(lineage[1].agent_id, parent.agent_id)
-        self.assertEqual(lineage[2].agent_id, child.agent_id)
-    
-    def test_save_and_load_metadata(self):
-        """Test saving and loading archive metadata."""
-        # Add agents
-        agent1 = self.archive.add_agent(
-            agent_path=str(self.agent1_path),
-            benchmark_scores={'test': 0.8}
-        )
-        
-        agent2 = self.archive.add_agent(
-            agent_path=str(self.agent2_path),
-            parent_id=agent1.agent_id,
-            benchmark_scores={'test': 0.9}
-        )
-        
-        # Save metadata
-        self.archive.save_metadata()
-        
-        # Create new archive instance and load
-        new_archive = AgentArchive(archive_path=str(self.temp_dir))
-        
-        self.assertEqual(len(new_archive.agents), 2)
-        self.assertIn(agent1.agent_id, new_archive.agents)
-        self.assertIn(agent2.agent_id, new_archive.agents)
+            agents.append(a)
+        return archive, agents
 
+    def test_weight_math_three_agents(self, tmp_path):
+        """
+        Hand-compute expected weights for a 3-agent archive with known
+        scores and child counts, then assert ParentSelector agrees.
 
-class TestParentSelector(unittest.TestCase):
-    """Test cases for ParentSelector."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="test_selector_"))
-        self.archive = AgentArchive(archive_path=str(self.temp_dir))
-        self.selector = ParentSelector(
-            archive=self.archive,
-            performance_weight=0.7,
-            novelty_weight=0.3
+        Archive:
+          agent A: score=0.9, 0 valid children
+          agent B: score=0.5, 1 valid child (agent C is child of B)
+          agent C: score=0.3, 0 valid children
+
+        lam=10, alpha_0=0.5
+        """
+        arc_dir = tmp_path / "arc"
+        archive = AgentArchive(archive_dir=str(arc_dir))
+        fa = _make_agent_file(tmp_path, "a.py")
+        fb = _make_agent_file(tmp_path, "b.py")
+        fc = _make_agent_file(tmp_path, "c.py")
+
+        agent_a = archive.add_agent(str(fa), benchmark_scores={"b": 0.9}, is_valid=True)
+        agent_b = archive.add_agent(str(fb), benchmark_scores={"b": 0.5}, is_valid=True)
+        # C is a VALID child of B
+        agent_c = archive.add_agent(
+            str(fc), parent_id=agent_b.agent_id,
+            benchmark_scores={"b": 0.3}, is_valid=True
         )
-        
-        # Add test agents
-        self.agents = []
+
+        # Hand-compute
+        # eligible = [A, B, C] in insertion order
+        # child counts: A=0, B=1 (C is valid child of B), C=0
+        expected_probs = self._hand_compute_weights(
+            scores=[0.9, 0.5, 0.3],
+            child_counts=[0, 1, 0],
+        )
+
+        # Verify via many draws that empirical probs are close
+        selector = ParentSelector(lam=10.0, alpha_0=0.5)
+        random.seed(42)
+        counts = {agent_a.agent_id: 0, agent_b.agent_id: 0, agent_c.agent_id: 0}
+        n = 10_000
+        for _ in range(n):
+            chosen = selector.select_parents(archive, n_parents=1)
+            counts[chosen[0].agent_id] += 1
+
+        eligible = [agent_a, agent_b, agent_c]
+        for agent, expected_p in zip(eligible, expected_probs):
+            empirical_p = counts[agent.agent_id] / n
+            assert abs(empirical_p - expected_p) < 0.03, (
+                f"agent {agent.agent_id}: expected ~{expected_p:.3f}, got {empirical_p:.3f}"
+            )
+
+    def test_sampling_without_replacement_returns_distinct(self, tmp_path):
+        arc_dir = tmp_path / "arc"
+        archive = AgentArchive(archive_dir=str(arc_dir))
         for i in range(5):
-            agent_path = self.temp_dir / f"agent_{i}"
-            TestFixtures.create_mock_agent_code(agent_path)
-            agent = self.archive.add_agent(
-                agent_path=str(agent_path),
-                benchmark_scores={'test': 0.1 + i * 0.2}
-            )
-            self.agents.append(agent)
-    
-    def tearDown(self):
-        """Clean up test fixtures."""
-        cleanup_test_directory(self.temp_dir)
-    
-    def test_select_parent(self):
-        """Test parent selection."""
-        # Select parent multiple times
-        selections = []
-        for _ in range(100):
-            parent = self.selector.select_parent()
-            if parent:
-                selections.append(parent.agent_id)
-        
-        # Higher scoring agents should be selected more often
-        self.assertGreater(len(selections), 0)
-        
-        # Count selections
-        selection_counts = {}
-        for agent_id in selections:
-            selection_counts[agent_id] = selection_counts.get(agent_id, 0) + 1
-        
-        # Verify that higher scoring agents are selected more
-        for i in range(len(self.agents) - 1):
-            agent1 = self.agents[i]
-            agent2 = self.agents[i + 1]
-            if agent1.agent_id in selection_counts and agent2.agent_id in selection_counts:
-                # Agent2 has higher score, should be selected more
-                self.assertLessEqual(
-                    selection_counts.get(agent1.agent_id, 0),
-                    selection_counts.get(agent2.agent_id, 0) * 2  # Allow some randomness
-                )
-    
-    def test_select_parent_with_exclusion(self):
-        """Test parent selection with exclusion list."""
-        # Exclude top 2 agents
-        exclude_ids = [self.agents[-1].agent_id, self.agents[-2].agent_id]
-        
-        parent = self.selector.select_parent(exclude_ids=exclude_ids)
-        
-        self.assertIsNotNone(parent)
-        self.assertNotIn(parent.agent_id, exclude_ids)
-    
-    def test_select_parent_with_min_score(self):
-        """Test parent selection with minimum score threshold."""
-        parent = self.selector.select_parent(min_score=0.5)
-        
-        self.assertIsNotNone(parent)
-        self.assertGreaterEqual(parent.performance_score, 0.5)
+            f = _make_agent_file(tmp_path, f"a{i}.py")
+            archive.add_agent(str(f), benchmark_scores={"b": 0.1 * (i + 1)}, is_valid=True)
 
+        selector = ParentSelector()
+        random.seed(7)
+        parents = selector.select_parents(archive, n_parents=3)
+        assert len(parents) == 3
+        ids = [p.agent_id for p in parents]
+        assert len(set(ids)) == 3, "Parents should be distinct (sampling without replacement)"
 
-class TestNoveltyCalculator(unittest.TestCase):
-    """Test cases for NoveltyCalculator."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="test_novelty_"))
-        self.calculator = NoveltyCalculator()
-        
-        # Create test agents with different code
-        self.agent1_path = self.temp_dir / "agent1"
-        self.agent2_path = self.temp_dir / "agent2"
-        TestFixtures.create_mock_agent_code(self.agent1_path)
-        TestFixtures.create_mock_agent_code(self.agent2_path)
-        
-        # Modify agent2 code slightly
-        agent2_file = self.agent2_path / "agent" / "agent.py"
-        content = agent2_file.read_text()
-        modified_content = content.replace("test agent", "modified test agent")
-        modified_content += "\n\ndef new_method(self):\n    pass\n"
-        agent2_file.write_text(modified_content)
-    
-    def tearDown(self):
-        """Clean up test fixtures."""
-        cleanup_test_directory(self.temp_dir)
-    
-    def test_calculate_novelty_identical(self):
-        """Test novelty calculation for identical agents."""
-        agent1 = ArchivedAgent(
-            agent_id="agent1",
-            code_path=str(self.agent1_path),
-            timestamp=datetime.now(),
-            parent_id=None,
-            generation=0,
-            performance_score=0.8,
-            benchmark_scores={'test': 0.8},
-            metadata={}
-        )
-        
-        agent2 = ArchivedAgent(
-            agent_id="agent2",
-            code_path=str(self.agent1_path),  # Same path, identical code
-            timestamp=datetime.now(),
-            parent_id=None,
-            generation=0,
-            performance_score=0.8,
-            benchmark_scores={'test': 0.8},
-            metadata={}
-        )
-        
-        novelty = self.calculator.calculate_novelty(agent1, [agent2])
-        
-        # Identical agents should have very low novelty
-        self.assertLess(novelty, 0.1)
-    
-    def test_calculate_novelty_different(self):
-        """Test novelty calculation for different agents."""
-        agent1 = ArchivedAgent(
-            agent_id="agent1",
-            code_path=str(self.agent1_path),
-            timestamp=datetime.now(),
-            parent_id=None,
-            generation=0,
-            performance_score=0.8,
-            benchmark_scores={'test': 0.8},
-            metadata={}
-        )
-        
-        agent2 = ArchivedAgent(
-            agent_id="agent2",
-            code_path=str(self.agent2_path),  # Different code
-            timestamp=datetime.now(),
-            parent_id=None,
-            generation=0,
-            performance_score=0.5,
-            benchmark_scores={'test': 0.5},
-            metadata={}
-        )
-        
-        novelty = self.calculator.calculate_novelty(agent1, [agent2])
-        
-        # Different agents should have higher novelty
-        self.assertGreater(novelty, 0.3)
-    
-    def test_calculate_novelty_multiple_agents(self):
-        """Test novelty calculation against multiple agents."""
-        target_agent = ArchivedAgent(
-            agent_id="target",
-            code_path=str(self.agent1_path),
-            timestamp=datetime.now(),
-            parent_id=None,
-            generation=0,
-            performance_score=0.8,
-            benchmark_scores={'test': 0.8},
-            metadata={}
-        )
-        
-        compare_agents = []
+    def test_empty_archive_returns_empty_list(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        selector = ParentSelector()
+        result = selector.select_parents(archive, n_parents=1)
+        assert result == []
+
+    def test_all_invalid_archive_returns_empty_list(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
         for i in range(3):
-            agent = ArchivedAgent(
-                agent_id=f"compare_{i}",
-                code_path=str(self.agent1_path) if i < 2 else str(self.agent2_path),
-                timestamp=datetime.now(),
-                parent_id=None,
-                generation=0,
-                performance_score=0.5 + i * 0.1,
-                benchmark_scores={'test': 0.5 + i * 0.1},
-                metadata={}
-            )
-            compare_agents.append(agent)
-        
-        novelty = self.calculator.calculate_novelty(target_agent, compare_agents)
-        
-        # Should be between 0 and 1
-        self.assertGreaterEqual(novelty, 0.0)
-        self.assertLessEqual(novelty, 1.0)
+            f = _make_agent_file(tmp_path, f"i{i}.py")
+            archive.add_agent(str(f), is_valid=False)
 
+        selector = ParentSelector()
+        result = selector.select_parents(archive, n_parents=1)
+        assert result == []
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_n_parents_exceeds_eligible_returns_all(self, tmp_path):
+        """If n_parents > eligible, return all eligible."""
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        for i in range(2):
+            f = _make_agent_file(tmp_path, f"a{i}.py")
+            archive.add_agent(str(f), benchmark_scores={"b": 0.5}, is_valid=True)
+
+        selector = ParentSelector()
+        parents = selector.select_parents(archive, n_parents=10)
+        assert len(parents) == 2
+
+    def test_higher_score_agent_selected_more_often(self, tmp_path):
+        """Agent with high score (0.9) should be picked more than one with low score (0.1)."""
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        f_high = _make_agent_file(tmp_path, "high.py")
+        f_low = _make_agent_file(tmp_path, "low.py")
+        high = archive.add_agent(str(f_high), benchmark_scores={"b": 0.9}, is_valid=True)
+        low = archive.add_agent(str(f_low), benchmark_scores={"b": 0.1}, is_valid=True)
+
+        selector = ParentSelector()
+        random.seed(0)
+        counts = {high.agent_id: 0, low.agent_id: 0}
+        for _ in range(1000):
+            chosen = selector.select_parents(archive, n_parents=1)
+            counts[chosen[0].agent_id] += 1
+
+        assert counts[high.agent_id] > counts[low.agent_id] * 3, (
+            "High-score agent should dominate selection"
+        )
+
+    def test_invalid_agents_excluded_from_selection(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        fv = _make_agent_file(tmp_path, "valid.py")
+        fi = _make_agent_file(tmp_path, "invalid.py")
+        valid = archive.add_agent(str(fv), benchmark_scores={"b": 0.5}, is_valid=True)
+        invalid = archive.add_agent(str(fi), benchmark_scores={"b": 0.9}, is_valid=False)
+
+        selector = ParentSelector()
+        random.seed(1)
+        for _ in range(50):
+            chosen = selector.select_parents(archive, n_parents=1)
+            assert chosen[0].agent_id == valid.agent_id

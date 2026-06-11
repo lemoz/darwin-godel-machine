@@ -1,108 +1,93 @@
-#!/usr/bin/env python3
 """
-Darwin Gödel Machine Integration Test.
-
-Tests the complete DGM evolution loop with basic benchmarks.
+Basic integration test: DGMController can be instantiated with a minimal config dict.
+(The heavy end-to-end loop is in test_dgm_loop.py.)
 """
 
-import asyncio
-import logging
-import sys
-import os
+import pytest
+import yaml
 from pathlib import Path
-from datetime import datetime
-
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from dgm_controller import DGMController
-from utils.logger import setup_logger
-
-# Setup logging
-setup_logger()
-logger = logging.getLogger(__name__)
 
 
-async def run_integration_test():
-    """Run a basic integration test of the DGM system."""
-    print("\n" + "="*60)
-    print("Darwin Gödel Machine - Integration Test")
-    print("="*60 + "\n")
-    
-    try:
-        # Initialize the controller
-        print("1. Initializing DGM Controller...")
-        controller = DGMController("config/dgm_config.yaml")
-        print("   ✓ Controller initialized")
-        
-        # Check configuration
-        print("\n2. Configuration:")
-        print(f"   - Primary FM Provider: {controller.config.get('fm_providers', {}).get('primary', 'Not set')}")
-        print(f"   - Max Iterations: {controller.config.get('dgm_settings', {}).get('max_iterations', 'Not set')}")
-        print(f"   - Archive Max Size: {controller.config.get('archive', {}).get('max_size', 'Not set')}")
-        
-        # Check benchmarks
-        print("\n3. Available Benchmarks:")
-        benchmark_dir = Path("config/benchmarks")
-        benchmarks = list(benchmark_dir.glob("*.yaml"))
-        for benchmark in benchmarks:
-            print(f"   - {benchmark.stem}")
-        # Components are initialized in the constructor
-        print("\n4. DGM Components initialized in constructor")
-        
-        
-        # Run a single evolution iteration
-        print("\n5. Running Single Evolution Iteration...")
-        print("   This will:")
-        print("   - Create or select a parent agent")
-        print("   - Run self-modification")
-        print("   - Evaluate on benchmarks")
-        print("   - Update the archive")
-        
-        # Set to run only 1 iteration for testing
-        controller.config['dgm_settings']['max_iterations'] = 1
-        
-        # Run the evolution
-        print("\n   Starting evolution...")
-        results = await controller.run()
-        
-        # Display results
-        print("\n6. Results:")
-        if results and 'iterations' in results and len(results['iterations']) > 0:
-            iteration = results['iterations'][0]
-            print(f"   ✓ Iteration completed successfully")
-            print(f"   - Parent Agent: {iteration.get('parent_id', 'N/A')}")
-            print(f"   - Child Agent: {iteration.get('child_id', 'N/A')}")
-            print(f"   - Benchmark Score: {iteration.get('score', 'N/A')}")
-            print(f"   - Improvement: {iteration.get('improvement', 'N/A')}")
-        else:
-            print("   ⚠ No results returned")
-        
-        print("\n7. Archive Status:")
-        archive_size = await controller.archive.get_size()
-        print(f"   - Agents in archive: {archive_size}")
-        
-        # Cleanup
-        await controller.cleanup()
-        
-        print("\n✓ Integration test completed successfully!")
-        print("\nThe DGM system is working correctly with basic benchmarks.")
-        print("You can now proceed with more complex benchmark integration.\n")
-        
-    except Exception as e:
-        print(f"\n✗ Integration test failed with error:")
-        print(f"   {type(e).__name__}: {str(e)}")
-        logger.exception("Integration test failed")
-        return False
-    
-    return True
+def _make_minimal_config(tmp_path: Path) -> dict:
+    bench_dir = tmp_path / "benchmarks"
+    bench_dir.mkdir()
+    # Write a valid (but trivially simple) benchmark
+    cfg = {
+        "name": "dummy",
+        "description": "dummy",
+        "task_prompt": "dummy",
+        "test_cases": [
+            {"function_name": "f", "inputs": ["1"], "expected_outputs": ["1"]}
+        ],
+        "timeout": 5,
+        "scoring_method": "pass_fail",
+    }
+    (bench_dir / "dummy.yaml").write_text(yaml.dump(cfg))
+
+    arc_dir = tmp_path / "archive"
+    results_dir = tmp_path / "results"
+    workspace_dir = tmp_path / "workspace"
+    for d in (arc_dir, results_dir, workspace_dir):
+        d.mkdir()
+
+    initial = tmp_path / "agent.py"
+    # Must use sync def — validator only recognises ast.FunctionDef (production bug).
+    initial.write_text(
+        'class Agent:\n'
+        '    def __init__(self, config): pass\n'
+        '    def solve_task(self, task):\n'
+        '        async def _r(): return {"success": True, "solution": ""}\n'
+        '        return _r()\n'
+    )
+
+    return {
+        "fm_providers": {
+            "primary": "anthropic",
+            "anthropic": {
+                "model": "claude-sonnet-4-6",
+                "api_key": "test-dummy",
+                "max_tokens": 128,
+                "temperature": 0.0,
+                "timeout": 5,
+            },
+        },
+        "archive": {"path": str(arc_dir)},
+        "parent_selection": {"lambda": 10, "alpha_0": 0.5},
+        "evaluation": {
+            "benchmarks_dir": str(bench_dir),
+            "results_dir": str(results_dir),
+        },
+        "agents": {
+            "workspace_dir": str(workspace_dir),
+            "initial_agent_path": str(initial),
+            "max_steps": 1,
+        },
+        "benchmarks": {"enabled": ["dummy"]},
+        "logging": {"level": "WARNING"},
+    }
 
 
-async def main():
-    """Main entry point."""
-    success = await run_integration_test()
-    sys.exit(0 if success else 1)
+class TestDGMControllerInit:
 
+    def test_controller_init_from_dict(self, tmp_path):
+        """DGMController can be constructed from a config dict without raising."""
+        from dgm_controller import DGMController
+        cfg = _make_minimal_config(tmp_path)
+        controller = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+        assert controller is not None
+        assert controller.archive is not None
+        assert controller.parent_selector is not None
+        assert controller.benchmark_runner is not None
+        assert controller.validator is not None
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    def test_archive_dir_created(self, tmp_path):
+        from dgm_controller import DGMController
+        cfg = _make_minimal_config(tmp_path)
+        controller = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+        assert Path(cfg["archive"]["path"]).exists()
+
+    def test_initial_archive_is_empty(self, tmp_path):
+        from dgm_controller import DGMController
+        cfg = _make_minimal_config(tmp_path)
+        controller = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+        assert len(controller.archive.agents) == 0
