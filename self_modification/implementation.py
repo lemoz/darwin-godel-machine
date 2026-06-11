@@ -5,14 +5,15 @@ This module provides functionality to implement modification proposals,
 including backup creation, code changes, and verification.
 """
 
-from typing import Dict, List, Any, Optional
-from pathlib import Path
+import ast
+import importlib.util
 import shutil
 import tempfile
 import datetime
 import asyncio
-import ast
 import traceback
+from typing import Dict, List, Any, Optional
+from pathlib import Path
 
 
 class ImplementationManager:
@@ -231,22 +232,37 @@ class ImplementationManager:
         return False
     
     def _apply_modify_change(self, file_path: Path, change: 'CodeChange') -> bool:
-        """Apply a 'modify' type change."""
+        """
+        Apply a 'modify' type change.
+
+        Requires exactly one occurrence of ``change.old_code`` in the file.
+        Zero occurrences → raises RuntimeError (old_code not found).
+        More than one → raises RuntimeError (ambiguous match).
+        """
         if not file_path.exists():
             return False
-        
+
+        if not (change.old_code and change.new_code):
+            # Nothing to do without both sides of the replacement.
+            return False
+
         content = file_path.read_text()
-        
-        if change.old_code and change.new_code:
-            # Simple replacement
-            if change.old_code in content:
-                content = content.replace(change.old_code, change.new_code)
-                file_path.write_text(content)
-                return True
-        
-        # For more complex modifications, would need more sophisticated logic
-        # This is a simplified implementation
-        return False
+        occurrences = content.count(change.old_code)
+
+        if occurrences == 0:
+            raise RuntimeError(
+                f"old_code not found in {file_path}: no occurrences of the search text"
+            )
+        if occurrences > 1:
+            raise RuntimeError(
+                f"Ambiguous match in {file_path}: {occurrences} occurrences found; "
+                "provide more context to make the match unique"
+            )
+
+        # Exactly one occurrence — safe to replace.
+        new_content = content.replace(change.old_code, change.new_code, 1)
+        file_path.write_text(new_content)
+        return True
     
     def _apply_delete_change(self, file_path: Path, change: 'CodeChange') -> bool:
         """Apply a 'delete' type change."""
@@ -327,27 +343,65 @@ class ImplementationManager:
     
     def _check_imports(self, agent_path: str) -> List[str]:
         """
-        Check if imports are valid.
-        
+        Check that every top-level import in modified Python files can be resolved.
+
+        For each ``.py`` file under *agent_path* the function:
+        1. Parses the source with :mod:`ast` to extract top-level ``import``
+           and ``from … import`` statements.
+        2. Calls :func:`importlib.util.find_spec` for each top-level module
+           name to verify it is resolvable.
+
+        Relative imports (``from . import …``) are skipped because they
+        require a package context.
+
         Args:
             agent_path: Path to agent code
-            
+
         Returns:
-            List of import errors
+            List of import-error strings (empty when everything resolves)
         """
-        errors = []
-        
-        # This is a simplified check - in production would be more thorough
-        required_modules = ['asyncio', 'typing', 'pathlib']
-        agent_file = Path(agent_path) / "agent" / "agent.py"
-        
-        if agent_file.exists():
-            content = agent_file.read_text()
-            for module in required_modules:
-                if f"import {module}" not in content and f"from {module}" not in content:
-                    # Not necessarily an error, just a check
-                    pass
-        
+        errors: List[str] = []
+
+        for py_file in Path(agent_path).rglob("*.py"):
+            try:
+                source = py_file.read_text()
+                tree = ast.parse(source, filename=str(py_file))
+            except SyntaxError:
+                # Syntax errors are caught separately in _verify_modifications.
+                continue
+            except Exception as exc:
+                errors.append(f"Could not read {py_file}: {exc}")
+                continue
+
+            for node in ast.walk(tree):
+                # Only examine top-level statements.
+                if not isinstance(node, (ast.Import, ast.ImportFrom)):
+                    continue
+
+                if isinstance(node, ast.Import):
+                    module_names = [alias.name.split(".")[0] for alias in node.names]
+                else:  # ImportFrom
+                    if node.level and node.level > 0:
+                        # Relative import — skip.
+                        continue
+                    module_names = (
+                        [node.module.split(".")[0]] if node.module else []
+                    )
+
+                for module_name in module_names:
+                    if not module_name:
+                        continue
+                    try:
+                        spec = importlib.util.find_spec(module_name)
+                        if spec is None:
+                            errors.append(
+                                f"{py_file}: cannot resolve import '{module_name}'"
+                            )
+                    except (ModuleNotFoundError, ValueError):
+                        errors.append(
+                            f"{py_file}: cannot resolve import '{module_name}'"
+                        )
+
         return errors
     
     def cleanup(self) -> None:

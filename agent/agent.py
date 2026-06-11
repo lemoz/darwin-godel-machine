@@ -6,6 +6,7 @@ coding agent in the Darwin Gödel Machine system.
 """
 
 import asyncio
+import json
 import logging
 import uuid
 from typing import Dict, Any, List, Optional, Union
@@ -230,35 +231,52 @@ class Agent:
                 logger.info(response.content)
                 logger.info(f"=== END RESPONSE ===")
             
+            # Build metadata for the assistant message so that format_messages
+            # can reconstruct proper Anthropic tool_use blocks.
+            assistant_metadata: Optional[Dict[str, Any]] = None
+            if response.tool_calls:
+                assistant_metadata = {
+                    "tool_calls": [
+                        {
+                            "id": tc.call_id or f"toolu_{uuid.uuid4().hex[:16]}",
+                            "name": tc.tool_name,
+                            "input": tc.parameters,
+                        }
+                        for tc in response.tool_calls
+                    ]
+                }
+
             # Add assistant response to conversation
             assistant_message = Message(
                 role=MessageRole.ASSISTANT,
-                content=response.content.rstrip() if response.content else ""
+                content=response.content.rstrip() if response.content else "",
+                metadata=assistant_metadata,
             )
             self.conversation_history.append(assistant_message)
-            
-            # Save conversation history for debugging
-            import json
-            from pathlib import Path
-            debug_dir = Path("debug")
-            debug_dir.mkdir(exist_ok=True)
-            
-            history_file = debug_dir / f"conversation_history_task_{task.task_id}_step{step+1}.json"
-            conversation_data = {
-                "task_id": task.task_id,
-                "step": step + 1,
-                "conversation": [
-                    {
-                        "role": msg.role.value,
-                        "content": msg.content[:1000] + "..." if len(msg.content) > 1000 else msg.content
-                    }
-                    for msg in self.conversation_history
-                ]
-            }
-            
-            with open(history_file, 'w') as f:
-                json.dump(conversation_data, f, indent=2)
-            logger.info(f"Saved conversation history to {history_file}")
+
+            # Optionally dump conversation history to disk for debugging.
+            if self.config.fm_config.get("debug_conversation_dump", False):
+                debug_dir = Path("debug")
+                debug_dir.mkdir(exist_ok=True)
+                history_file = debug_dir / f"conversation_history_task_{task.task_id}_step{step+1}.json"
+                conversation_data = {
+                    "task_id": task.task_id,
+                    "step": step + 1,
+                    "conversation": [
+                        {
+                            "role": msg.role.value,
+                            "content": (
+                                msg.content[:1000] + "..."
+                                if len(msg.content) > 1000
+                                else msg.content
+                            ),
+                        }
+                        for msg in self.conversation_history
+                    ],
+                }
+                with open(history_file, "w") as f:
+                    json.dump(conversation_data, f, indent=2)
+                logger.info(f"Saved conversation history to {history_file}")
             
             # Execute any tool calls
             if response.tool_calls:
@@ -298,41 +316,60 @@ class Agent:
     async def _execute_tool_calls(self, tool_calls: List[ToolCall]) -> None:
         """
         Execute tool calls and add results to conversation.
-        
+
+        All tool result messages for a single assistant turn are appended as
+        consecutive TOOL-role messages.  The Anthropic ``format_messages``
+        implementation batches consecutive TOOL messages into a single user
+        message with multiple ``tool_result`` blocks, satisfying the API's
+        alternating-role requirement.
+
+        Each TOOL-role message carries ``metadata["tool_use_id"]`` matching the
+        corresponding ``tool_use`` block id from the assistant message.
+
         Args:
             tool_calls: List of tool calls to execute
         """
         for i, tool_call in enumerate(tool_calls):
             try:
-                # Log tool call details
                 logger.info(f"=== TOOL CALL {i+1} ===")
                 logger.info(f"Tool: {tool_call.tool_name}")
                 logger.info(f"Parameters: {tool_call.parameters}")
-                
-                # Execute the tool
+
                 result = await self.tool_registry.execute_tool(
                     tool_call.tool_name,
-                    tool_call.parameters
+                    tool_call.parameters,
                 )
-                
-                # Log tool result
+
                 logger.info(f"Tool Result Status: {result.status}")
-                logger.info(f"Tool Result Output: {result.output[:500] if result.output else 'None'}...")
+                logger.info(
+                    f"Tool Result Output: {result.output[:500] if result.output else 'None'}..."
+                )
                 if result.error:
                     logger.info(f"Tool Result Error: {result.error}")
                 logger.info(f"=== END TOOL CALL {i+1} ===")
-                
-                # Format result as message
+
+                # Build the result message, threading in the tool_use_id so that
+                # format_messages can construct proper tool_result blocks.
                 result_message = self.message_formatter.format_tool_result_message(
                     tool_result=result
                 )
+                # Inject tool_use_id into metadata.
+                if tool_call.call_id:
+                    if result_message.metadata is None:
+                        result_message.metadata = {}
+                    result_message.metadata["tool_use_id"] = tool_call.call_id
+
                 self.conversation_history.append(result_message)
-                
+
             except Exception as e:
-                # Add error message to conversation
                 error_message = Message(
                     role=MessageRole.TOOL,
-                    content=f"Tool execution failed: {str(e)}"
+                    content=f"Tool execution failed: {str(e)}",
+                    metadata=(
+                        {"tool_use_id": tool_call.call_id}
+                        if tool_call.call_id
+                        else None
+                    ),
                 )
                 self.conversation_history.append(error_message)
     
