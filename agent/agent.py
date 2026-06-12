@@ -199,7 +199,7 @@ class Agent:
             Solution string
         """
         solution = ""
-        max_steps = 20  # Reasonable limit based on observed agent behavior
+        max_steps = max(1, int(self.config.max_iterations))
         
         logger.info(f"Starting task solution with up to {max_steps} steps for task {task.task_id}")
         
@@ -224,6 +224,8 @@ class Agent:
                     logger.info(f"Recent message {i+1}: Role={msg.role}, Content preview={msg.content[:100] if msg.content else 'None'}...")
             response = await self.fm_handler.get_completion(request)
             logger.info(f"API call completed. Tool calls: {len(response.tool_calls) if response.tool_calls else 0}")
+            if response.usage:
+                logger.info(f"API usage: {response.usage}")
             
             # Log agent's response for debugging
             if response.content:

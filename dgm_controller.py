@@ -122,6 +122,31 @@ class DGMController:
 
         return obj
 
+    def _redact_sensitive_values(self, obj):
+        """Return a copy of config-like data with secret values redacted."""
+        def is_sensitive_key(key: Any) -> bool:
+            key_lower = str(key).lower()
+            return (
+                key_lower in {"api_key", "token", "secret", "password"}
+                or key_lower.endswith("_api_key")
+                or key_lower.endswith("_token")
+                or key_lower.endswith("_secret")
+                or key_lower.endswith("_password")
+                or "credential" in key_lower
+            )
+
+        if isinstance(obj, dict):
+            redacted = {}
+            for key, value in obj.items():
+                if is_sensitive_key(key):
+                    redacted[key] = "[REDACTED]"
+                else:
+                    redacted[key] = self._redact_sensitive_values(value)
+            return redacted
+        if isinstance(obj, list):
+            return [self._redact_sensitive_values(item) for item in obj]
+        return obj
+
     def get_or_create_initial_agent(self) -> str:
         """
         Get or create the initial agent (agent_0).
@@ -164,7 +189,7 @@ class Agent:
             num_generations: Number of generations to run. If None, runs indefinitely.
         """
         logger.info("Starting Darwin Gödel Machine")
-        logger.info(f"Configuration: {self.config}")
+        logger.info(f"Configuration: {self._redact_sensitive_values(self.config)}")
 
         # Initialize with base agent if archive is empty
         if len(self.archive.agents) == 0:
@@ -502,7 +527,8 @@ performance."""
                     agent_id=f"eval_{agent_path_obj.stem}_{benchmark_name}",
                     fm_provider=primary_provider,
                     fm_config=provider_config,
-                    working_directory=str(agent_path_obj.parent)
+                    working_directory=str(agent_path_obj.parent),
+                    max_iterations=self.config['agents'].get('max_steps', 20),
                 )
 
                 # Load the agent class from the file path using load_from_path,

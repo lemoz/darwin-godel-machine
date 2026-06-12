@@ -1,0 +1,42 @@
+# Minimal live DGM proof configuration.
+#
+# This config is intentionally narrower than config/dgm_config.yaml so a live
+# API-backed run can prove the full loop without using the default budget.
+
+fm_providers:
+  primary: anthropic
+  anthropic:
+    model: claude-sonnet-4-6
+    api_key: ${ANTHROPIC_API_KEY}
+    max_tokens: 2048
+    temperature: 0.1
+    timeout: 60
+
+archive:
+  path: .dgm-live-runs/2026-06-12-proof/archive
+
+parent_selection:
+  lambda: 10
+  alpha_0: 0.5
+
+evaluation:
+  benchmarks_dir: config/benchmarks
+  results_dir: .dgm-live-runs/2026-06-12-proof/results
+  timeout_seconds: 30
+
+agents:
+  workspace_dir: .dgm-live-runs/2026-06-12-proof/workspace
+  initial_agent_path: agent/agent.py
+  max_steps: 5
+
+benchmarks:
+  timeout_default: 30
+  max_attempts: 3
+  enabled:
+    - list_processing
+
+logging:
+  level: INFO
+
+generation_delay_seconds: 0
+stop_on_error: true
