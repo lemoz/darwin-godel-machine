@@ -114,3 +114,25 @@ class TestBenchmarkEvaluationPipeline:
         }
         avg = self.runner.get_average_score(results)
         assert avg == pytest.approx(0.7)
+
+
+async def test_humaneval_style_reference_solution_passes():
+    """The shipped HumanEval-style pack must be verified without API calls."""
+    project_root = Path(__file__).resolve().parents[2]
+    runner = BenchmarkRunner(
+        benchmarks_dir=str(project_root / "config" / "benchmarks"),
+        use_sandbox=False,
+    )
+    task = runner.benchmarks["humaneval_style"]
+    reference_solution = (
+        project_root / "tests" / "fixtures" / "reference_solutions" / "humaneval_style.py"
+    ).read_text()
+
+    test_results = []
+    for test_case in task.test_cases:
+        result = await runner._run_test_case(reference_solution, test_case, task)
+        test_results.append(result)
+
+    assert len(task.test_cases) == 4
+    assert all(result["success"] for result in test_results)
+    assert runner._calculate_score({"test_results": test_results}, task) == pytest.approx(1.0)
