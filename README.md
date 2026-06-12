@@ -3,6 +3,7 @@
 **A Self-Improving AI System for Evolutionary Code Enhancement**
 
 [![GitHub](https://img.shields.io/badge/GitHub-lemoz%2Fdarwin--godel--machine-blue?logo=github)](https://github.com/lemoz/darwin-godel-machine)
+[![CI](https://github.com/lemoz/darwin-godel-machine/actions/workflows/ci.yml/badge.svg)](https://github.com/lemoz/darwin-godel-machine/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-beta-orange.svg)
