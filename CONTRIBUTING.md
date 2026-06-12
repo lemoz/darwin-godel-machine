@@ -6,7 +6,7 @@ Thank you for your interest in contributing to the Darwin Gödel Machine project
 
 ### Prerequisites
 - Python 3.8+
-- Docker is optional today. Docker-based isolation is planned but not yet wired into runtime execution; use your own container or VM for untrusted evolution runs.
+- Docker is optional. The current opt-in Docker path isolates generated benchmark test scripts only; use your own container or VM for untrusted evolution runs.
 - API keys for foundation models (Claude, Gemini, or OpenAI) are needed for live DGM runs, not for the default test suite.
 
 ### Setup
@@ -78,7 +78,7 @@ python run_dgm.py
 ### Security
 - Never commit API keys or secrets
 - Follow security guidelines in SECURITY.md
-- Treat model-written code as untrusted. Until Docker isolation lands, run untrusted experiments inside your own container or VM.
+- Treat model-written code as untrusted. The built-in Docker path does not yet isolate full agent solving, tool use, or self-modification.
 - Report security issues privately via GitHub Security tab
 
 ## 🏗️ Architecture

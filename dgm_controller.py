@@ -20,6 +20,7 @@ from agent import Agent, Task, AgentConfig
 from archive import AgentArchive, ParentSelector
 from evaluation.benchmark_runner import BenchmarkRunner
 from evaluation.agent_validator import AgentValidator
+from sandbox.sandbox_manager import SandboxConfig, SandboxManager
 from utils.logger import setup_logger
 from utils.agent_loader import AgentLoader
 
@@ -75,8 +76,23 @@ class DGMController:
             alpha_0=ps_cfg.get('alpha_0', 0.5)
         )
 
+        evaluation_config = self.config.get('evaluation', {})
+        sandbox_manager = None
+        use_sandbox = evaluation_config.get('use_sandbox', False)
+        if use_sandbox:
+            sandbox_config = SandboxConfig(
+                **{
+                    key: value
+                    for key, value in self.config.get('sandbox', {}).items()
+                    if key in SandboxConfig.__dataclass_fields__
+                }
+            )
+            sandbox_manager = SandboxManager(sandbox_config)
+
         self.benchmark_runner = BenchmarkRunner(
-            benchmarks_dir=self.config['evaluation']['benchmarks_dir']
+            benchmarks_dir=evaluation_config.get('benchmarks_dir', 'config/benchmarks'),
+            sandbox_manager=sandbox_manager,
+            use_sandbox=use_sandbox
         )
 
         self.validator = AgentValidator()

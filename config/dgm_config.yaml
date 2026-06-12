@@ -49,6 +49,18 @@ evaluation:
   benchmarks_dir: config/benchmarks
   results_dir: results
   timeout_seconds: 30
+  use_sandbox: false
+
+# Optional Docker sandbox settings for benchmark test-script execution.
+# Agent solving and tool use still run directly in the configured workspace.
+sandbox:
+  image_name: dgm-sandbox
+  memory_limit: 2g
+  cpu_limit: "1"
+  timeout: 300
+  network_mode: none
+  working_dir: /home/dgm_agent/workspace
+  auto_build_image: true
   
 # Agent Settings
 agents:

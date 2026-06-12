@@ -8,6 +8,8 @@ import asyncio
 import json
 import os
 import re
+import shlex
+import sys
 import tempfile
 import time
 from dataclasses import dataclass
@@ -89,7 +91,7 @@ class BenchmarkRunner:
         self,
         benchmarks_dir: str = "./config/benchmarks",
         sandbox_manager: Optional[Any] = None,
-        use_sandbox: bool = True
+        use_sandbox: bool = False
     ):
         """
         Initialize the benchmark runner.
@@ -104,6 +106,28 @@ class BenchmarkRunner:
         self.use_sandbox = use_sandbox
         self.benchmarks: Dict[str, BenchmarkTask] = {}
         self._load_benchmarks()
+
+        if self.use_sandbox and self.sandbox_manager is None and _SandboxManager:
+            candidate = _SandboxManager()
+            if candidate.is_docker_available():
+                self.sandbox_manager = candidate
+            else:
+                logger.warning(
+                    "Docker sandbox requested but unavailable; using direct subprocess execution"
+                )
+                self.use_sandbox = False
+
+        if self.use_sandbox and self.sandbox_manager:
+            ensure_image = getattr(self.sandbox_manager, "ensure_sandbox_image", None)
+            if ensure_image is not None:
+                try:
+                    ensure_image()
+                except Exception as exc:
+                    logger.warning(
+                        "Docker sandbox image unavailable; using direct subprocess execution: %s",
+                        exc,
+                    )
+                    self.use_sandbox = False
 
     def _load_benchmarks(self) -> None:
         """Load all benchmark configurations."""
@@ -227,9 +251,24 @@ class BenchmarkRunner:
         task: Task,
         benchmark: BenchmarkTask
     ) -> Dict[str, Any]:
-        """Run agent in a sandboxed environment."""
-        logger.warning("Sandbox execution not fully implemented, using direct execution")
+        """
+        Run benchmark flow with sandboxed test execution where available.
+
+        Agent task solving still runs in-process because it may need configured
+        provider clients and workspace tools. The generated benchmark solution
+        test scripts are isolated by ``_run_test_case`` when sandboxing is
+        enabled and Docker is available.
+        """
         return await self._run_directly(agent, task, benchmark)
+
+    def _can_use_sandbox(self) -> bool:
+        """Return True when sandboxed subprocess execution is configured."""
+        if not self.use_sandbox or not self.sandbox_manager:
+            return False
+        availability_check = getattr(self.sandbox_manager, "is_docker_available", None)
+        if availability_check is None:
+            return True
+        return bool(availability_check())
 
     # ------------------------------------------------------------------
     # Test-generation helpers
@@ -354,66 +393,106 @@ print(json.dumps({{
             }
 
         solution_file: Optional[str] = None
+        temp_dir: Optional[tempfile.TemporaryDirectory] = None
         try:
-            with tempfile.NamedTemporaryFile(
-                mode='w',
-                suffix='.py',
-                delete=False
-            ) as f:
-                f.write(solution)
-                solution_file = f.name
+            use_sandbox = self._can_use_sandbox()
+            if use_sandbox:
+                sandbox_temp_parent = Path.home() / ".cache" / "dgm-sandbox"
+                sandbox_temp_parent.mkdir(parents=True, exist_ok=True)
+                temp_dir = tempfile.TemporaryDirectory(dir=str(sandbox_temp_parent))
+            else:
+                temp_dir = tempfile.TemporaryDirectory()
+
+            workspace_path = Path(temp_dir.name)
+            solution_path = workspace_path / "solution.py"
+            solution_path.write_text(solution)
+            solution_file = str(solution_path)
 
             inputs = test_case.get('inputs', [])
             expected_outputs = test_case.get('expected_outputs', [])
 
             results: List[Dict[str, Any]] = []
             overall_success = True
+            sandbox_working_dir = getattr(
+                getattr(self.sandbox_manager, "config", None),
+                "working_dir",
+                "/home/dgm_agent/workspace",
+            )
 
             for i, (input_val, expected_val) in enumerate(zip(inputs, expected_outputs)):
                 raw_input = str(input_val)
                 raw_expected = str(expected_val)
+                sandbox_solution_file = str(Path(sandbox_working_dir) / solution_path.name)
 
                 test_code = self._build_test_script(
-                    solution_file,
+                    sandbox_solution_file if use_sandbox else solution_file,
                     function_name,
                     raw_input,
                     raw_expected,
                     i
                 )
+                test_script_path = workspace_path / f"test_case_{i}.py"
+                test_script_path.write_text(test_code)
 
-                proc = await asyncio.create_subprocess_exec(
-                    'python3', '-c', test_code,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-
-                try:
-                    stdout, stderr = await asyncio.wait_for(
-                        proc.communicate(),
-                        timeout=benchmark.timeout
+                if use_sandbox:
+                    sandbox_result = await self.sandbox_manager.execute_in_sandbox(
+                        command=f"{shlex.quote('python')} {shlex.quote(test_script_path.name)}",
+                        workspace_path=str(workspace_path),
+                        timeout=benchmark.timeout,
                     )
-                except asyncio.TimeoutError:
-                    # Kill the subprocess cleanly on timeout.
+                    output_text = sandbox_result.output.strip()
+                    stderr_text = (sandbox_result.error or "").strip()
+                    timed_out = (
+                        not sandbox_result.success
+                        and sandbox_result.exit_code is None
+                        and "timed out" in stderr_text.lower()
+                    )
+                else:
+                    proc = await asyncio.create_subprocess_exec(
+                        sys.executable,
+                        str(test_script_path),
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
+
                     try:
-                        proc.kill()
-                    except ProcessLookupError:
-                        pass
-                    await proc.wait()
-                    timeout_result = {
+                        stdout, stderr = await asyncio.wait_for(
+                            proc.communicate(),
+                            timeout=benchmark.timeout
+                        )
+                    except asyncio.TimeoutError:
+                        # Kill the subprocess cleanly on timeout.
+                        try:
+                            proc.kill()
+                        except ProcessLookupError:
+                            pass
+                        await proc.wait()
+                        timeout_result = {
+                            'success': False,
+                            'actual_output': None,
+                            'expected_output': raw_expected.strip(),
+                            'error': f'Timeout after {benchmark.timeout}s',
+                            'input': raw_input
+                        }
+                        results.append(timeout_result)
+                        overall_success = False
+                        continue
+
+                    output_text = stdout.decode().strip()
+                    stderr_text = stderr.decode().strip()
+                    timed_out = False
+
+                # Parse the machine-readable JSON marker.
+                test_result: Dict[str, Any] = {}
+                if timed_out:
+                    test_result = {
                         'success': False,
                         'actual_output': None,
                         'expected_output': raw_expected.strip(),
                         'error': f'Timeout after {benchmark.timeout}s',
                         'input': raw_input
                     }
-                    results.append(timeout_result)
-                    overall_success = False
-                    continue
-
-                # Parse the machine-readable JSON marker.
-                output_text = stdout.decode().strip()
-                test_result: Dict[str, Any] = {}
-                if output_text:
+                elif output_text:
                     try:
                         # The script prints exactly one JSON line.
                         last_json_line = output_text.split('\n')[-1]
@@ -427,7 +506,6 @@ print(json.dumps({{
                             'input': raw_input
                         }
                 else:
-                    stderr_text = stderr.decode().strip()
                     test_result = {
                         'success': False,
                         'actual_output': None,
@@ -462,6 +540,8 @@ print(json.dumps({{
                     os.unlink(solution_file)
                 except OSError:
                     pass
+            if temp_dir is not None:
+                temp_dir.cleanup()
 
     def _calculate_score(
         self,
