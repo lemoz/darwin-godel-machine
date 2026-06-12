@@ -5,8 +5,8 @@ DGM run has been executed for this estimate.
 
 ## Configuration Snapshot
 
-- Entry point: `python run_dgm.py`
-- Generations: 3, as hard-coded in `run_dgm.py`
+- Entry point: `python run_dgm.py --generations 3`
+- Generations: 3, matching the default `run_dgm.py` CLI value
 - Provider/model: `anthropic` / `claude-sonnet-4-6`
 - Enabled benchmarks: `string_manipulation`, `list_processing`, `simple_algorithm`
 - Agent max steps per task: 20
@@ -49,7 +49,7 @@ the 8,000-token assumption.
 
 ## Approval Needed
 
-Before running `python run_dgm.py`, Chris should approve one of:
+Before running `python run_dgm.py --generations 3`, Chris should approve one of:
 
 - Approve the default 3-generation run with a soft budget ceiling of $45.
 - Reduce scope to 1 generation before the flagship run.
