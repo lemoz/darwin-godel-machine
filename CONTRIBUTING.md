@@ -6,15 +6,40 @@ Thank you for your interest in contributing to the Darwin Gödel Machine project
 
 ### Prerequisites
 - Python 3.8+
-- Docker (for sandboxed execution)
-- API keys for foundation models (Claude, Gemini, or OpenAI)
+- Docker is optional today. Docker-based isolation is planned but not yet wired into runtime execution; use your own container or VM for untrusted evolution runs.
+- API keys for foundation models (Claude, Gemini, or OpenAI) are needed for live DGM runs, not for the default test suite.
 
 ### Setup
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/darwin_godel_machine.git`
-3. Install dependencies: `pip install -r requirements.txt`
-4. Copy `.env.example` to `.env` and add your API keys
-5. Run tests: `python -m pytest tests/`
+2. Clone your fork:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/darwin-godel-machine.git
+   cd darwin-godel-machine
+   ```
+3. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+4. Install dependencies:
+   ```bash
+   python -m pip install --upgrade pip
+   python -m pip install -r requirements.txt
+   ```
+5. Run the full default test suite:
+   ```bash
+   python -m pytest
+   ```
+
+### Live DGM Runs
+
+Only configure API keys when you are ready to run the system against foundation model providers:
+
+```bash
+cp .env.example .env
+# Edit .env with your API keys, then run:
+python run_dgm.py
+```
 
 ## 📋 How to Contribute
 
@@ -22,6 +47,7 @@ Thank you for your interest in contributing to the Darwin Gödel Machine project
 - Use GitHub Issues for bug reports and feature requests
 - Include steps to reproduce for bugs
 - Provide context and use cases for feature requests
+- For larger product-direction requests such as WebUI, web search, knowledge learning, or new tool ecosystems, open an issue with the intended workflow first so maintainers can scope it before implementation.
 
 ### Code Contributions
 1. Create a feature branch: `git checkout -b feature/your-feature-name`
@@ -52,7 +78,7 @@ Thank you for your interest in contributing to the Darwin Gödel Machine project
 ### Security
 - Never commit API keys or secrets
 - Follow security guidelines in SECURITY.md
-- Test agent modifications in sandboxed environments
+- Treat model-written code as untrusted. Until Docker isolation lands, run untrusted experiments inside your own container or VM.
 - Report security issues privately via GitHub Security tab
 
 ## 🏗️ Architecture
@@ -62,7 +88,7 @@ Thank you for your interest in contributing to the Darwin Gödel Machine project
 - **Archive**: Population-based storage of discovered agents
 - **Evaluation**: Benchmark-driven validation of agent performance
 - **Self-Modification**: Diagnosis and proposal system for improvements
-- **Sandbox**: Secure execution environment for agent code
+- **Execution Guards**: Workspace containment, command filtering, hard timeouts, and validation before archive admission
 
 ### Key Patterns
 - Environment variable configuration
