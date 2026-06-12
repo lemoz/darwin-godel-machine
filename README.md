@@ -105,6 +105,13 @@ LLM-powered coding agents with:
 #### 3. **Archive Management** (`archive/`)
 - **Agent Archive**: Stores every valid agent (unbounded, per the paper) with full lineage
 - **Parent Selector**: Implements the paper's selection rule — sigmoid-scaled performance times a 1/(1+children) exploration bonus, sampled categorically
+- **Lineage Visualization**: Generate an SVG or HTML family tree from archive metadata
+
+```bash
+python scripts/generate_archive_lineage.py --archive-dir archive/agents --output docs/archive-lineage.html
+```
+
+![Archive lineage example](docs/archive-lineage-example.svg)
 
 #### 4. **Evaluation System** (`evaluation/`)
 - **Benchmark Runner**: Executes agents on coding challenges

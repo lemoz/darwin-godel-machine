@@ -12,10 +12,15 @@ import random
 import shutil
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 import pytest
 
 from archive.agent_archive import AgentArchive, ArchivedAgent
+from archive.lineage_visualizer import (
+    render_archive_lineage_html,
+    render_archive_lineage_svg,
+)
 from archive.parent_selector import ParentSelector
 
 
@@ -33,6 +38,26 @@ def _make_agent_file(tmp_path: Path, name: str = "agent.py") -> Path:
 def _add_agent(archive: AgentArchive, agent_file: Path, **kwargs) -> ArchivedAgent:
     """Thin wrapper so tests don't repeat keyword noise."""
     return archive.add_agent(agent_path=str(agent_file), **kwargs)
+
+
+def _archived_agent(
+    agent_id: str,
+    parent_id: Optional[str],
+    generation: int,
+    score: float,
+    is_valid: bool = True,
+) -> ArchivedAgent:
+    return ArchivedAgent(
+        agent_id=agent_id,
+        parent_id=parent_id,
+        generation=generation,
+        source_path=f"/tmp/{agent_id}",
+        created_at=f"2026-06-12T00:00:0{generation}",
+        benchmark_scores={"bench": score},
+        average_score=score,
+        is_valid=is_valid,
+        metadata={},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +184,37 @@ class TestAgentArchive:
 
         children = archive.get_agent_children(parent.agent_id)
         assert len(children) == 2
+
+
+class TestArchiveLineageVisualizer:
+
+    def test_render_archive_lineage_svg_contains_nodes_and_edges(self):
+        root = _archived_agent("root-agent", None, 0, 0.4)
+        child = _archived_agent("child-agent", root.agent_id, 1, 0.8)
+
+        svg = render_archive_lineage_svg([child, root])
+
+        assert svg.startswith('<svg xmlns="http://www.w3.org/2000/svg"')
+        assert "agent root-age" in svg
+        assert "agent child-ag" in svg
+        assert "score 0.800" in svg
+        assert "<path" in svg
+
+    def test_render_archive_lineage_svg_empty_archive(self):
+        svg = render_archive_lineage_svg([])
+        assert "No archived agents yet" in svg
+
+    def test_render_archive_lineage_html_contains_table(self):
+        root = _archived_agent("root-agent", None, 0, 0.4)
+        child = _archived_agent("child-agent", root.agent_id, 1, 0.8, is_valid=False)
+
+        html = render_archive_lineage_html([root, child])
+
+        assert "<!doctype html>" in html
+        assert "<table>" in html
+        assert "root-agent" in html
+        assert "child-agent" in html
+        assert "<td>no</td>" in html
 
 
 # ---------------------------------------------------------------------------
