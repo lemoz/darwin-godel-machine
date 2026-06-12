@@ -1,0 +1,72 @@
+name: humaneval_style
+description: HumanEval-style standalone Python function tasks with edge cases
+difficulty: medium
+timeout: 30
+category: algorithms
+scoring_method: partial
+
+task_prompt: |
+  Implement the requested standalone Python functions. Each function should be
+  deterministic, side-effect free, and should handle the listed edge cases.
+  Return only Python code that defines the requested functions.
+
+test_cases:
+  - function_name: has_close_pair
+    task_description: returns True when any two numbers are closer than the given threshold
+    inputs:
+      - "[1.0, 2.0, 3.0], 0.5"
+      - "[1.0, 2.0, 3.0], 1.1"
+      - "[], 1.0"
+      - "[5.0], 0.1"
+      - "[-1.0, -1.4, 2.0], 0.5"
+    expected_outputs:
+      - "False"
+      - "True"
+      - "False"
+      - "False"
+      - "True"
+
+  - function_name: split_balanced_parens
+    task_description: splits a string of parentheses into top-level balanced groups
+    inputs:
+      - "'(())()'"
+      - "'(()())(())'"
+      - "''"
+      - "'()()()'"
+      - "'((()))'"
+    expected_outputs:
+      - "['(())', '()']"
+      - "['(()())', '(())']"
+      - "[]"
+      - "['()', '()', '()']"
+      - "['((()))']"
+
+  - function_name: rolling_minimum
+    task_description: returns the running minimum after each item in a list of numbers
+    inputs:
+      - "[3, 2, 5, 1, 4]"
+      - "[1, 2, 3]"
+      - "[-1, -3, 0, -2]"
+      - "[]"
+      - "[5]"
+    expected_outputs:
+      - "[3, 2, 2, 1, 1]"
+      - "[1, 1, 1]"
+      - "[-1, -3, -3, -3]"
+      - "[]"
+      - "[5]"
+
+  - function_name: below_zero
+    task_description: returns True if a running account balance ever drops below zero
+    inputs:
+      - "[1, 2, -4, 1]"
+      - "[5, -3, -1]"
+      - "[-1]"
+      - "[]"
+      - "[2, -2, -1]"
+    expected_outputs:
+      - "True"
+      - "False"
+      - "True"
+      - "False"
+      - "True"

@@ -206,6 +206,11 @@ inputs: ["abc123def", "hello5world"]
 expected_outputs: ["fed123cba", "dlrow5olleh"]
 ```
 
+For a harder no-network smoke path, see `config/benchmarks/humaneval_style.yaml`.
+It contains HumanEval-style standalone function tasks with reference solutions
+verified by the integration test suite; add `humaneval_style` to
+`benchmarks.enabled` when you want the DGM loop to evaluate against it.
+
 ## 🧪 Running Experiments
 
 ### Basic Evolution Run
