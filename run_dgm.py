@@ -3,6 +3,7 @@
 Run the Darwin Gödel Machine with basic benchmarks.
 """
 
+import argparse
 import asyncio
 import logging
 import sys
@@ -30,18 +31,34 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def main():
+def parse_args(argv=None):
+    """Parse CLI arguments."""
+    parser = argparse.ArgumentParser(description="Run the Darwin Gödel Machine")
+    parser.add_argument(
+        "--config",
+        default="config/dgm_config.yaml",
+        help="Path to DGM configuration file",
+    )
+    parser.add_argument(
+        "--generations",
+        type=int,
+        default=3,
+        help="Number of DGM generations to run",
+    )
+    return parser.parse_args(argv)
+
+
+async def main(argv=None):
     """Run the DGM loop."""
+    args = parse_args(argv)
     try:
         # Initialize the DGM controller
         logger.info("Initializing Darwin Gödel Machine...")
-        controller = DGMController()
+        controller = DGMController(config_or_path=args.config)
         
-        # Run for a limited number of generations
-        num_generations = 3  # Start with 3 generations for testing
-        logger.info(f"Running DGM for {num_generations} generations...")
+        logger.info(f"Running DGM for {args.generations} generations...")
         
-        await controller.run(num_generations=num_generations)
+        await controller.run(num_generations=args.generations)
         
         logger.info("DGM run completed successfully!")
         
