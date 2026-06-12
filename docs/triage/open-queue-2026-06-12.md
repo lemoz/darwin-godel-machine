@@ -2,14 +2,16 @@
 
 This packet records the current open GitHub queue and drafts Chris-facing replies
 without posting them. The repository state was checked after `git pull --ff-only`
-on `main`, and the local default suite passed with `159 passed, 7 skipped, 2 warnings`.
+on `main`; the packet branch was later rebased onto the same `main` after the
+CLI and archive-lineage PRs landed.
 
 ## Summary
 
 | Item | State | CI | Action |
 | --- | --- | --- | --- |
-| PR #4: isolate benchmark tests in docker | Draft | `pytest` success | Chris decision: merge partial sandbox slice or wait for full runtime sandbox |
-| PR #9: add live run cost gate | Draft | `pytest` success | Chris decision: approve default run, reduce run, or change estimate assumptions |
+| PR #4: isolate benchmark tests in docker | Draft, rebased | `pytest` success | Chris decision: merge partial sandbox slice or wait for full runtime sandbox |
+| PR #9: add live run cost gate | Draft, rebased | `pytest` success | Chris decision: approve default run, reduce run, or change estimate assumptions |
+| PR #10: draft open queue triage packet | Draft, rebased | `pytest` success | Chris decision: approve, edit, or reject the unposted draft comments below |
 | Issue #1: WebUI/product direction | Open | n/a | Chris voice needed before posting roadmap/product commitments |
 
 ## PR #4 Decision Draft
@@ -81,3 +83,7 @@ Chris-ready issue reply draft:
 
 No GitHub comments were posted while preparing this packet. The drafts above
 should be posted only after Chris approves the exact target and text.
+
+## Validation
+
+Refresh validation is recorded in the PR body after each packet update.
