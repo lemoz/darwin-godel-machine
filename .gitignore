@@ -1,5 +1,6 @@
 # Data files
 *.json
+!docs/live-runs/**/scorecard.json
 *.csv
 *.tsv
 *.xlsx

@@ -130,12 +130,15 @@ async def _verify_score_movement(project_root: Path) -> dict[str, Any]:
 def _verify_live_run_docs(project_root: Path) -> dict[str, Any]:
     readme = project_root / "docs" / "live-runs" / "2026-06-12-proof" / "README.md"
     transcript = project_root / "docs" / "live-runs" / "2026-06-12-proof" / "transcript.txt"
+    scorecard = project_root / "docs" / "live-runs" / "2026-06-12-proof" / "scorecard.json"
     _check_file(readme, project_root)
     _check_file(transcript, project_root)
+    _check_file(scorecard, project_root)
 
     readme_text = readme.read_text(encoding="utf-8")
     _require("API calls: 20" in readme_text, "Live-run README is missing API-call evidence")
     _require("Top score: 1.000" in readme_text, "Live-run README is missing top score")
+    _require("Successful improvements: 0" in readme_text, "Live-run README is missing improvement count")
     _require(
         "does not prove benchmark improvement" in readme_text,
         "Live-run README must keep the benchmark-improvement caveat",
@@ -145,11 +148,32 @@ def _verify_live_run_docs(project_root: Path) -> dict[str, Any]:
     _require("POST https://api.anthropic.com/v1/messages" in transcript_text, "Transcript lacks live API evidence")
     _require("DGM run completed" in transcript_text, "Transcript lacks completion evidence")
 
+    scorecard_json = _load_json(scorecard)
+    _require(scorecard_json["total_agents"] == 3, "Live-run scorecard must record three agents")
+    _require(scorecard_json["valid_agents"] == 3, "Live-run scorecard must record three valid agents")
+    _require(scorecard_json["top_score"] == 1.0, "Live-run scorecard top score must be 1.0")
+    _require(
+        scorecard_json["best_average_delta"] == 0.0,
+        "Live-run scorecard must record zero average-score delta",
+    )
+    _require(
+        scorecard_json["has_improvement"] is False,
+        "Live-run scorecard must preserve the no-improvement caveat",
+    )
+    _require(
+        len(scorecard_json["generation_best_scores"]) == 3,
+        "Live-run scorecard must record three generations",
+    )
+
     return {
         "name": "live_run_docs",
         "status": "ok",
         "readme": str(readme.relative_to(project_root)),
         "transcript": str(transcript.relative_to(project_root)),
+        "scorecard": str(scorecard.relative_to(project_root)),
+        "top_score": scorecard_json["top_score"],
+        "best_average_delta": scorecard_json["best_average_delta"],
+        "has_improvement": scorecard_json["has_improvement"],
     }
 
 
