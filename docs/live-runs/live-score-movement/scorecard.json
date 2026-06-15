@@ -3,18 +3,18 @@
   "best_average_delta": 0.0,
   "generation_best_scores": [
     {
-      "agent_id": "f47d2466-708d-44f4-86be-c16a61580204",
-      "average_score": 1.0,
+      "agent_id": "5719cca2-7188-4ed3-b805-603252f204c3",
+      "average_score": 0.8823529411764706,
       "benchmark_scores": {
-        "humaneval_style": 1.0
+        "humaneval_headroom": 0.8823529411764706
       },
       "generation": 0
     },
     {
-      "agent_id": "84bb0743-82d1-462b-895b-9cae24dd5d4f",
-      "average_score": 1.0,
+      "agent_id": "aaace30a-fdc4-465b-892a-83bbcf1d1c75",
+      "average_score": 0.8823529411764706,
       "benchmark_scores": {
-        "humaneval_style": 1.0
+        "humaneval_headroom": 0.8823529411764706
       },
       "generation": 1
     }
@@ -26,32 +26,32 @@
     {
       "average_delta": 0.0,
       "benchmark_deltas": {
-        "humaneval_style": 0.0
+        "humaneval_headroom": 0.0
       },
-      "child_average_score": 1.0,
+      "child_average_score": 0.8823529411764706,
       "child_generation": 1,
-      "child_id": "84bb0743-82d1-462b-895b-9cae24dd5d4f",
+      "child_id": "aaace30a-fdc4-465b-892a-83bbcf1d1c75",
       "is_improvement": false,
-      "parent_average_score": 1.0,
+      "parent_average_score": 0.8823529411764706,
       "parent_generation": 0,
-      "parent_id": "f47d2466-708d-44f4-86be-c16a61580204"
+      "parent_id": "5719cca2-7188-4ed3-b805-603252f204c3"
     },
     {
-      "average_delta": -1.0,
+      "average_delta": -0.8823529411764706,
       "benchmark_deltas": {
-        "humaneval_style": -1.0
+        "humaneval_headroom": -0.8823529411764706
       },
       "child_average_score": 0.0,
       "child_generation": 1,
-      "child_id": "d73027b2-b348-4c3a-8b9a-fa90ffb29c05",
+      "child_id": "509181a6-d257-4bbc-a5da-9c6a9b01bff8",
       "is_improvement": false,
-      "parent_average_score": 1.0,
+      "parent_average_score": 0.8823529411764706,
       "parent_generation": 0,
-      "parent_id": "f47d2466-708d-44f4-86be-c16a61580204"
+      "parent_id": "5719cca2-7188-4ed3-b805-603252f204c3"
     }
   ],
-  "top_agent_id": "f47d2466-708d-44f4-86be-c16a61580204",
-  "top_score": 1.0,
+  "top_agent_id": "5719cca2-7188-4ed3-b805-603252f204c3",
+  "top_score": 0.8823529411764706,
   "total_agents": 3,
   "valid_agents": 3
 }

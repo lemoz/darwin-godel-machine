@@ -231,10 +231,20 @@ def _verify_live_score_movement_attempt_docs(project_root: Path) -> dict[str, An
     scorecard_json = _load_json(scorecard)
     _require(scorecard_json["total_agents"] == 3, "Live scorecard must record three agents")
     _require(scorecard_json["valid_agents"] == 3, "Live scorecard must record three valid agents")
-    _require(scorecard_json["top_score"] == 1.0, "Live scorecard top score must be 1.0")
+    _require(
+        abs(scorecard_json["top_score"] - (15 / 17)) < 1e-12,
+        "Live scorecard top score must record the approved headroom run",
+    )
     _require(
         scorecard_json["best_average_delta"] == 0.0,
         "Live scorecard must record zero best average-score delta",
+    )
+    _require(
+        all(
+            "humaneval_headroom" in item["benchmark_scores"]
+            for item in scorecard_json["generation_best_scores"]
+        ),
+        "Live scorecard must use the headroom benchmark",
     )
     _require(
         scorecard_json["has_improvement"] is False,
