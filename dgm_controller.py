@@ -9,6 +9,7 @@ import asyncio
 import logging
 import json
 import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
@@ -579,42 +580,45 @@ performance."""
             try:
                 logger.info(f"Running benchmark: {benchmark_name}")
 
-                # Create minimal agent config for evaluation
+                # Create minimal agent config for evaluation. Benchmark tasks
+                # get a scratch workspace so generated solution files do not
+                # modify the agent source directory being evaluated.
                 primary_provider = self.config['fm_providers']['primary']
                 provider_config = self.config['fm_providers'][primary_provider]
 
                 agent_path_obj = Path(agent_path)
-                agent_config = AgentConfig(
-                    agent_id=f"eval_{agent_path_obj.stem}_{benchmark_name}",
-                    fm_provider=primary_provider,
-                    fm_config=provider_config,
-                    working_directory=str(agent_path_obj.parent),
-                    max_iterations=self.config['agents'].get('max_steps', 20),
-                    sandbox_manager=self.sandbox_manager,
-                    use_sandbox=self.use_sandbox,
-                )
-
-                # Load the agent class from the file path using load_from_path,
-                # which handles all file paths correctly and avoids sys.modules
-                # collisions.  Fall back to the default Agent only when the file
-                # doesn't exist.
-                if agent_path_obj.exists():
-                    AgentClass = self.agent_loader.load_from_path(agent_path_obj)
-                else:
-                    logger.warning(
-                        f"Agent file not found at {agent_path_obj}, using default Agent"
+                with tempfile.TemporaryDirectory(prefix="dgm-benchmark-") as benchmark_workspace:
+                    agent_config = AgentConfig(
+                        agent_id=f"eval_{agent_path_obj.stem}_{benchmark_name}",
+                        fm_provider=primary_provider,
+                        fm_config=provider_config,
+                        working_directory=benchmark_workspace,
+                        max_iterations=self.config['agents'].get('max_steps', 20),
+                        sandbox_manager=self.sandbox_manager,
+                        use_sandbox=self.use_sandbox,
                     )
-                    AgentClass = Agent
 
-                # Create agent instance
-                agent = AgentClass(agent_config)
+                    # Load the agent class from the file path using load_from_path,
+                    # which handles all file paths correctly and avoids sys.modules
+                    # collisions.  Fall back to the default Agent only when the file
+                    # doesn't exist.
+                    if agent_path_obj.exists():
+                        AgentClass = self.agent_loader.load_from_path(agent_path_obj)
+                    else:
+                        logger.warning(
+                            f"Agent file not found at {agent_path_obj}, using default Agent"
+                        )
+                        AgentClass = Agent
 
-                # Run benchmark — result.score is the pre-computed pass fraction
-                result = await self.benchmark_runner.run_benchmark(
-                    agent=agent,
-                    benchmark_name=benchmark_name,
-                    verbose=False
-                )
+                    # Create agent instance
+                    agent = AgentClass(agent_config)
+
+                    # Run benchmark — result.score is the pre-computed pass fraction
+                    result = await self.benchmark_runner.run_benchmark(
+                        agent=agent,
+                        benchmark_name=benchmark_name,
+                        verbose=False
+                    )
 
                 scores[benchmark_name] = result.score
                 logger.info(f"{benchmark_name} score: {result.score:.3f}")

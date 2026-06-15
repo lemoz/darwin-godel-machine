@@ -346,6 +346,10 @@ class TestDGMControllerInit:
             captured["agent"] = agent
             captured["benchmark_name"] = benchmark_name
             captured["verbose"] = verbose
+            Path(agent.config.working_directory, "solution.py").write_text(
+                "generated scratch solution\n",
+                encoding="utf-8",
+            )
             return SimpleNamespace(score=0.75)
 
         ctrl.benchmark_runner.run_benchmark = fake_run_benchmark
@@ -355,7 +359,10 @@ class TestDGMControllerInit:
         assert scores == {"dummy": 0.75}
         assert captured["config"].sandbox_manager is ctrl.sandbox_manager
         assert captured["config"].use_sandbox is True
-        assert captured["config"].working_directory == str(agent_file.parent)
+        assert captured["config"].working_directory != str(agent_file.parent)
+        assert "dgm-benchmark-" in Path(captured["config"].working_directory).name
+        assert not (agent_file.parent / "solution.py").exists()
+        assert not Path(captured["config"].working_directory).exists()
         assert captured["agent"].config is captured["config"]
         assert captured["benchmark_name"] == "dummy"
         assert captured["verbose"] is False
