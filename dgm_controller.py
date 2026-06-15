@@ -17,6 +17,8 @@ import traceback
 import yaml
 
 from agent import Agent, Task, AgentConfig
+from agent.tools.base_tool import ToolExecutionStatus
+from agent.tools.edit_tool import EditTool
 from archive import AgentArchive, ParentSelector
 from evaluation.benchmark_runner import BenchmarkRunner
 from evaluation.agent_validator import AgentValidator
@@ -510,7 +512,26 @@ performance."""
                 if solution and isinstance(solution, str):
                     try:
                         ast.parse(solution)
-                        (workspace_dir / 'agent.py').write_text(solution)
+                        edit_tool = EditTool(
+                            working_directory=str(workspace_dir),
+                            sandbox_manager=self.sandbox_manager,
+                            use_sandbox=self.use_sandbox,
+                            timeout=self.config.get('evaluation', {}).get(
+                                'timeout_seconds',
+                                30,
+                            ),
+                        )
+                        edit_result = await edit_tool.execute({
+                            "action": "write",
+                            "file_path": "agent.py",
+                            "content": solution,
+                        })
+                        if edit_result.status != ToolExecutionStatus.SUCCESS:
+                            logger.error(
+                                "Failed to write solution string to workspace "
+                                f"agent.py: {edit_result.error}"
+                            )
+                            return None
                         logger.info("Wrote solution string to workspace agent.py")
                     except SyntaxError:
                         logger.warning(
