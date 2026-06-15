@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import json
 import sys
+import tempfile
 import warnings
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,7 @@ warnings.filterwarnings(
 )
 
 from evaluation.benchmark_runner import BenchmarkRunner
+from sandbox.sandbox_manager import SandboxConfig, SandboxManager, SandboxResult
 from scripts.compare_benchmark_solutions import compare_solutions
 from scripts.run_dgm_in_sandbox import _build_parser as build_sandbox_runner_parser
 
@@ -182,6 +184,80 @@ def _verify_sandbox_runner_cli(project_root: Path) -> dict[str, Any]:
     }
 
 
+async def _verify_sandbox_discard_changes_contract() -> dict[str, Any]:
+    class MutatingSandboxManager(SandboxManager):
+        async def execute_in_sandbox(self, *args: Any, **kwargs: Any) -> SandboxResult:
+            workspace = Path(kwargs["workspace_path"])
+            (workspace / "kept.txt").write_text("sandbox\n", encoding="utf-8")
+            (workspace / "created.txt").write_text("created\n", encoding="utf-8")
+            (workspace / "removed.txt").unlink()
+            return SandboxResult(success=True, output="mutated staged workspace\n", exit_code=0)
+
+    def seed_host_project(host_project: Path) -> None:
+        host_project.mkdir(parents=True)
+        (host_project / "kept.txt").write_text("host\n", encoding="utf-8")
+        (host_project / "removed.txt").write_text("remove me\n", encoding="utf-8")
+
+    with tempfile.TemporaryDirectory(prefix="dgm-sandbox-sync-contract-") as temp_dir:
+        host_project = Path(temp_dir) / "sync"
+        seed_host_project(host_project)
+        manager = MutatingSandboxManager(SandboxConfig())
+
+        result = await manager.execute_project_command(
+            command="mutate staged workspace",
+            project_path=str(host_project),
+            sync_back=True,
+        )
+
+        _require(result.success, "Sandbox sync-back contract did not complete")
+        _require(
+            (host_project / "kept.txt").read_text(encoding="utf-8") == "sandbox\n",
+            "Sandbox sync-back contract did not propagate staged file updates",
+        )
+        _require(
+            (host_project / "created.txt").read_text(encoding="utf-8") == "created\n",
+            "Sandbox sync-back contract did not propagate staged file creates",
+        )
+        _require(
+            not (host_project / "removed.txt").exists(),
+            "Sandbox sync-back contract did not propagate staged file deletes",
+        )
+
+    with tempfile.TemporaryDirectory(prefix="dgm-sandbox-discard-contract-") as temp_dir:
+        host_project = Path(temp_dir) / "discard"
+        seed_host_project(host_project)
+        manager = MutatingSandboxManager(SandboxConfig())
+
+        result = await manager.execute_project_command(
+            command="mutate staged workspace",
+            project_path=str(host_project),
+            sync_back=False,
+        )
+
+        _require(result.success, "Sandbox discard-changes contract did not complete")
+        _require(
+            (host_project / "kept.txt").read_text(encoding="utf-8") == "host\n",
+            "Sandbox discard-changes contract leaked staged file updates",
+        )
+        _require(
+            not (host_project / "created.txt").exists(),
+            "Sandbox discard-changes contract leaked staged file creates",
+        )
+        _require(
+            (host_project / "removed.txt").read_text(encoding="utf-8") == "remove me\n",
+            "Sandbox discard-changes contract leaked staged file deletes",
+        )
+
+    return {
+        "name": "sandbox_discard_changes_contract",
+        "status": "ok",
+        "proves": [
+            "sync_back_true_mirrors_staged_writes",
+            "sync_back_false_preserves_host_checkout",
+        ],
+    }
+
+
 async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, Any]]:
     """Run all no-network setup/demo verification checks."""
     project_root = project_root.resolve()
@@ -202,6 +278,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
     checks.append(_verify_live_run_docs(project_root))
     checks.append(_verify_archive_lineage(project_root))
     checks.append(_verify_sandbox_runner_cli(project_root))
+    checks.append(await _verify_sandbox_discard_changes_contract())
     return checks
 
 

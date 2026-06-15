@@ -120,6 +120,48 @@ def test_project_tree_sync_propagates_deletes_and_preserves_ignored(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_execute_project_command_can_discard_staged_changes(tmp_path):
+    class MutatingSandboxManager(SandboxManager):
+        async def execute_in_sandbox(self, *args, **kwargs):
+            workspace = Path(kwargs["workspace_path"])
+            (workspace / "kept.txt").write_text("sandbox\n")
+            (workspace / "created.txt").write_text("created\n")
+            (workspace / "removed.txt").unlink()
+            return SandboxResult(success=True, output="mutated\n", exit_code=0)
+
+    def seed_host_project(host: Path) -> None:
+        host.mkdir()
+        (host / "kept.txt").write_text("host\n")
+        (host / "removed.txt").write_text("remove me\n")
+
+    synced = tmp_path / "synced"
+    seed_host_project(synced)
+    sync_result = await MutatingSandboxManager(SandboxConfig()).execute_project_command(
+        command="mutate staged workspace",
+        project_path=str(synced),
+        sync_back=True,
+    )
+
+    assert sync_result.success is True
+    assert (synced / "kept.txt").read_text() == "sandbox\n"
+    assert (synced / "created.txt").read_text() == "created\n"
+    assert not (synced / "removed.txt").exists()
+
+    discarded = tmp_path / "discarded"
+    seed_host_project(discarded)
+    discard_result = await MutatingSandboxManager(SandboxConfig()).execute_project_command(
+        command="mutate staged workspace",
+        project_path=str(discarded),
+        sync_back=False,
+    )
+
+    assert discard_result.success is True
+    assert (discarded / "kept.txt").read_text() == "host\n"
+    assert not (discarded / "created.txt").exists()
+    assert (discarded / "removed.txt").read_text() == "remove me\n"
+
+
+@pytest.mark.asyncio
 async def test_run_sandboxed_dgm_invokes_project_command(tmp_path):
     project_root = tmp_path / "project"
     config = project_root / "config" / "dgm_config.yaml"
