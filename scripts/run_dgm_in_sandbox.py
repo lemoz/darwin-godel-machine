@@ -79,6 +79,16 @@ def collect_environment(
     return selected
 
 
+def resolve_network_mode(allow_network: bool, requested_network_mode: str) -> str:
+    """Resolve Docker networking for full-process runs.
+
+    The full-process runner keeps network access off unless the caller opts in
+    with ``--allow-network``. This prevents a permissive project config from
+    silently enabling live network access.
+    """
+    return requested_network_mode if allow_network else "none"
+
+
 async def run_sandboxed_dgm(
     *,
     config_path: Path,
@@ -112,7 +122,7 @@ async def run_sandboxed_dgm(
         project_path=str(project_root),
         timeout=timeout or sandbox_config.timeout,
         environment=environment,
-        network_mode=network_mode if allow_network else sandbox_config.network_mode,
+        network_mode=resolve_network_mode(allow_network, network_mode),
         read_only=False,
         sync_back=sync_back,
     )
