@@ -37,7 +37,7 @@ cp .env.example .env
 ### Full-Process Docker Runner (opt-in)
 - Use `scripts/run_dgm_in_sandbox.py` when the controller/orchestration process itself should run inside Docker
 - The runner stages the repository through `~/.cache/dgm-sandbox` as the container workspace and syncs successful non-ignored writes and deletes back so archives, results, workspaces, and logs can persist in the host checkout unless `--discard-changes` is set
-- Live provider calls require explicit `--allow-network` plus explicit `--env NAME` pass-through for each required secret; no credentials are passed by default, and the runner forces Docker `network_mode: none` unless `--allow-network` is set
+- Live provider calls require explicit `--allow-network` plus explicit `--env NAME` pass-through for each required secret; no credentials are passed by default, `--env` is rejected unless `--allow-network` is also set, and the runner forces Docker `network_mode: none` unless `--allow-network` is set
 
 ### Remaining Isolation Limits
 - The default `python run_dgm.py` path still executes model orchestration and archive/controller logic in the configured workspace on the host
