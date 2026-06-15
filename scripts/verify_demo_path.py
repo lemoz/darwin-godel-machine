@@ -36,6 +36,7 @@ from scripts.run_dgm_in_sandbox import (
     write_run_audit,
 )
 from scripts.verify_live_score_movement_plan import verify_live_score_movement_plan
+from webui.status_page import build_status_model, render_status_page
 
 
 class VerificationError(RuntimeError):
@@ -354,6 +355,26 @@ async def _verify_sandbox_discard_changes_contract() -> dict[str, Any]:
     }
 
 
+def _verify_webui_status_page(project_root: Path) -> dict[str, Any]:
+    model = build_status_model(project_root)
+    html = render_status_page(model)
+    _require("DGM Local Status" in html, "WebUI status page is missing title")
+    _require(
+        "python scripts/verify_demo_path.py" in html,
+        "WebUI status page must surface the no-network verifier command",
+    )
+    _require(
+        "python scripts/run_dgm_in_sandbox.py --help" in html,
+        "WebUI status page must surface the sandboxed runner command",
+    )
+    return {
+        "name": "webui_status_page",
+        "status": "ok",
+        "agents": len(model.agents),
+        "artifacts": len(model.artifacts),
+    }
+
+
 async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, Any]]:
     """Run all no-network setup/demo verification checks."""
     project_root = project_root.resolve()
@@ -382,6 +403,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
             project_root=project_root,
         )
     )
+    checks.append(_verify_webui_status_page(project_root))
     return checks
 
 
