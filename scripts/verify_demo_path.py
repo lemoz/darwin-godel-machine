@@ -25,7 +25,10 @@ warnings.filterwarnings(
 from evaluation.benchmark_runner import BenchmarkRunner
 from sandbox.sandbox_manager import SandboxConfig, SandboxManager, SandboxResult
 from scripts.compare_benchmark_solutions import compare_solutions
-from scripts.run_dgm_in_sandbox import _build_parser as build_sandbox_runner_parser
+from scripts.run_dgm_in_sandbox import (
+    _build_parser as build_sandbox_runner_parser,
+    resolve_network_mode,
+)
 
 
 class VerificationError(RuntimeError):
@@ -175,12 +178,21 @@ def _verify_sandbox_runner_cli(project_root: Path) -> dict[str, Any]:
     _require(args.allow_network is True, "Sandbox runner parser did not accept --allow-network")
     _require(args.env == ["ANTHROPIC_API_KEY"], "Sandbox runner parser did not collect --env")
     _require(args.discard_changes is True, "Sandbox runner parser did not accept --discard-changes")
+    _require(
+        resolve_network_mode(False, "bridge") == "none",
+        "Sandbox runner must keep network disabled without --allow-network",
+    )
+    _require(
+        resolve_network_mode(True, "bridge") == "bridge",
+        "Sandbox runner did not honor explicit --allow-network network mode",
+    )
 
     return {
         "name": "sandbox_runner_cli",
         "status": "ok",
         "path": str(runner.relative_to(project_root)),
         "safe_flags": ["--allow-network", "--env", "--discard-changes"],
+        "network_default": "none",
     }
 
 

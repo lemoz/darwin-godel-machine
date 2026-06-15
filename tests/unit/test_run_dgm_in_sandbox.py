@@ -9,6 +9,7 @@ from scripts.run_dgm_in_sandbox import (
     build_dgm_command,
     collect_environment,
     load_sandbox_config,
+    resolve_network_mode,
     run_sandboxed_dgm,
 )
 
@@ -42,6 +43,11 @@ def test_collect_environment_requires_explicit_existing_values():
     }
     with pytest.raises(SandboxRunError, match="not set"):
         collect_environment(["GEMINI_API_KEY"], env)
+
+
+def test_resolve_network_mode_requires_explicit_allow_network():
+    assert resolve_network_mode(False, "bridge") == "none"
+    assert resolve_network_mode(True, "bridge") == "bridge"
 
 
 def test_load_sandbox_config_reads_project_config(tmp_path):
@@ -201,6 +207,69 @@ async def test_run_sandboxed_dgm_invokes_project_command(tmp_path):
             "sync_back": True,
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_run_sandboxed_dgm_ignores_configured_network_without_opt_in(tmp_path):
+    project_root = tmp_path / "project"
+    config = project_root / "config" / "dgm_config.yaml"
+    config.parent.mkdir(parents=True)
+    config.write_text("sandbox:\n  network_mode: bridge\n", encoding="utf-8")
+
+    class FakeManager:
+        def __init__(self):
+            self.calls = []
+
+        def is_sandbox_ready(self):
+            return True
+
+        async def execute_project_command(self, **kwargs):
+            self.calls.append(kwargs)
+            return SandboxResult(success=True, output="ok\n", exit_code=0)
+
+    manager = FakeManager()
+    await run_sandboxed_dgm(
+        config_path=config,
+        generations=1,
+        project_root=project_root,
+        env_names=[],
+        allow_network=False,
+        manager=manager,
+    )
+
+    assert manager.calls[0]["network_mode"] == "none"
+
+
+@pytest.mark.asyncio
+async def test_run_sandboxed_dgm_uses_requested_network_with_opt_in(tmp_path):
+    project_root = tmp_path / "project"
+    config = project_root / "config" / "dgm_config.yaml"
+    config.parent.mkdir(parents=True)
+    config.write_text("sandbox:\n  network_mode: none\n", encoding="utf-8")
+
+    class FakeManager:
+        def __init__(self):
+            self.calls = []
+
+        def is_sandbox_ready(self):
+            return True
+
+        async def execute_project_command(self, **kwargs):
+            self.calls.append(kwargs)
+            return SandboxResult(success=True, output="ok\n", exit_code=0)
+
+    manager = FakeManager()
+    await run_sandboxed_dgm(
+        config_path=config,
+        generations=1,
+        project_root=project_root,
+        env_names=[],
+        allow_network=True,
+        network_mode="bridge",
+        manager=manager,
+    )
+
+    assert manager.calls[0]["network_mode"] == "bridge"
 
 
 @pytest.mark.asyncio
