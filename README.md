@@ -280,6 +280,19 @@ current provider pricing:
 python scripts/verify_live_score_movement_plan.py
 ```
 
+As checked against Anthropic's official pricing page on 2026-06-15,
+`claude-sonnet-4-6` was listed at `$3 / MTok` input and `$15 / MTok` output.
+With a conservative 50,000 input-token assumption per model call, estimate the
+bounded rehearsal cost before asking for approval:
+
+```bash
+python scripts/estimate_live_run_cost.py \
+  --input-price-per-mtok 3 \
+  --output-price-per-mtok 15 \
+  --assumed-input-tokens-per-call 50000 \
+  --max-budget 5
+```
+
 After explicit approval, run it through the full-process sandbox runner:
 
 ```bash

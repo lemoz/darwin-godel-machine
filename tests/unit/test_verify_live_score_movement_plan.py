@@ -41,6 +41,15 @@ def test_live_score_movement_plan_verifies_default_config():
     assert report["requires_current_pricing_check"] is True
     assert report["requires_full_process_sandbox"] is True
     assert report["requires_scorecard_improvement"] is True
+    assert report["pricing_checked_at"] == "2026-06-15"
+    assert report["input_price_per_mtok"] == 3
+    assert report["output_price_per_mtok"] == 15
+    assert report["assumed_input_tokens_per_call"] == 50_000
+    assert report["request_ceiling"] == 25
+    assert report["input_token_ceiling"] == 1_250_000
+    assert report["output_token_ceiling"] == 51_200
+    assert report["estimated_total_cost_usd"] == pytest.approx(4.518)
+    assert report["max_estimated_cost_usd"] == 5
 
 
 def test_live_score_movement_plan_rejects_unapproved_run(tmp_path):
