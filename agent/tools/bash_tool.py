@@ -8,9 +8,11 @@ with safety restrictions and timeout handling.
 import asyncio
 import os
 import re
+import shutil
 import shlex
 import signal
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Dict, Any, List
 import time
@@ -27,16 +29,26 @@ class BashTool(BaseTool):
     measures to prevent dangerous operations.
     """
     
-    def __init__(self, working_directory: str = None, timeout: int = 30):
+    def __init__(
+        self,
+        working_directory: str = None,
+        timeout: int = 30,
+        sandbox_manager: Any = None,
+        use_sandbox: bool = False,
+    ):
         """
         Initialize the Bash tool.
         
         Args:
             working_directory: Directory to execute commands in
             timeout: Default timeout for command execution
+            sandbox_manager: Optional Docker sandbox manager for command execution
+            use_sandbox: Whether to execute commands through the sandbox when available
         """
         self.working_directory = working_directory or os.getcwd()
         self.default_timeout = timeout
+        self.sandbox_manager = sandbox_manager
+        self.use_sandbox = use_sandbox
         
         # Commands that are blocked for safety
         self.blocked_commands = {
@@ -65,6 +77,26 @@ class BashTool(BaseTool):
             for key, value in os.environ.items()
             if not any(term in key.lower() for term in sensitive_terms)
         }
+
+    def _can_use_sandbox(self) -> bool:
+        """Return True when sandboxed command execution is configured."""
+        if not self.use_sandbox or self.sandbox_manager is None:
+            return False
+        readiness_check = getattr(self.sandbox_manager, "is_sandbox_ready", None)
+        if readiness_check is not None:
+            return bool(readiness_check())
+        availability_check = getattr(self.sandbox_manager, "is_docker_available", None)
+        if availability_check is None:
+            return True
+        if not bool(availability_check()):
+            return False
+        ensure_image = getattr(self.sandbox_manager, "ensure_sandbox_image", None)
+        if ensure_image is not None:
+            try:
+                ensure_image()
+            except Exception:
+                return False
+        return True
     
     def get_name(self) -> str:
         """Get the name of this tool."""
@@ -141,6 +173,18 @@ class BashTool(BaseTool):
             
             # Handle special commands
             first_word = command.split()[0] if command.split() else ""
+            if first_word in {"cd", "pwd"}:
+                return await self.restricted_commands[first_word](command, timeout)
+
+            if self._can_use_sandbox():
+                result = await self._execute_sandbox_command(
+                    command,
+                    timeout,
+                    capture_output,
+                )
+                result.execution_time = time.time() - start_time
+                return result
+
             if first_word in self.restricted_commands:
                 return await self.restricted_commands[first_word](command, timeout)
             
@@ -160,6 +204,76 @@ class BashTool(BaseTool):
                 error=f"Failed to execute command: {str(e)}",
                 execution_time=execution_time
             )
+
+    async def _execute_sandbox_command(
+        self,
+        command: str,
+        timeout: int,
+        capture_output: bool,
+    ) -> ToolResult:
+        """Execute a shell command through the configured Docker sandbox."""
+        sandbox_temp_parent = Path.home() / ".cache" / "dgm-sandbox"
+        sandbox_temp_parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=str(sandbox_temp_parent)) as temp_dir:
+            staged_workspace = Path(temp_dir)
+            self._copy_workspace(
+                source=Path(self.working_directory),
+                destination=staged_workspace,
+            )
+            sandbox_result = await self.sandbox_manager.execute_in_sandbox(
+                command=command,
+                workspace_path=str(staged_workspace),
+                timeout=timeout,
+            )
+            self._copy_workspace(
+                source=staged_workspace,
+                destination=Path(self.working_directory),
+            )
+
+        timed_out = (
+            sandbox_result.exit_code is None
+            and "timed out" in (sandbox_result.error or "").lower()
+        )
+        if sandbox_result.success:
+            status = ToolExecutionStatus.SUCCESS
+        elif timed_out:
+            status = ToolExecutionStatus.TIMEOUT
+        else:
+            status = ToolExecutionStatus.ERROR
+
+        return ToolResult(
+            status=status,
+            output=sandbox_result.output if capture_output else "",
+            error=sandbox_result.error,
+            metadata={
+                "exit_code": sandbox_result.exit_code,
+                "sandboxed": True,
+            },
+            execution_time=sandbox_result.execution_time,
+        )
+
+    @staticmethod
+    def _copy_workspace(source: Path, destination: Path) -> None:
+        """Copy workspace files while skipping generated Python cache files."""
+        source = source.resolve()
+        destination = destination.resolve()
+        if not source.exists():
+            destination.mkdir(parents=True, exist_ok=True)
+            return
+
+        def ignore(_dir: str, names: List[str]) -> set:
+            return {
+                name
+                for name in names
+                if name == "__pycache__" or name.endswith((".pyc", ".pyo"))
+            }
+
+        shutil.copytree(
+            source,
+            destination,
+            dirs_exist_ok=True,
+            ignore=ignore,
+        )
     
     def _check_command_safety(self, command: str) -> Dict[str, Any]:
         """

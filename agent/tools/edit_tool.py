@@ -4,10 +4,64 @@ Edit tool implementation for file manipulation.
 This tool allows the DGM agent to read, write, and modify files.
 """
 
+import json
 import os
+import shlex
+import shutil
+import tempfile
+import time
 from pathlib import Path
 from typing import Dict, Any, List
 from .base_tool import BaseTool, ToolResult, ToolExecutionStatus, ToolParameter
+
+
+_EDIT_TOOL_RUNNER = r"""
+import asyncio
+import importlib.util
+import json
+import sys
+import types
+from pathlib import Path
+
+
+def load_edit_tool():
+    code_root = Path("/home/dgm_agent/agent_code")
+    agent_pkg = types.ModuleType("agent")
+    agent_pkg.__path__ = [str(code_root / "agent")]
+    sys.modules.setdefault("agent", agent_pkg)
+
+    tools_pkg = types.ModuleType("agent.tools")
+    tools_pkg.__path__ = [str(code_root / "agent" / "tools")]
+    sys.modules.setdefault("agent.tools", tools_pkg)
+
+    spec = importlib.util.spec_from_file_location(
+        "agent.tools.edit_tool",
+        code_root / "agent" / "tools" / "edit_tool.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.EditTool
+
+
+async def main():
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: edit_tool_runner.py PARAMS_JSON")
+
+    params_file = Path(sys.argv[1]).resolve()
+    parameters = json.loads(params_file.read_text(encoding="utf-8"))
+    edit_tool = load_edit_tool()(working_directory=str(Path.cwd()))
+    result = await edit_tool._execute_direct(parameters)
+    print(json.dumps({
+        "status": result.status.value,
+        "output": result.output,
+        "error": result.error or "",
+    }))
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+"""
 
 
 def _resolve_and_check(
@@ -52,15 +106,47 @@ class EditTool(BaseTool):
     will be implemented in a later phase of the MVP development.
     """
     
-    def __init__(self, working_directory: str = None):
+    def __init__(
+        self,
+        working_directory: str = None,
+        sandbox_manager: Any = None,
+        use_sandbox: bool = False,
+        timeout: int = 30,
+    ):
         """
         Initialize the Edit tool.
         
         Args:
             working_directory: Directory to operate in
+            sandbox_manager: Optional Docker sandbox manager for file operations
+            use_sandbox: Whether to execute edits through the sandbox when available
+            timeout: Default timeout for sandboxed edit operations
         """
         self.working_directory = working_directory
+        self.sandbox_manager = sandbox_manager
+        self.use_sandbox = use_sandbox
+        self.default_timeout = timeout
         super().__init__()
+
+    def _can_use_sandbox(self) -> bool:
+        """Return True when sandboxed edit execution is configured."""
+        if not self.use_sandbox or self.sandbox_manager is None:
+            return False
+        readiness_check = getattr(self.sandbox_manager, "is_sandbox_ready", None)
+        if readiness_check is not None:
+            return bool(readiness_check())
+        availability_check = getattr(self.sandbox_manager, "is_docker_available", None)
+        if availability_check is None:
+            return True
+        if not bool(availability_check()):
+            return False
+        ensure_image = getattr(self.sandbox_manager, "ensure_sandbox_image", None)
+        if ensure_image is not None:
+            try:
+                ensure_image()
+            except Exception:
+                return False
+        return True
     
     def get_name(self) -> str:
         """Get the name of this tool."""
@@ -143,6 +229,17 @@ class EditTool(BaseTool):
                 output="",
                 error="File path parameter is required",
             )
+
+        if self.working_directory and self._can_use_sandbox():
+            return await self._execute_sandbox_edit(parameters)
+
+        return await self._execute_direct(parameters)
+
+    async def _execute_direct(self, parameters: Dict[str, Any]) -> ToolResult:
+        """Execute the edit operation directly in the configured workspace."""
+        action = parameters.get("action")
+        file_path_str = parameters.get("file_path")
+        content = parameters.get("content", "")
 
         # Resolve path and verify containment.
         if self.working_directory:
@@ -268,6 +365,147 @@ class EditTool(BaseTool):
                 output="",
                 error=f"Error executing {action} on {file_path_str}: {str(e)}",
             )
+
+    async def _execute_sandbox_edit(self, parameters: Dict[str, Any]) -> ToolResult:
+        """Execute the edit operation inside the configured Docker sandbox."""
+        started_at = time.time()
+        sandbox_temp_parent = Path.home() / ".cache" / "dgm-sandbox"
+        sandbox_temp_parent.mkdir(parents=True, exist_ok=True)
+
+        with tempfile.TemporaryDirectory(dir=str(sandbox_temp_parent)) as temp_dir:
+            temp_path = Path(temp_dir)
+            staged_workspace = temp_path / "workspace"
+            agent_code_dir = temp_path / "agent_code"
+            tool_code_dir = agent_code_dir / "agent" / "tools"
+            tool_code_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(Path(__file__), tool_code_dir / "edit_tool.py")
+            shutil.copy2(
+                Path(__file__).with_name("base_tool.py"),
+                tool_code_dir / "base_tool.py",
+            )
+            self._copy_workspace(
+                source=Path(self.working_directory),
+                destination=staged_workspace,
+            )
+
+            params_path = staged_workspace / ".dgm_edit_tool_params.json"
+            params_path.write_text(json.dumps(parameters), encoding="utf-8")
+
+            sandbox_result = await self.sandbox_manager.execute_in_sandbox(
+                command=(
+                    f"python3 -c {shlex.quote(_EDIT_TOOL_RUNNER)} "
+                    ".dgm_edit_tool_params.json"
+                ),
+                agent_code_path=str(agent_code_dir),
+                workspace_path=str(staged_workspace),
+                timeout=self.default_timeout,
+            )
+
+            try:
+                params_path.unlink(missing_ok=True)
+            except TypeError:  # pragma: no cover - Python < 3.8
+                if params_path.exists():
+                    params_path.unlink()
+
+            if not sandbox_result.success:
+                timed_out = (
+                    sandbox_result.exit_code is None
+                    and "timed out" in (sandbox_result.error or "").lower()
+                )
+                return ToolResult(
+                    status=(
+                        ToolExecutionStatus.TIMEOUT
+                        if timed_out
+                        else ToolExecutionStatus.ERROR
+                    ),
+                    output=sandbox_result.output,
+                    error=sandbox_result.error,
+                    metadata={
+                        "exit_code": sandbox_result.exit_code,
+                        "sandboxed": True,
+                    },
+                    execution_time=(
+                        sandbox_result.execution_time or time.time() - started_at
+                    ),
+                )
+
+            parsed_result = self._parse_sandbox_result(sandbox_result.output)
+            parsed_result.metadata = {
+                **(parsed_result.metadata or {}),
+                "exit_code": sandbox_result.exit_code,
+                "sandboxed": True,
+            }
+            parsed_result.execution_time = (
+                sandbox_result.execution_time or time.time() - started_at
+            )
+
+            self._copy_workspace(
+                source=staged_workspace,
+                destination=Path(self.working_directory),
+            )
+            self._apply_successful_delete_to_host(parameters, parsed_result)
+            return parsed_result
+
+    @staticmethod
+    def _parse_sandbox_result(output: str) -> ToolResult:
+        """Parse the JSON result emitted by the sandbox edit runner."""
+        try:
+            payload = json.loads(output)
+            status = ToolExecutionStatus(payload.get("status", "error"))
+            return ToolResult(
+                status=status,
+                output=payload.get("output", ""),
+                error=payload.get("error", ""),
+            )
+        except Exception as exc:
+            return ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output=output,
+                error=f"Failed to parse sandbox edit result: {exc}",
+            )
+
+    def _apply_successful_delete_to_host(
+        self,
+        parameters: Dict[str, Any],
+        result: ToolResult,
+    ) -> None:
+        """Propagate the edit tool's file delete action after workspace copy-back."""
+        if result.status != ToolExecutionStatus.SUCCESS:
+            return
+        if parameters.get("action") != "delete":
+            return
+        file_path_str = parameters.get("file_path")
+        if not file_path_str or not self.working_directory:
+            return
+        full_path, escape_error = _resolve_and_check(
+            file_path_str,
+            self.working_directory,
+        )
+        if escape_error is None and full_path.exists():
+            full_path.unlink()
+
+    @staticmethod
+    def _copy_workspace(source: Path, destination: Path) -> None:
+        """Copy workspace files while skipping generated Python cache files."""
+        source = source.resolve()
+        destination = destination.resolve()
+        if not source.exists():
+            destination.mkdir(parents=True, exist_ok=True)
+            return
+
+        def ignore(_dir: str, names: List[str]) -> set:
+            return {
+                name
+                for name in names
+                if name == "__pycache__" or name.endswith((".pyc", ".pyo"))
+            }
+
+        shutil.copytree(
+            source,
+            destination,
+            dirs_exist_ok=True,
+            ignore=ignore,
+        )
 
 
 # TODO: Implement full Edit tool functionality

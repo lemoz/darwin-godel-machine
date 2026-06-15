@@ -17,9 +17,12 @@ import traceback
 import yaml
 
 from agent import Agent, Task, AgentConfig
+from agent.tools.base_tool import ToolExecutionStatus
+from agent.tools.edit_tool import EditTool
 from archive import AgentArchive, ParentSelector
 from evaluation.benchmark_runner import BenchmarkRunner
 from evaluation.agent_validator import AgentValidator
+from sandbox.sandbox_manager import SandboxConfig, SandboxManager
 from utils.logger import setup_logger
 from utils.agent_loader import AgentLoader
 
@@ -75,11 +78,48 @@ class DGMController:
             alpha_0=ps_cfg.get('alpha_0', 0.5)
         )
 
+        evaluation_config = self.config.get('evaluation', {})
+        sandbox_manager = None
+        use_sandbox = evaluation_config.get('use_sandbox', False)
+        if use_sandbox:
+            sandbox_config = SandboxConfig(
+                **{
+                    key: value
+                    for key, value in self.config.get('sandbox', {}).items()
+                    if key in SandboxConfig.__dataclass_fields__
+                }
+            )
+            sandbox_manager = SandboxManager(sandbox_config)
+            readiness_check = getattr(sandbox_manager, "is_sandbox_ready", None)
+            if readiness_check is not None:
+                if not readiness_check():
+                    logger.warning(
+                        "Docker sandbox requested but unavailable; using direct host execution"
+                    )
+                    sandbox_manager = None
+                    use_sandbox = False
+            else:
+                availability_check = getattr(sandbox_manager, "is_docker_available", None)
+                if availability_check is not None and not availability_check():
+                    logger.warning(
+                        "Docker sandbox requested but unavailable; using direct host execution"
+                    )
+                    sandbox_manager = None
+                    use_sandbox = False
+        self.sandbox_manager = sandbox_manager
+        self.use_sandbox = use_sandbox
+
         self.benchmark_runner = BenchmarkRunner(
-            benchmarks_dir=self.config['evaluation']['benchmarks_dir']
+            benchmarks_dir=evaluation_config.get('benchmarks_dir', 'config/benchmarks'),
+            sandbox_manager=sandbox_manager,
+            use_sandbox=use_sandbox
         )
 
-        self.validator = AgentValidator()
+        self.validator = AgentValidator(
+            sandbox_manager=sandbox_manager,
+            use_sandbox=use_sandbox,
+            timeout=evaluation_config.get('timeout_seconds', 30),
+        )
 
         # Initialize agent loader
         self.agent_loader = AgentLoader(project_root=Path(self.workspace))
@@ -453,7 +493,9 @@ performance."""
                 fm_provider=primary_provider,
                 fm_config=self.config['fm_providers'][primary_provider],
                 working_directory=str(workspace_dir),
-                max_iterations=self.config['agents'].get('max_steps', 20)
+                max_iterations=self.config['agents'].get('max_steps', 20),
+                sandbox_manager=self.sandbox_manager,
+                use_sandbox=self.use_sandbox,
             )
 
             # Instantiate parent agent
@@ -470,7 +512,26 @@ performance."""
                 if solution and isinstance(solution, str):
                     try:
                         ast.parse(solution)
-                        (workspace_dir / 'agent.py').write_text(solution)
+                        edit_tool = EditTool(
+                            working_directory=str(workspace_dir),
+                            sandbox_manager=self.sandbox_manager,
+                            use_sandbox=self.use_sandbox,
+                            timeout=self.config.get('evaluation', {}).get(
+                                'timeout_seconds',
+                                30,
+                            ),
+                        )
+                        edit_result = await edit_tool.execute({
+                            "action": "write",
+                            "file_path": "agent.py",
+                            "content": solution,
+                        })
+                        if edit_result.status != ToolExecutionStatus.SUCCESS:
+                            logger.error(
+                                "Failed to write solution string to workspace "
+                                f"agent.py: {edit_result.error}"
+                            )
+                            return None
                         logger.info("Wrote solution string to workspace agent.py")
                     except SyntaxError:
                         logger.warning(
@@ -529,6 +590,8 @@ performance."""
                     fm_config=provider_config,
                     working_directory=str(agent_path_obj.parent),
                     max_iterations=self.config['agents'].get('max_steps', 20),
+                    sandbox_manager=self.sandbox_manager,
+                    use_sandbox=self.use_sandbox,
                 )
 
                 # Load the agent class from the file path using load_from_path,

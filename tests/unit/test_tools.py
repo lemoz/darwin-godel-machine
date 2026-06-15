@@ -4,6 +4,7 @@ Unit tests for tool implementations: BashTool, EditTool, and base ToolRegistry.
 All async tests use pytest-asyncio (asyncio_mode = auto in pytest.ini).
 """
 
+import json
 import pytest
 import shutil
 import tempfile
@@ -14,6 +15,7 @@ from agent.tools.base_tool import (
 )
 from agent.tools.bash_tool import BashTool
 from agent.tools.edit_tool import EditTool
+from sandbox.sandbox_manager import SandboxResult
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +133,104 @@ class TestBashTool:
         assert result.status == ToolExecutionStatus.SUCCESS
         assert "sk-test-secret" not in result.output
         assert "visible" in result.output
+
+    async def test_uses_sandbox_manager_when_enabled(self, tmp_path):
+        class FakeSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            async def execute_in_sandbox(self, command, workspace_path, timeout):
+                Path(workspace_path, "from_sandbox.txt").write_text("created in sandbox")
+                self.calls.append({
+                    "command": command,
+                    "workspace_path": workspace_path,
+                    "timeout": timeout,
+                })
+                return SandboxResult(
+                    success=True,
+                    output="sandbox hello\n",
+                    exit_code=0,
+                    execution_time=0.1,
+                )
+
+        sandbox_manager = FakeSandboxManager()
+        tool = BashTool(
+            working_directory=str(tmp_path),
+            timeout=10,
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({"command": "python3 hello.py", "timeout": 7})
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert result.output == "sandbox hello\n"
+        assert result.metadata == {"exit_code": 0, "sandboxed": True}
+        assert sandbox_manager.calls[0]["command"] == "python3 hello.py"
+        assert sandbox_manager.calls[0]["timeout"] == 7
+        assert sandbox_manager.calls[0]["workspace_path"] != str(tmp_path)
+        assert str(Path(sandbox_manager.calls[0]["workspace_path"])).startswith(
+            str(Path.home() / ".cache" / "dgm-sandbox")
+        )
+        assert (tmp_path / "from_sandbox.txt").read_text() == "created in sandbox"
+
+    async def test_sandbox_request_falls_back_when_unavailable(self, tmp_path):
+        class UnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return False
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when unavailable")
+
+        sandbox_manager = UnavailableSandboxManager()
+        tool = BashTool(
+            working_directory=str(tmp_path),
+            timeout=10,
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({"command": "echo fallback"})
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "fallback" in result.output
+        assert sandbox_manager.calls == []
+
+    async def test_sandbox_image_setup_failure_falls_back(self, tmp_path):
+        class ImageUnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            def ensure_sandbox_image(self):
+                raise RuntimeError("image unavailable")
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when image setup fails")
+
+        sandbox_manager = ImageUnavailableSandboxManager()
+        tool = BashTool(
+            working_directory=str(tmp_path),
+            timeout=10,
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({"command": "echo image fallback"})
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "image fallback" in result.output
+        assert sandbox_manager.calls == []
 
     def test_tool_name(self):
         assert self.tool.get_name() == "bash"
@@ -268,6 +368,171 @@ class TestEditTool:
         read = await self.tool.execute({"action": "read", "file_path": "app.txt"})
         assert "line1" in read.output
         assert "line2" in read.output
+
+    async def test_uses_sandbox_manager_when_enabled(self, tmp_path):
+        class FakeSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            async def execute_in_sandbox(
+                self,
+                command,
+                agent_code_path=None,
+                workspace_path=None,
+                timeout=None,
+            ):
+                Path(workspace_path, "from_sandbox.txt").write_text(
+                    "created in sandbox"
+                )
+                self.calls.append({
+                    "command": command,
+                    "agent_code_path": agent_code_path,
+                    "agent_edit_tool_exists": (
+                        Path(agent_code_path) / "agent" / "tools" / "edit_tool.py"
+                    ).exists(),
+                    "workspace_path": workspace_path,
+                    "timeout": timeout,
+                })
+                return SandboxResult(
+                    success=True,
+                    output=json.dumps({
+                        "status": "success",
+                        "output": "Successfully wrote from_sandbox.txt",
+                        "error": "",
+                    }),
+                    exit_code=0,
+                    execution_time=0.1,
+                )
+
+        sandbox_manager = FakeSandboxManager()
+        tool = EditTool(
+            working_directory=str(tmp_path),
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+            timeout=12,
+        )
+
+        result = await tool.execute({
+            "action": "write",
+            "file_path": "from_sandbox.txt",
+            "content": "created in sandbox",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert result.metadata == {"exit_code": 0, "sandboxed": True}
+        assert sandbox_manager.calls[0]["timeout"] == 12
+        assert sandbox_manager.calls[0]["workspace_path"] != str(tmp_path)
+        assert str(Path(sandbox_manager.calls[0]["workspace_path"])).startswith(
+            str(Path.home() / ".cache" / "dgm-sandbox")
+        )
+        assert sandbox_manager.calls[0]["agent_edit_tool_exists"] is True
+        assert sandbox_manager.calls[0]["command"].startswith("python3 -c ")
+        assert (tmp_path / "from_sandbox.txt").read_text() == "created in sandbox"
+        assert not (tmp_path / ".dgm_edit_tool_params.json").exists()
+
+    async def test_sandbox_delete_removes_host_file(self, tmp_path):
+        (tmp_path / "delete_me.txt").write_text("delete me")
+
+        class FakeSandboxManager:
+            def is_docker_available(self):
+                return True
+
+            async def execute_in_sandbox(
+                self,
+                command,
+                agent_code_path=None,
+                workspace_path=None,
+                timeout=None,
+            ):
+                Path(workspace_path, "delete_me.txt").unlink()
+                return SandboxResult(
+                    success=True,
+                    output=json.dumps({
+                        "status": "success",
+                        "output": "Successfully deleted delete_me.txt",
+                        "error": "",
+                    }),
+                    exit_code=0,
+                    execution_time=0.1,
+                )
+
+        tool = EditTool(
+            working_directory=str(tmp_path),
+            sandbox_manager=FakeSandboxManager(),
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({
+            "action": "delete",
+            "file_path": "delete_me.txt",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert not (tmp_path / "delete_me.txt").exists()
+
+    async def test_sandbox_request_falls_back_when_unavailable(self, tmp_path):
+        class UnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return False
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when unavailable")
+
+        sandbox_manager = UnavailableSandboxManager()
+        tool = EditTool(
+            working_directory=str(tmp_path),
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({
+            "action": "write",
+            "file_path": "fallback.txt",
+            "content": "direct write",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (tmp_path / "fallback.txt").read_text() == "direct write"
+        assert sandbox_manager.calls == []
+
+    async def test_sandbox_image_setup_failure_falls_back(self, tmp_path):
+        class ImageUnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            def ensure_sandbox_image(self):
+                raise RuntimeError("image unavailable")
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when image setup fails")
+
+        sandbox_manager = ImageUnavailableSandboxManager()
+        tool = EditTool(
+            working_directory=str(tmp_path),
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({
+            "action": "write",
+            "file_path": "fallback.txt",
+            "content": "direct write",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (tmp_path / "fallback.txt").read_text() == "direct write"
+        assert sandbox_manager.calls == []
 
     async def test_unknown_action_is_error(self):
         result = await self.tool.execute({

@@ -51,6 +51,8 @@ class AgentConfig:
     tool_timeout: int = 30
     max_iterations: int = 10
     memory_limit: Optional[int] = None
+    sandbox_manager: Optional[Any] = None
+    use_sandbox: bool = False
 
 
 class Agent:
@@ -119,12 +121,19 @@ class Agent:
         # Register bash tool
         bash_tool = BashTool(
             working_directory=str(self.working_directory),
-            timeout=self.config.tool_timeout
+            timeout=self.config.tool_timeout,
+            sandbox_manager=self.config.sandbox_manager,
+            use_sandbox=self.config.use_sandbox,
         )
         self.tool_registry.register_tool(bash_tool)
         
-        # Register edit tool (placeholder for now)
-        edit_tool = EditTool(working_directory=str(self.working_directory))
+        # Register edit tool
+        edit_tool = EditTool(
+            working_directory=str(self.working_directory),
+            sandbox_manager=self.config.sandbox_manager,
+            use_sandbox=self.config.use_sandbox,
+            timeout=self.config.tool_timeout,
+        )
         self.tool_registry.register_tool(edit_tool)
     
     async def solve_task(self, task: Task) -> Dict[str, Any]:

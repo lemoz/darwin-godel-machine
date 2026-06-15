@@ -2,9 +2,11 @@
 Unit tests for DGMController initialization and helper methods.
 """
 
+import json
 import pytest
 import yaml
 from pathlib import Path
+from types import SimpleNamespace
 
 
 def _minimal_config(tmp_path: Path) -> dict:
@@ -153,3 +155,207 @@ class TestDGMControllerInit:
         assert redacted["nested"]["api_token"] == "[REDACTED]"
         assert redacted["nested"]["items"][0]["password"] == "[REDACTED]"
         assert redacted["nested"]["items"][1]["safe"] == "visible"
+
+    def test_init_wires_sandbox_manager_when_enabled(self, tmp_path, monkeypatch):
+        from dgm_controller import DGMController
+
+        class FakeSandboxManager:
+            def __init__(self, config):
+                self.config = config
+
+        monkeypatch.setattr("dgm_controller.SandboxManager", FakeSandboxManager)
+        cfg = _minimal_config(tmp_path)
+        cfg["evaluation"]["use_sandbox"] = True
+        cfg["sandbox"] = {"image_name": "custom-sandbox"}
+
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        assert isinstance(ctrl.sandbox_manager, FakeSandboxManager)
+        assert ctrl.sandbox_manager.config.image_name == "custom-sandbox"
+        assert ctrl.use_sandbox is True
+        assert ctrl.benchmark_runner.sandbox_manager is ctrl.sandbox_manager
+        assert ctrl.benchmark_runner.use_sandbox is True
+        assert ctrl.validator.sandbox_manager is ctrl.sandbox_manager
+        assert ctrl.validator.use_sandbox is True
+
+    def test_init_disables_sandbox_when_manager_not_ready(self, tmp_path, monkeypatch):
+        from dgm_controller import DGMController
+
+        class NotReadySandboxManager:
+            def __init__(self, config):
+                self.config = config
+
+            def is_sandbox_ready(self):
+                return False
+
+        monkeypatch.setattr("dgm_controller.SandboxManager", NotReadySandboxManager)
+        cfg = _minimal_config(tmp_path)
+        cfg["evaluation"]["use_sandbox"] = True
+
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        assert ctrl.sandbox_manager is None
+        assert ctrl.use_sandbox is False
+        assert ctrl.benchmark_runner.sandbox_manager is None
+        assert ctrl.benchmark_runner.use_sandbox is False
+        assert ctrl.validator.sandbox_manager is None
+        assert ctrl.validator.use_sandbox is False
+
+    async def test_self_modification_solution_write_uses_sandbox_edit_tool(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from archive.agent_archive import ArchivedAgent
+        from agent.agent import Task
+        from dgm_controller import DGMController
+        from sandbox.sandbox_manager import SandboxResult
+
+        class FakeSandboxManager:
+            instances = []
+
+            def __init__(self, config):
+                self.config = config
+                self.calls = []
+                self.instances.append(self)
+
+            def is_sandbox_ready(self):
+                return True
+
+            async def execute_in_sandbox(
+                self,
+                command,
+                agent_code_path=None,
+                workspace_path=None,
+                timeout=None,
+            ):
+                params_path = Path(workspace_path) / ".dgm_edit_tool_params.json"
+                params = json.loads(params_path.read_text(encoding="utf-8"))
+                Path(workspace_path, params["file_path"]).write_text(
+                    params["content"],
+                    encoding="utf-8",
+                )
+                self.calls.append({
+                    "command": command,
+                    "agent_code_path": agent_code_path,
+                    "workspace_path": workspace_path,
+                    "timeout": timeout,
+                })
+                return SandboxResult(
+                    success=True,
+                    output=json.dumps({
+                        "status": "success",
+                        "output": "wrote agent.py",
+                        "error": "",
+                    }),
+                    exit_code=0,
+                    execution_time=0.1,
+                )
+
+        solution = (
+            "class Agent:\n"
+            "    def __init__(self, config=None): pass\n"
+            "    def solve_task(self, task): return 'done'\n"
+        )
+
+        class FakeAgent:
+            def __init__(self, config):
+                self.config = config
+
+            async def solve_task(self, task):
+                return {"success": True, "solution": solution}
+
+        monkeypatch.setattr("dgm_controller.SandboxManager", FakeSandboxManager)
+        monkeypatch.setattr("dgm_controller.Agent", FakeAgent)
+
+        cfg = _minimal_config(tmp_path)
+        cfg["evaluation"]["use_sandbox"] = True
+        cfg["evaluation"]["timeout_seconds"] = 9
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        parent_dir = tmp_path / "parent_agent"
+        parent_dir.mkdir()
+        (parent_dir / "agent.py").write_text(
+            "class Agent:\n"
+            "    def __init__(self, config=None): pass\n"
+            "    def solve_task(self, task): return 'old'\n",
+            encoding="utf-8",
+        )
+        parent = ArchivedAgent(
+            agent_id="parent_001",
+            parent_id=None,
+            generation=0,
+            source_path=str(parent_dir / "agent.py"),
+            created_at="2026-06-15T00:00:00",
+            benchmark_scores={"dummy": 0.0},
+            average_score=0.0,
+            is_valid=True,
+            metadata={},
+        )
+        task = Task(task_id="self_modify_parent_001_0", description="modify")
+
+        result_path = await ctrl._perform_self_modification(parent, task)
+
+        assert result_path is not None
+        result_file = Path(result_path)
+        assert result_file.read_text(encoding="utf-8") == solution
+        assert not (result_file.parent / ".dgm_edit_tool_params.json").exists()
+        sandbox_manager = FakeSandboxManager.instances[0]
+        assert len(sandbox_manager.calls) == 1
+        assert sandbox_manager.calls[0]["timeout"] == 9
+        assert sandbox_manager.calls[0]["workspace_path"] != str(result_file.parent)
+
+    async def test_evaluate_agent_passes_sandbox_config_to_loaded_agent(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from dgm_controller import DGMController
+
+        class FakeSandboxManager:
+            def __init__(self, config):
+                self.config = config
+
+            def is_sandbox_ready(self):
+                return True
+
+        monkeypatch.setattr("dgm_controller.SandboxManager", FakeSandboxManager)
+        cfg = _minimal_config(tmp_path)
+        cfg["evaluation"]["use_sandbox"] = True
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        agent_file = tmp_path / "candidate_agent.py"
+        agent_file.write_text(
+            "class Agent:\n"
+            "    def __init__(self, config): self.config = config\n"
+            "    def solve_task(self, task): return {'success': True, 'solution': ''}\n",
+            encoding="utf-8",
+        )
+
+        captured = {}
+
+        class LoadedAgent:
+            def __init__(self, config):
+                captured["config"] = config
+                self.config = config
+                self.agent_id = config.agent_id
+
+        ctrl.agent_loader.load_from_path = lambda _path: LoadedAgent
+
+        async def fake_run_benchmark(agent, benchmark_name, verbose=False):
+            captured["agent"] = agent
+            captured["benchmark_name"] = benchmark_name
+            captured["verbose"] = verbose
+            return SimpleNamespace(score=0.75)
+
+        ctrl.benchmark_runner.run_benchmark = fake_run_benchmark
+
+        scores = await ctrl._evaluate_agent(str(agent_file))
+
+        assert scores == {"dummy": 0.75}
+        assert captured["config"].sandbox_manager is ctrl.sandbox_manager
+        assert captured["config"].use_sandbox is True
+        assert captured["config"].working_directory == str(agent_file.parent)
+        assert captured["agent"].config is captured["config"]
+        assert captured["benchmark_name"] == "dummy"
+        assert captured["verbose"] is False

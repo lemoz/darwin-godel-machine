@@ -18,6 +18,7 @@ from evaluation.scorer import (
     JsonScorer, FunctionOutputScorer
 )
 from evaluation.agent_validator import AgentValidator
+from sandbox.sandbox_manager import SandboxManager, SandboxResult
 
 
 # ---------------------------------------------------------------------------
@@ -169,6 +170,165 @@ class TestRunTestCase:
         assert any("Timeout" in (e or "") or "timeout" in (e or "") for e in errors), (
             f"Expected timeout error, got: {errors}"
         )
+
+    async def test_uses_sandbox_manager_when_available(self, tmp_path):
+        task = _make_task(tmp_path)
+
+        class FakeConfig:
+            working_dir = "/home/dgm_agent/workspace"
+
+        class FakeSandboxManager:
+            config = FakeConfig()
+
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            async def execute_in_sandbox(self, command, workspace_path, timeout, **kwargs):
+                self.calls.append({
+                    "command": command,
+                    "workspace_path": workspace_path,
+                    "timeout": timeout,
+                    "kwargs": kwargs,
+                })
+                return SandboxResult(
+                    success=True,
+                    output='{"success": true, "actual_output": "3", "expected_output": "3", "error": null}\n',
+                    exit_code=0,
+                )
+
+        fake_sandbox = FakeSandboxManager()
+        runner = _make_runner(tmp_path, task)
+        runner.use_sandbox = True
+        runner.sandbox_manager = fake_sandbox
+
+        result = await runner._run_test_case(
+            "def add(a, b):\n    return a + b\n",
+            task.test_cases[0],
+            task,
+        )
+
+        assert result["success"] is True
+        assert result["passed"] == result["total"] == 3
+        assert len(fake_sandbox.calls) == 3
+        assert all(call["command"].startswith("python test_case_") for call in fake_sandbox.calls)
+
+    async def test_sandbox_request_falls_back_when_unavailable(self, tmp_path):
+        task = _make_task(tmp_path)
+
+        class UnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return False
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when unavailable")
+
+        sandbox_manager = UnavailableSandboxManager()
+        runner = _make_runner(tmp_path, task)
+        runner.use_sandbox = True
+        runner.sandbox_manager = sandbox_manager
+
+        result = await runner._run_test_case(
+            "def add(a, b):\n    return a + b\n",
+            task.test_cases[0],
+            task,
+        )
+
+        assert result["success"] is True
+        assert result["passed"] == result["total"] == 3
+        assert sandbox_manager.calls == []
+
+    async def test_sandbox_request_falls_back_when_not_ready_at_runtime(
+        self,
+        tmp_path,
+    ):
+        task = _make_task(tmp_path)
+
+        class NotReadySandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_sandbox_ready(self):
+                return False
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when not ready")
+
+        sandbox_manager = NotReadySandboxManager()
+        runner = _make_runner(tmp_path, task)
+        runner.use_sandbox = True
+        runner.sandbox_manager = sandbox_manager
+
+        result = await runner._run_test_case(
+            "def add(a, b):\n    return a + b\n",
+            task.test_cases[0],
+            task,
+        )
+
+        assert result["success"] is True
+        assert result["passed"] == result["total"] == 3
+        assert sandbox_manager.calls == []
+
+    def test_constructor_disables_sandbox_when_manager_not_ready(self, tmp_path):
+        task = _make_task(tmp_path)
+
+        class NotReadySandboxManager:
+            def is_sandbox_ready(self):
+                return False
+
+        bdir = tmp_path / "benchmarks"
+        bdir.mkdir(exist_ok=True)
+        cfg = {
+            "name": task.name,
+            "description": task.description,
+            "task_prompt": task.task_prompt,
+            "test_cases": task.test_cases,
+            "timeout": task.timeout,
+            "scoring_method": task.scoring_method,
+        }
+        (bdir / f"{task.name}.yaml").write_text(yaml.dump(cfg))
+
+        runner = BenchmarkRunner(
+            benchmarks_dir=str(bdir),
+            sandbox_manager=NotReadySandboxManager(),
+            use_sandbox=True,
+        )
+
+        assert runner.use_sandbox is False
+
+
+class TestSandboxManager:
+
+    def test_cpu_limit_to_nano_cpus(self):
+        assert SandboxManager._cpu_limit_to_nano_cpus("1") == 1_000_000_000
+        assert SandboxManager._cpu_limit_to_nano_cpus("0.5") == 500_000_000
+        assert SandboxManager._cpu_limit_to_nano_cpus("bad") is None
+        assert SandboxManager._cpu_limit_to_nano_cpus("0") is None
+
+    def test_sandbox_ready_requires_docker_and_image(self, monkeypatch):
+        manager = SandboxManager()
+
+        monkeypatch.setattr(manager, "is_docker_available", lambda: False)
+        assert manager.is_sandbox_ready() is False
+
+        calls = []
+        monkeypatch.setattr(manager, "is_docker_available", lambda: True)
+        monkeypatch.setattr(manager, "ensure_sandbox_image", lambda: calls.append("ok"))
+        assert manager.is_sandbox_ready() is True
+        assert calls == ["ok"]
+
+        def fail_image():
+            raise RuntimeError("image unavailable")
+
+        monkeypatch.setattr(manager, "ensure_sandbox_image", fail_image)
+        assert manager.is_sandbox_ready() is False
 
 
 # ---------------------------------------------------------------------------
@@ -345,3 +505,120 @@ class TestAgentValidator:
         summary = validator.get_validation_summary(result)
         assert isinstance(summary, str)
         assert "Agent Validation Summary" in summary
+
+    async def test_runtime_load_uses_sandbox_when_enabled(self, tmp_path):
+        f = tmp_path / "agent.py"
+        f.write_text(
+            'from pathlib import Path\n'
+            'Path(__file__).with_name("host_import_marker.txt").write_text("bad")\n'
+            'class Agent:\n'
+            '    def __init__(self): pass\n'
+            '    def solve_task(self, task): return "done"\n'
+        )
+
+        class FakeSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            async def execute_in_sandbox(self, command, workspace_path, timeout):
+                self.calls.append({
+                    "command": command,
+                    "workspace_path": workspace_path,
+                    "timeout": timeout,
+                    "agent_present": Path(workspace_path, "agent.py").exists(),
+                    "marker_present": Path(
+                        workspace_path,
+                        "host_import_marker.txt",
+                    ).exists(),
+                })
+                return SandboxResult(
+                    success=True,
+                    output=(
+                        '{"valid": true, "errors": [], "warnings": [], '
+                        '"checks_passed": ["Agent class loaded and verified successfully in sandbox"]}'
+                    ),
+                    exit_code=0,
+                )
+
+        sandbox_manager = FakeSandboxManager()
+        validator = AgentValidator(
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+            timeout=11,
+        )
+
+        result = await validator.validate_agent(str(f))
+
+        assert result["valid"] is True, f"Errors: {result['errors']}"
+        assert sandbox_manager.calls[0]["command"].startswith("python3 -c ")
+        assert sandbox_manager.calls[0]["timeout"] == 11
+        assert sandbox_manager.calls[0]["agent_present"] is True
+        assert sandbox_manager.calls[0]["marker_present"] is False
+        assert not (tmp_path / "host_import_marker.txt").exists()
+        assert any("in sandbox" in check for check in result["checks_passed"])
+
+    async def test_sandbox_runtime_load_falls_back_when_unavailable(self, tmp_path):
+        f = tmp_path / "agent.py"
+        f.write_text(MINIMAL_AGENT)
+
+        class UnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return False
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when unavailable")
+
+        sandbox_manager = UnavailableSandboxManager()
+        validator = AgentValidator(
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await validator.validate_agent(str(f))
+
+        assert result["valid"] is True, f"Errors: {result['errors']}"
+        assert sandbox_manager.calls == []
+        assert any(
+            "Agent class loaded and verified successfully" == check
+            for check in result["checks_passed"]
+        )
+
+    async def test_sandbox_image_setup_failure_falls_back(self, tmp_path):
+        f = tmp_path / "agent.py"
+        f.write_text(MINIMAL_AGENT)
+
+        class ImageUnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            def ensure_sandbox_image(self):
+                raise RuntimeError("image unavailable")
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when image setup fails")
+
+        sandbox_manager = ImageUnavailableSandboxManager()
+        validator = AgentValidator(
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await validator.validate_agent(str(f))
+
+        assert result["valid"] is True, f"Errors: {result['errors']}"
+        assert sandbox_manager.calls == []
+        assert any(
+            "Agent class loaded and verified successfully" == check
+            for check in result["checks_passed"]
+        )

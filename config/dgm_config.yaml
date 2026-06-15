@@ -49,6 +49,19 @@ evaluation:
   benchmarks_dir: config/benchmarks
   results_dir: results
   timeout_seconds: 30
+  use_sandbox: false
+
+# Optional Docker sandbox settings for benchmark test scripts, agent bash/edit
+# operations, and modified-agent runtime load checks. The model orchestration
+# loop and controller/archive logic still run in the configured host workspace.
+sandbox:
+  image_name: dgm-sandbox
+  memory_limit: 2g
+  cpu_limit: "1"
+  timeout: 300
+  network_mode: none
+  working_dir: /home/dgm_agent/workspace
+  auto_build_image: true
   
 # Agent Settings
 agents:

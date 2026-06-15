@@ -10,10 +10,120 @@ from pathlib import Path
 import ast
 import inspect
 import importlib.util
+import json
+import shlex
+import shutil
 import sys
+import tempfile
 import time
 
 from utils.agent_loader import AgentLoader
+
+
+_SANDBOX_VALIDATION_RUNNER = r"""
+import hashlib
+import importlib.util
+import inspect
+import json
+import sys
+import types
+from pathlib import Path
+
+
+def find_agent_class(module, mod_name, preferred_name):
+    candidate = getattr(module, preferred_name, None)
+    if isinstance(candidate, type):
+        return candidate
+
+    candidate = getattr(module, "Agent", None)
+    if isinstance(candidate, type):
+        return candidate
+
+    local_classes = [
+        obj for _name, obj in vars(module).items()
+        if isinstance(obj, type) and getattr(obj, "__module__", None) == mod_name
+    ]
+    for cls in local_classes:
+        if cls.__name__.endswith("Agent"):
+            return cls
+    for cls in local_classes:
+        if "Agent" in cls.__name__ and not cls.__name__.endswith("Config"):
+            return cls
+    return None
+
+
+def load_agent_class(agent_file, preferred_name):
+    agent_file = Path(agent_file).resolve()
+    agent_dir = agent_file.parent
+    digest = hashlib.md5(str(agent_file).encode()).hexdigest()[:12]
+    pkg_name = f"dgm_validation_pkg_{digest}"
+
+    pkg = types.ModuleType(pkg_name)
+    pkg.__path__ = [str(agent_dir)]
+    pkg.__package__ = pkg_name
+    sys.modules[pkg_name] = pkg
+
+    mod_name = f"{pkg_name}.{agent_file.stem}"
+    spec = importlib.util.spec_from_file_location(mod_name, agent_file)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot create module spec for {agent_file}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[mod_name] = module
+    spec.loader.exec_module(module)
+
+    agent_class = find_agent_class(module, mod_name, preferred_name)
+    if agent_class is None:
+        raise AttributeError(f"No Agent class found in {agent_file}")
+    return agent_class
+
+
+def main():
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: sandbox_validator PARAMS_JSON")
+
+    params = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+    result = {
+        "valid": True,
+        "errors": [],
+        "warnings": [],
+        "checks_passed": [],
+    }
+
+    try:
+        agent_class = load_agent_class(
+            Path.cwd() / params["main_file"],
+            params["agent_class_name"],
+        )
+
+        for method_name in params["required_methods"]:
+            if not hasattr(agent_class, method_name):
+                result["valid"] = False
+                result["errors"].append(
+                    f"Loaded class missing required method: {method_name}"
+                )
+
+        if result["valid"] and hasattr(agent_class, "solve_task"):
+            sig = inspect.signature(agent_class.solve_task)
+            params_list = list(sig.parameters.keys())
+            if "task" not in params_list:
+                result["warnings"].append(
+                    "solve_task should have 'task' parameter"
+                )
+
+        if result["valid"]:
+            result["checks_passed"].append(
+                "Agent class loaded and verified successfully in sandbox"
+            )
+    except Exception as exc:
+        result["valid"] = False
+        result["errors"].append(f"Sandbox implementation validation failed: {exc}")
+
+    print(json.dumps(result))
+
+
+if __name__ == "__main__":
+    main()
+"""
 
 
 class AgentValidator:
@@ -24,7 +134,12 @@ class AgentValidator:
     follow the expected structure, and can be properly instantiated.
     """
     
-    def __init__(self):
+    def __init__(
+        self,
+        sandbox_manager: Optional[Any] = None,
+        use_sandbox: bool = False,
+        timeout: int = 30,
+    ):
         """Initialize the agent validator."""
         self.required_methods = [
             'solve_task',
@@ -36,6 +151,29 @@ class AgentValidator:
         ]
         self.validation_results = []
         self.agent_loader = AgentLoader()
+        self.sandbox_manager = sandbox_manager
+        self.use_sandbox = use_sandbox
+        self.timeout = timeout
+
+    def _can_use_sandbox(self) -> bool:
+        """Return True when sandboxed runtime validation is configured."""
+        if not self.use_sandbox or self.sandbox_manager is None:
+            return False
+        readiness_check = getattr(self.sandbox_manager, "is_sandbox_ready", None)
+        if readiness_check is not None:
+            return bool(readiness_check())
+        availability_check = getattr(self.sandbox_manager, "is_docker_available", None)
+        if availability_check is None:
+            return True
+        if not bool(availability_check()):
+            return False
+        ensure_image = getattr(self.sandbox_manager, "ensure_sandbox_image", None)
+        if ensure_image is not None:
+            try:
+                ensure_image()
+            except Exception:
+                return False
+        return True
     
     async def validate_agent(self, agent_path: str) -> Dict[str, Any]:
         """
@@ -255,6 +393,14 @@ class AgentValidator:
             return False
 
         # --- Gate 4: try to load the actual file via importlib ---
+        if self._can_use_sandbox():
+            return await self._validate_runtime_load_in_sandbox(
+                agent_path=agent_path,
+                file_path=file_path,
+                agent_class_name=agent_class_name,
+                results=results,
+            )
+
         # Use a unique module name to avoid collisions with cached modules.
         unique_name = f"_dgm_agent_validate_{id(file_path)}_{int(time.time() * 1e6)}"
         try:
@@ -321,6 +467,108 @@ class AgentValidator:
         except Exception as e:
             results['errors'].append(f"Implementation validation failed: {str(e)}")
             return False
+
+    async def _validate_runtime_load_in_sandbox(
+        self,
+        agent_path: str,
+        file_path: Path,
+        agent_class_name: str,
+        results: Dict[str, Any],
+    ) -> bool:
+        """Run the runtime import/load validation inside the Docker sandbox."""
+        sandbox_temp_parent = Path.home() / ".cache" / "dgm-sandbox"
+        sandbox_temp_parent.mkdir(parents=True, exist_ok=True)
+
+        with tempfile.TemporaryDirectory(dir=str(sandbox_temp_parent)) as temp_dir:
+            staged_workspace = Path(temp_dir) / "workspace"
+            source_root, relative_agent_file = self._validation_source_root(
+                agent_path=agent_path,
+                file_path=file_path,
+            )
+            self._copy_workspace(source=source_root, destination=staged_workspace)
+
+            params_path = staged_workspace / ".dgm_validator_params.json"
+            params_path.write_text(
+                json.dumps({
+                    "main_file": str(relative_agent_file),
+                    "agent_class_name": agent_class_name,
+                    "required_methods": self.required_methods,
+                }),
+                encoding="utf-8",
+            )
+
+            sandbox_result = await self.sandbox_manager.execute_in_sandbox(
+                command=(
+                    f"python3 -c {shlex.quote(_SANDBOX_VALIDATION_RUNNER)} "
+                    ".dgm_validator_params.json"
+                ),
+                workspace_path=str(staged_workspace),
+                timeout=self.timeout,
+            )
+
+            try:
+                params_path.unlink(missing_ok=True)
+            except TypeError:  # pragma: no cover - Python < 3.8
+                if params_path.exists():
+                    params_path.unlink()
+
+        if not sandbox_result.success:
+            results['errors'].append(
+                "Sandbox implementation validation failed: "
+                f"{sandbox_result.error or sandbox_result.output}"
+            )
+            return False
+
+        try:
+            payload = json.loads(sandbox_result.output.strip().splitlines()[-1])
+        except Exception as exc:
+            results['errors'].append(
+                f"Failed to parse sandbox validation result: {exc}"
+            )
+            return False
+
+        results['warnings'].extend(payload.get("warnings", []))
+        results['checks_passed'].extend(payload.get("checks_passed", []))
+        if not payload.get("valid", False):
+            results['errors'].extend(payload.get("errors", []))
+            return False
+        return True
+
+    @staticmethod
+    def _validation_source_root(agent_path: str, file_path: Path) -> "tuple[Path, Path]":
+        """Return the source root to stage and the agent file path within it."""
+        requested_path = Path(agent_path).resolve()
+        file_path = file_path.resolve()
+        if requested_path.is_dir():
+            source_root = requested_path
+            relative_agent_file = file_path.relative_to(source_root)
+        else:
+            source_root = file_path.parent
+            relative_agent_file = Path(file_path.name)
+        return source_root, relative_agent_file
+
+    @staticmethod
+    def _copy_workspace(source: Path, destination: Path) -> None:
+        """Copy validation inputs while skipping generated Python cache files."""
+        source = source.resolve()
+        destination = destination.resolve()
+        if not source.exists():
+            destination.mkdir(parents=True, exist_ok=True)
+            return
+
+        def ignore(_dir: str, names: List[str]) -> set:
+            return {
+                name
+                for name in names
+                if name == "__pycache__" or name.endswith((".pyc", ".pyo"))
+            }
+
+        shutil.copytree(
+            source,
+            destination,
+            dirs_exist_ok=True,
+            ignore=ignore,
+        )
     
     def _validate_dependencies(self, agent_path: str, results: Dict[str, Any]) -> None:
         """
