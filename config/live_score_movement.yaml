@@ -1,0 +1,73 @@
+# Cost-gated live DGM score-movement rehearsal configuration.
+#
+# This is a planned live-run config, not part of the default test suite. Run the
+# no-network preflight first, then get explicit approval before spending API
+# budget.
+
+fm_providers:
+  primary: anthropic
+  anthropic:
+    model: claude-sonnet-4-6
+    api_key: ${ANTHROPIC_API_KEY}
+    max_tokens: 2048
+    temperature: 0.1
+    timeout: 60
+
+archive:
+  path: .dgm-live-runs/live-score-movement/archive
+
+parent_selection:
+  lambda: 10
+  alpha_0: 0.5
+
+evaluation:
+  benchmarks_dir: config/benchmarks
+  results_dir: .dgm-live-runs/live-score-movement/results
+  timeout_seconds: 30
+  use_sandbox: false
+
+sandbox:
+  image_name: dgm-sandbox
+  memory_limit: 2g
+  cpu_limit: "1"
+  timeout: 300
+  network_mode: none
+  working_dir: /home/dgm_agent/workspace
+  auto_build_image: true
+
+agents:
+  workspace_dir: .dgm-live-runs/live-score-movement/workspace
+  initial_agent_path: agent/agent.py
+  max_steps: 5
+
+benchmarks:
+  timeout_default: 30
+  max_attempts: 3
+  enabled:
+    - humaneval_style
+
+logging:
+  level: INFO
+
+generation_delay_seconds: 0
+stop_on_error: true
+
+live_run:
+  purpose: live_score_movement_rehearsal
+  approval_required: true
+  recommended_generations: 2
+  cost_gate:
+    check_current_provider_pricing_before_run: true
+    max_generations_without_reapproval: 2
+    max_agent_steps: 5
+    max_output_tokens_per_call: 2048
+    max_enabled_benchmarks: 1
+  required_preflight:
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_demo_path.py
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --require
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_live_score_movement_plan.py
+  recommended_run:
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/run_dgm_in_sandbox.py --config config/live_score_movement.yaml --generations 2 --allow-network --env ANTHROPIC_API_KEY --audit-output .dgm-sandbox-runs/live-score-movement-audit.json
+  post_run_scorecard:
+    command: PATH="$PWD/.venv/bin:$PATH" python scripts/summarize_archive_scores.py --archive-metadata .dgm-live-runs/live-score-movement/archive/archive_metadata.json --output docs/live-runs/live-score-movement/scorecard.json --require-improvement
+    require_improvement: true
