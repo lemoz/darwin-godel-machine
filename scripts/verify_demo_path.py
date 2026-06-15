@@ -178,6 +178,64 @@ def _verify_live_run_docs(project_root: Path) -> dict[str, Any]:
     }
 
 
+def _verify_live_score_movement_attempt_docs(project_root: Path) -> dict[str, Any]:
+    readme = project_root / "docs" / "live-runs" / "live-score-movement" / "README.md"
+    scorecard = project_root / "docs" / "live-runs" / "live-score-movement" / "scorecard.json"
+    audit = project_root / "docs" / "live-runs" / "live-score-movement" / "sandbox-audit.json"
+    _check_file(readme, project_root)
+    _check_file(scorecard, project_root)
+    _check_file(audit, project_root)
+
+    readme_text = readme.read_text(encoding="utf-8")
+    _require(
+        "not prove benchmark improvement" in readme_text,
+        "Live score-movement README must keep the benchmark-improvement caveat",
+    )
+    _require(
+        "fully live, sandboxed, provider-backed DGM run completed" in readme_text,
+        "Live score-movement README must record live run completion",
+    )
+
+    scorecard_json = _load_json(scorecard)
+    _require(scorecard_json["total_agents"] == 3, "Live scorecard must record three agents")
+    _require(scorecard_json["valid_agents"] == 3, "Live scorecard must record three valid agents")
+    _require(scorecard_json["top_score"] == 1.0, "Live scorecard top score must be 1.0")
+    _require(
+        scorecard_json["best_average_delta"] == 0.0,
+        "Live scorecard must record zero best average-score delta",
+    )
+    _require(
+        scorecard_json["has_improvement"] is False,
+        "Live scorecard must preserve the failed-improvement gate",
+    )
+
+    audit_text = audit.read_text(encoding="utf-8")
+    audit_json = json.loads(audit_text)
+    _require(audit_json["allow_network"] is True, "Live sandbox audit must record network opt-in")
+    _require(audit_json["network_mode"] == "bridge", "Live sandbox audit must record bridge network")
+    _require(
+        audit_json["env_names"] == ["ANTHROPIC_API_KEY"],
+        "Live sandbox audit must record provider env var name",
+    )
+    _require(audit_json["env_values"] == "hidden", "Live sandbox audit must hide env values")
+    _require(
+        "sk-" not in audit_text and "secret" not in audit_text.lower(),
+        "Live sandbox audit must not contain secret values",
+    )
+
+    return {
+        "name": "live_score_movement_attempt_docs",
+        "status": "ok",
+        "readme": str(readme.relative_to(project_root)),
+        "scorecard": str(scorecard.relative_to(project_root)),
+        "audit": str(audit.relative_to(project_root)),
+        "top_score": scorecard_json["top_score"],
+        "best_average_delta": scorecard_json["best_average_delta"],
+        "has_improvement": scorecard_json["has_improvement"],
+        "audit_hides_env_values": True,
+    }
+
+
 def _verify_archive_lineage(project_root: Path) -> dict[str, Any]:
     svg = project_root / "docs" / "archive-lineage-example.svg"
     _check_file(svg, project_root)
@@ -373,6 +431,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
     checks.append(await _verify_humaneval_reference(project_root))
     checks.append(await _verify_score_movement(project_root))
     checks.append(_verify_live_run_docs(project_root))
+    checks.append(_verify_live_score_movement_attempt_docs(project_root))
     checks.append(_verify_archive_lineage(project_root))
     checks.append(_verify_sandbox_runner_cli(project_root))
     checks.append(await _verify_sandbox_discard_changes_contract())
