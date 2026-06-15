@@ -88,6 +88,7 @@ async def run_sandboxed_dgm(
     allow_network: bool = False,
     network_mode: str = "bridge",
     timeout: Optional[int] = None,
+    sync_back: bool = True,
     manager: Optional[SandboxManager] = None,
 ) -> SandboxResult:
     """
@@ -113,6 +114,7 @@ async def run_sandboxed_dgm(
         environment=environment,
         network_mode=network_mode if allow_network else sandbox_config.network_mode,
         read_only=False,
+        sync_back=sync_back,
     )
 
 
@@ -138,6 +140,14 @@ def _build_parser() -> argparse.ArgumentParser:
         default="bridge",
         help="Docker network mode used only with --allow-network.",
     )
+    parser.add_argument(
+        "--discard-changes",
+        action="store_true",
+        help=(
+            "Run in the staged sandbox workspace but do not sync successful "
+            "writes/deletes back to the host checkout."
+        ),
+    )
     return parser
 
 
@@ -151,6 +161,7 @@ async def _main_async(args: argparse.Namespace) -> int:
             allow_network=args.allow_network,
             network_mode=args.network_mode,
             timeout=args.timeout,
+            sync_back=not args.discard_changes,
         )
     except SandboxRunError as exc:
         print(f"[fail] {exc}", file=sys.stderr)
