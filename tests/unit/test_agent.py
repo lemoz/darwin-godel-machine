@@ -171,6 +171,32 @@ class TestAgentSolveTask:
         # Should not grow unboundedly from prior task
         assert len(self.agent.conversation_history) <= len_after_a + 10
 
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
+    async def test_solve_task_respects_configured_max_iterations(self, mock_gc):
+        mock_gc.return_value = CompletionResponse(
+            content="I need to keep working.",
+            tool_calls=[
+                ToolCall(
+                    tool_name="missing_tool",
+                    parameters={},
+                    call_id="toolu_missing",
+                )
+            ],
+            finish_reason="tool_use",
+        )
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 2
+        agent = Agent(cfg)
+
+        task = Task(task_id="limited", description="Keep trying")
+        result = await agent.solve_task(task)
+
+        assert result["success"] is True
+        assert mock_gc.await_count == 2
+
 
 # ---------------------------------------------------------------------------
 # Task dataclass

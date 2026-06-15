@@ -122,6 +122,16 @@ class TestBashTool:
                 f"Expected blocked command to fail: {cmd}"
             )
 
+    async def test_command_environment_redacts_secret_like_variables(self, monkeypatch):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-secret")
+        monkeypatch.setenv("SAFE_PUBLIC_VALUE", "visible")
+        result = await self.tool.execute({
+            "command": "python3 -c 'import os\nprint(os.getenv(\"ANTHROPIC_API_KEY\"))\nprint(os.getenv(\"SAFE_PUBLIC_VALUE\"))'"
+        })
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "sk-test-secret" not in result.output
+        assert "visible" in result.output
+
     def test_tool_name(self):
         assert self.tool.get_name() == "bash"
 

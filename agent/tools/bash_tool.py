@@ -56,6 +56,15 @@ class BashTool(BaseTool):
         }
         
         super().__init__()
+
+    def _sanitized_environment(self) -> Dict[str, str]:
+        """Return the process environment without credential-like variables."""
+        sensitive_terms = ("key", "token", "secret", "password", "credential")
+        return {
+            key: value
+            for key, value in os.environ.items()
+            if not any(term in key.lower() for term in sensitive_terms)
+        }
     
     def get_name(self) -> str:
         """Get the name of this tool."""
@@ -271,7 +280,7 @@ class BashTool(BaseTool):
                 stdout=subprocess.PIPE if capture_output else None,
                 stderr=subprocess.PIPE if capture_output else None,
                 cwd=self.working_directory,
-                env=os.environ.copy(),
+                env=self._sanitized_environment(),
                 start_new_session=True,  # puts the shell in its own process group
             )
 

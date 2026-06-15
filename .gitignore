@@ -140,6 +140,7 @@ results/
 exports/
 debug/
 test_workspace/
+.dgm-live-runs/
 agents/workspace/
 archive/agents/
 *.pid

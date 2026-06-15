@@ -136,3 +136,20 @@ class TestDGMControllerInit:
         cfg["custom_setting"] = "${MY_TEST_VAR}"
         ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
         assert ctrl.config["custom_setting"] == "expanded_value"
+
+    def test_redacts_sensitive_values_before_logging(self, tmp_path):
+        from dgm_controller import DGMController
+        cfg = _minimal_config(tmp_path)
+        cfg["nested"] = {
+            "api_token": "tok_live",
+            "items": [{"password": "pw_live"}, {"safe": "visible"}],
+        }
+
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+        redacted = ctrl._redact_sensitive_values(ctrl.config)
+
+        assert redacted["fm_providers"]["anthropic"]["api_key"] == "[REDACTED]"
+        assert redacted["fm_providers"]["anthropic"]["max_tokens"] == 128
+        assert redacted["nested"]["api_token"] == "[REDACTED]"
+        assert redacted["nested"]["items"][0]["password"] == "[REDACTED]"
+        assert redacted["nested"]["items"][1]["safe"] == "visible"
