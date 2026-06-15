@@ -6,7 +6,7 @@ Thank you for your interest in contributing to the Darwin Gödel Machine project
 
 ### Prerequisites
 - Python 3.8+
-- Docker is optional. The current opt-in Docker path isolates generated benchmark test scripts plus agent bash and edit tool operations; use your own container or VM for untrusted evolution runs.
+- Docker is optional. The current opt-in Docker path isolates generated benchmark test scripts, agent bash/edit tool operations, and modified-agent runtime load checks; use your own container or VM for untrusted evolution runs.
 - API keys for foundation models (Claude, Gemini, or OpenAI) are needed for live DGM runs, not for the default test suite.
 
 ### Setup

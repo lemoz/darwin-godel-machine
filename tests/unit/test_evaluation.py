@@ -428,3 +428,87 @@ class TestAgentValidator:
         summary = validator.get_validation_summary(result)
         assert isinstance(summary, str)
         assert "Agent Validation Summary" in summary
+
+    async def test_runtime_load_uses_sandbox_when_enabled(self, tmp_path):
+        f = tmp_path / "agent.py"
+        f.write_text(
+            'from pathlib import Path\n'
+            'Path(__file__).with_name("host_import_marker.txt").write_text("bad")\n'
+            'class Agent:\n'
+            '    def __init__(self): pass\n'
+            '    def solve_task(self, task): return "done"\n'
+        )
+
+        class FakeSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            async def execute_in_sandbox(self, command, workspace_path, timeout):
+                self.calls.append({
+                    "command": command,
+                    "workspace_path": workspace_path,
+                    "timeout": timeout,
+                    "agent_present": Path(workspace_path, "agent.py").exists(),
+                    "marker_present": Path(
+                        workspace_path,
+                        "host_import_marker.txt",
+                    ).exists(),
+                })
+                return SandboxResult(
+                    success=True,
+                    output=(
+                        '{"valid": true, "errors": [], "warnings": [], '
+                        '"checks_passed": ["Agent class loaded and verified successfully in sandbox"]}'
+                    ),
+                    exit_code=0,
+                )
+
+        sandbox_manager = FakeSandboxManager()
+        validator = AgentValidator(
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+            timeout=11,
+        )
+
+        result = await validator.validate_agent(str(f))
+
+        assert result["valid"] is True, f"Errors: {result['errors']}"
+        assert sandbox_manager.calls[0]["command"].startswith("python3 -c ")
+        assert sandbox_manager.calls[0]["timeout"] == 11
+        assert sandbox_manager.calls[0]["agent_present"] is True
+        assert sandbox_manager.calls[0]["marker_present"] is False
+        assert not (tmp_path / "host_import_marker.txt").exists()
+        assert any("in sandbox" in check for check in result["checks_passed"])
+
+    async def test_sandbox_runtime_load_falls_back_when_unavailable(self, tmp_path):
+        f = tmp_path / "agent.py"
+        f.write_text(MINIMAL_AGENT)
+
+        class UnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return False
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when unavailable")
+
+        sandbox_manager = UnavailableSandboxManager()
+        validator = AgentValidator(
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await validator.validate_agent(str(f))
+
+        assert result["valid"] is True, f"Errors: {result['errors']}"
+        assert sandbox_manager.calls == []
+        assert any(
+            "Agent class loaded and verified successfully" == check
+            for check in result["checks_passed"]
+        )

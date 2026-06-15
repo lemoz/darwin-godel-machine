@@ -97,7 +97,11 @@ class DGMController:
             use_sandbox=use_sandbox
         )
 
-        self.validator = AgentValidator()
+        self.validator = AgentValidator(
+            sandbox_manager=sandbox_manager,
+            use_sandbox=use_sandbox,
+            timeout=evaluation_config.get('timeout_seconds', 30),
+        )
 
         # Initialize agent loader
         self.agent_loader = AgentLoader(project_root=Path(self.workspace))

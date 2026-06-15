@@ -173,3 +173,5 @@ class TestDGMControllerInit:
         assert ctrl.use_sandbox is True
         assert ctrl.benchmark_runner.sandbox_manager is ctrl.sandbox_manager
         assert ctrl.benchmark_runner.use_sandbox is True
+        assert ctrl.validator.sandbox_manager is ctrl.sandbox_manager
+        assert ctrl.validator.use_sandbox is True
