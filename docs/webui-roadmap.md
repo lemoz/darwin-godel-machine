@@ -13,7 +13,8 @@ execution boundary and benchmark story stay easy to verify.
 - The no-network path must keep working without API keys.
 - Live runs still require explicit provider credentials and budget awareness.
 - The full-process Docker runner is a staged-workspace boundary, not a
-  disposable VM.
+  disposable VM; use `--discard-changes` when a sandboxed run should avoid
+  syncing successful writes/deletes back to the host checkout.
 
 ## First Useful WebUI
 
@@ -52,6 +53,8 @@ Before a WebUI PR is mergeable, it should prove:
 - It can run `scripts/verify_demo_path.py` from the UI or expose that check.
 - It clearly distinguishes host CLI runs from sandboxed full-process runs.
 - It does not pass provider secrets to Docker unless explicitly requested.
+- It exposes whether sandboxed run output will sync back to the host checkout
+  or be discarded with `--discard-changes`.
 - It preserves README/SECURITY wording about staged-workspace limits.
 - It includes tests for any command construction or process launching logic.
 
