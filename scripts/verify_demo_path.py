@@ -23,6 +23,7 @@ warnings.filterwarnings(
 
 from evaluation.benchmark_runner import BenchmarkRunner
 from scripts.compare_benchmark_solutions import compare_solutions
+from scripts.run_dgm_in_sandbox import _build_parser as build_sandbox_runner_parser
 
 
 class VerificationError(RuntimeError):
@@ -154,6 +155,33 @@ def _verify_archive_lineage(project_root: Path) -> dict[str, Any]:
     }
 
 
+def _verify_sandbox_runner_cli(project_root: Path) -> dict[str, Any]:
+    runner = project_root / "scripts" / "run_dgm_in_sandbox.py"
+    _check_file(runner, project_root)
+    parser = build_sandbox_runner_parser()
+    help_text = parser.format_help()
+    args = parser.parse_args([
+        "--allow-network",
+        "--env",
+        "ANTHROPIC_API_KEY",
+        "--discard-changes",
+    ])
+
+    _require("--allow-network" in help_text, "Sandbox runner help missing --allow-network")
+    _require("--env" in help_text, "Sandbox runner help missing --env")
+    _require("--discard-changes" in help_text, "Sandbox runner help missing --discard-changes")
+    _require(args.allow_network is True, "Sandbox runner parser did not accept --allow-network")
+    _require(args.env == ["ANTHROPIC_API_KEY"], "Sandbox runner parser did not collect --env")
+    _require(args.discard_changes is True, "Sandbox runner parser did not accept --discard-changes")
+
+    return {
+        "name": "sandbox_runner_cli",
+        "status": "ok",
+        "path": str(runner.relative_to(project_root)),
+        "safe_flags": ["--allow-network", "--env", "--discard-changes"],
+    }
+
+
 async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, Any]]:
     """Run all no-network setup/demo verification checks."""
     project_root = project_root.resolve()
@@ -173,6 +201,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
     checks.append(await _verify_score_movement(project_root))
     checks.append(_verify_live_run_docs(project_root))
     checks.append(_verify_archive_lineage(project_root))
+    checks.append(_verify_sandbox_runner_cli(project_root))
     return checks
 
 
