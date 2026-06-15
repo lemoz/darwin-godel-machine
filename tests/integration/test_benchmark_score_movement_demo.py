@@ -45,3 +45,24 @@ async def test_headroom_demo_solutions_show_hidden_case_score_movement():
     assert report["baseline"]["total"] == 17
     assert report["candidate"]["passed"] == 17
     assert report["candidate"]["total"] == 17
+
+
+@pytest.mark.asyncio
+async def test_calibrated_demo_solutions_show_broad_hidden_case_score_movement():
+    project_root = Path(__file__).resolve().parents[2]
+
+    report = await compare_solutions(
+        benchmarks_dir=project_root / "config" / "benchmarks",
+        benchmark_name="humaneval_calibrated",
+        baseline_path=project_root / "docs" / "demo" / "humaneval_calibrated_baseline.py",
+        candidate_path=project_root / "docs" / "demo" / "humaneval_calibrated_improved.py",
+    )
+
+    assert report["benchmark"] == "humaneval_calibrated"
+    assert report["baseline"]["score"] == pytest.approx(0.6)
+    assert report["candidate"]["score"] == pytest.approx(1.0)
+    assert report["delta"] == pytest.approx(0.4)
+    assert report["baseline"]["passed"] == 30
+    assert report["baseline"]["total"] == 50
+    assert report["candidate"]["passed"] == 50
+    assert report["candidate"]["total"] == 50

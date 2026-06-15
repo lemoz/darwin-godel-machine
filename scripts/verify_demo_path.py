@@ -72,6 +72,7 @@ async def _verify_humaneval_reference(project_root: Path) -> dict[str, Any]:
         use_sandbox=False,
     )
     expected = {
+        "humaneval_calibrated",
         "humaneval_headroom",
         "humaneval_style",
         "list_processing",
@@ -149,6 +150,39 @@ async def _verify_live_headroom_score_movement(project_root: Path) -> dict[str, 
 
     return {
         "name": "live_headroom_score_movement_demo",
+        "status": "ok",
+        "benchmark": report["benchmark"],
+        "baseline_score": report["baseline"]["score"],
+        "candidate_score": report["candidate"]["score"],
+        "delta": report["delta"],
+        "baseline_passed": report["baseline"]["passed"],
+        "candidate_passed": report["candidate"]["passed"],
+        "total": report["candidate"]["total"],
+    }
+
+
+async def _verify_calibrated_score_movement(project_root: Path) -> dict[str, Any]:
+    report = await compare_solutions(
+        benchmarks_dir=project_root / "config" / "benchmarks",
+        benchmark_name="humaneval_calibrated",
+        baseline_path=project_root / "docs" / "demo" / "humaneval_calibrated_baseline.py",
+        candidate_path=project_root / "docs" / "demo" / "humaneval_calibrated_improved.py",
+    )
+    checked_in = _load_json(
+        project_root / "docs" / "demo" / "humaneval_calibrated_score_movement.json"
+    )
+
+    _require(report["baseline"]["score"] == 0.6, "Expected calibrated baseline score 0.6")
+    _require(report["candidate"]["score"] == 1.0, "Expected calibrated candidate score 1.0")
+    _require(report["delta"] == 0.4, "Expected calibrated score delta 0.4")
+    _require(report["baseline"]["passed"] == 30, "Expected calibrated baseline to pass 30 cases")
+    _require(report["baseline"]["total"] == 50, "Expected calibrated benchmark to have 50 cases")
+    _require(checked_in["baseline"]["score"] == report["baseline"]["score"], "Stale calibrated baseline JSON report")
+    _require(checked_in["candidate"]["score"] == report["candidate"]["score"], "Stale calibrated candidate JSON report")
+    _require(checked_in["delta"] == report["delta"], "Stale calibrated delta JSON report")
+
+    return {
+        "name": "calibrated_score_movement_demo",
         "status": "ok",
         "benchmark": report["benchmark"],
         "baseline_score": report["baseline"]["score"],
@@ -250,6 +284,14 @@ def _verify_live_score_movement_attempt_docs(project_root: Path) -> dict[str, An
         scorecard_json["has_improvement"] is False,
         "Live scorecard must preserve the failed-improvement gate",
     )
+    _require(
+        scorecard_json["has_regression"] is True,
+        "Live scorecard must preserve benchmark regression evidence",
+    )
+    _require(
+        scorecard_json["total_benchmark_regressions"] == 1,
+        "Live scorecard must record the regressed child benchmark",
+    )
 
     audit_text = audit.read_text(encoding="utf-8")
     audit_json = json.loads(audit_text)
@@ -274,6 +316,8 @@ def _verify_live_score_movement_attempt_docs(project_root: Path) -> dict[str, An
         "top_score": scorecard_json["top_score"],
         "best_average_delta": scorecard_json["best_average_delta"],
         "has_improvement": scorecard_json["has_improvement"],
+        "has_regression": scorecard_json["has_regression"],
+        "total_benchmark_regressions": scorecard_json["total_benchmark_regressions"],
         "audit_hides_env_values": True,
     }
 
@@ -464,8 +508,12 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
         project_root / "requirements.txt",
         project_root / "config" / "dgm_config.yaml",
         project_root / "config" / "live_score_movement.yaml",
+        project_root / "config" / "benchmarks" / "humaneval_calibrated.yaml",
         project_root / "config" / "benchmarks" / "humaneval_headroom.yaml",
         project_root / "config" / "benchmarks" / "humaneval_style.yaml",
+        project_root / "docs" / "demo" / "humaneval_calibrated_baseline.py",
+        project_root / "docs" / "demo" / "humaneval_calibrated_improved.py",
+        project_root / "docs" / "demo" / "humaneval_calibrated_score_movement.json",
         project_root / "docs" / "demo" / "humaneval_headroom_baseline.py",
         project_root / "docs" / "demo" / "humaneval_headroom_improved.py",
         project_root / "docs" / "demo" / "humaneval_headroom_score_movement.json",
@@ -477,6 +525,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
     checks.append(await _verify_humaneval_reference(project_root))
     checks.append(await _verify_score_movement(project_root))
     checks.append(await _verify_live_headroom_score_movement(project_root))
+    checks.append(await _verify_calibrated_score_movement(project_root))
     checks.append(_verify_live_run_docs(project_root))
     checks.append(_verify_live_score_movement_attempt_docs(project_root))
     checks.append(_verify_archive_lineage(project_root))

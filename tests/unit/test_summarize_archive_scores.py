@@ -52,6 +52,15 @@ def test_summarize_archive_scores_finds_parent_child_improvement(tmp_path):
     assert report["parent_child_deltas"][0]["benchmark_deltas"] == {
         "humaneval_style": 0.5
     }
+    assert report["parent_child_deltas"][0]["benchmark_improvements"] == {
+        "humaneval_style": 0.5
+    }
+    assert report["parent_child_deltas"][0]["benchmark_regressions"] == {}
+    assert report["parent_child_deltas"][0]["benchmark_unchanged"] == []
+    assert report["total_benchmark_improvements"] == 1
+    assert report["total_benchmark_regressions"] == 0
+    assert report["total_benchmark_unchanged"] == 0
+    assert report["has_regression"] is False
     assert report["generation_best_scores"] == [
         {
             "generation": 0,
@@ -103,6 +112,42 @@ def test_require_improvement_fails_flat_archive(tmp_path, capsys):
     assert exit_code == 1
     assert "best_delta=+0.000" in captured.out
     assert "no valid parent-child average-score improvement" in captured.err
+
+
+def test_summarize_archive_scores_reports_benchmark_regressions(tmp_path):
+    metadata = tmp_path / "archive_metadata.json"
+    _write_archive_metadata(
+        metadata,
+        {
+            "root": {
+                "agent_id": "root",
+                "parent_id": None,
+                "generation": 0,
+                "average_score": 0.75,
+                "benchmark_scores": {"a": 1.0, "b": 0.5, "c": 0.75},
+                "is_valid": True,
+            },
+            "child": {
+                "agent_id": "child",
+                "parent_id": "root",
+                "generation": 1,
+                "average_score": 0.5,
+                "benchmark_scores": {"a": 0.5, "b": 0.75, "c": 0.75},
+                "is_valid": True,
+            },
+        },
+    )
+
+    report = summarize_archive_scores(metadata)
+    delta = report["parent_child_deltas"][0]
+
+    assert delta["benchmark_improvements"] == {"b": 0.25}
+    assert delta["benchmark_regressions"] == {"a": -0.5}
+    assert delta["benchmark_unchanged"] == ["c"]
+    assert report["has_regression"] is True
+    assert report["total_benchmark_improvements"] == 1
+    assert report["total_benchmark_regressions"] == 1
+    assert report["total_benchmark_unchanged"] == 1
 
 
 def test_main_writes_scorecard_json(tmp_path, capsys):
