@@ -6,6 +6,7 @@ import json
 import pytest
 import yaml
 from pathlib import Path
+from types import SimpleNamespace
 
 
 def _minimal_config(tmp_path: Path) -> dict:
@@ -303,3 +304,58 @@ class TestDGMControllerInit:
         assert len(sandbox_manager.calls) == 1
         assert sandbox_manager.calls[0]["timeout"] == 9
         assert sandbox_manager.calls[0]["workspace_path"] != str(result_file.parent)
+
+    async def test_evaluate_agent_passes_sandbox_config_to_loaded_agent(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from dgm_controller import DGMController
+
+        class FakeSandboxManager:
+            def __init__(self, config):
+                self.config = config
+
+            def is_sandbox_ready(self):
+                return True
+
+        monkeypatch.setattr("dgm_controller.SandboxManager", FakeSandboxManager)
+        cfg = _minimal_config(tmp_path)
+        cfg["evaluation"]["use_sandbox"] = True
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        agent_file = tmp_path / "candidate_agent.py"
+        agent_file.write_text(
+            "class Agent:\n"
+            "    def __init__(self, config): self.config = config\n"
+            "    def solve_task(self, task): return {'success': True, 'solution': ''}\n",
+            encoding="utf-8",
+        )
+
+        captured = {}
+
+        class LoadedAgent:
+            def __init__(self, config):
+                captured["config"] = config
+                self.config = config
+                self.agent_id = config.agent_id
+
+        ctrl.agent_loader.load_from_path = lambda _path: LoadedAgent
+
+        async def fake_run_benchmark(agent, benchmark_name, verbose=False):
+            captured["agent"] = agent
+            captured["benchmark_name"] = benchmark_name
+            captured["verbose"] = verbose
+            return SimpleNamespace(score=0.75)
+
+        ctrl.benchmark_runner.run_benchmark = fake_run_benchmark
+
+        scores = await ctrl._evaluate_agent(str(agent_file))
+
+        assert scores == {"dummy": 0.75}
+        assert captured["config"].sandbox_manager is ctrl.sandbox_manager
+        assert captured["config"].use_sandbox is True
+        assert captured["config"].working_directory == str(agent_file.parent)
+        assert captured["agent"].config is captured["config"]
+        assert captured["benchmark_name"] == "dummy"
+        assert captured["verbose"] is False

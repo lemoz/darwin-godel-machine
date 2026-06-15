@@ -244,6 +244,38 @@ class TestRunTestCase:
         assert result["passed"] == result["total"] == 3
         assert sandbox_manager.calls == []
 
+    async def test_sandbox_request_falls_back_when_not_ready_at_runtime(
+        self,
+        tmp_path,
+    ):
+        task = _make_task(tmp_path)
+
+        class NotReadySandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_sandbox_ready(self):
+                return False
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when not ready")
+
+        sandbox_manager = NotReadySandboxManager()
+        runner = _make_runner(tmp_path, task)
+        runner.use_sandbox = True
+        runner.sandbox_manager = sandbox_manager
+
+        result = await runner._run_test_case(
+            "def add(a, b):\n    return a + b\n",
+            task.test_cases[0],
+            task,
+        )
+
+        assert result["success"] is True
+        assert result["passed"] == result["total"] == 3
+        assert sandbox_manager.calls == []
+
     def test_constructor_disables_sandbox_when_manager_not_ready(self, tmp_path):
         task = _make_task(tmp_path)
 

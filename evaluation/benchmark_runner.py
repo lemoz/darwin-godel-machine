@@ -273,10 +273,21 @@ class BenchmarkRunner:
         """Return True when sandboxed subprocess execution is configured."""
         if not self.use_sandbox or not self.sandbox_manager:
             return False
+        readiness_check = getattr(self.sandbox_manager, "is_sandbox_ready", None)
+        if readiness_check is not None:
+            return bool(readiness_check())
         availability_check = getattr(self.sandbox_manager, "is_docker_available", None)
         if availability_check is None:
             return True
-        return bool(availability_check())
+        if not bool(availability_check()):
+            return False
+        ensure_image = getattr(self.sandbox_manager, "ensure_sandbox_image", None)
+        if ensure_image is not None:
+            try:
+                ensure_image()
+            except Exception:
+                return False
+        return True
 
     # ------------------------------------------------------------------
     # Test-generation helpers
