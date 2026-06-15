@@ -5,6 +5,7 @@ import pytest
 from sandbox.sandbox_manager import SandboxConfig, SandboxManager, SandboxResult
 from scripts.run_dgm_in_sandbox import (
     SandboxRunError,
+    _build_parser,
     build_dgm_command,
     collect_environment,
     load_sandbox_config,
@@ -62,6 +63,12 @@ sandbox:
     assert sandbox_config.memory_limit == "1g"
     assert sandbox_config.cpu_limit == "0.5"
     assert sandbox_config.timeout == 12
+
+
+def test_parser_exposes_discard_changes_flag():
+    args = _build_parser().parse_args(["--discard-changes"])
+
+    assert args.discard_changes is True
 
 
 def test_project_tree_copy_skips_local_caches(tmp_path):
@@ -149,8 +156,41 @@ async def test_run_sandboxed_dgm_invokes_project_command(tmp_path):
             "environment": {},
             "network_mode": "none",
             "read_only": False,
+            "sync_back": True,
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_run_sandboxed_dgm_can_discard_successful_changes(tmp_path):
+    project_root = tmp_path / "project"
+    config = project_root / "config" / "dgm_config.yaml"
+    config.parent.mkdir(parents=True)
+    config.write_text("sandbox:\n  network_mode: none\n", encoding="utf-8")
+
+    class FakeManager:
+        def __init__(self):
+            self.calls = []
+
+        def is_sandbox_ready(self):
+            return True
+
+        async def execute_project_command(self, **kwargs):
+            self.calls.append(kwargs)
+            return SandboxResult(success=True, output="ok\n", exit_code=0)
+
+    manager = FakeManager()
+    result = await run_sandboxed_dgm(
+        config_path=config,
+        generations=1,
+        project_root=project_root,
+        env_names=[],
+        sync_back=False,
+        manager=manager,
+    )
+
+    assert result.success is True
+    assert manager.calls[0]["sync_back"] is False
 
 
 @pytest.mark.asyncio
