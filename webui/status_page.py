@@ -518,6 +518,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     project_root = Path(args.project_root).resolve()
     archive_dir = Path(args.archive_dir) if args.archive_dir else None
+    if archive_dir is not None and not archive_dir.is_absolute():
+        archive_dir = project_root / archive_dir
     model = build_status_model(project_root=project_root, archive_dir=archive_dir)
     html = render_status_page(model)
 

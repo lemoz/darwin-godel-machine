@@ -136,3 +136,26 @@ def test_status_page_cli_resolves_relative_output_under_project_root(tmp_path):
 
     assert result == 0
     assert (tmp_path / "docs" / "status.html").exists()
+
+
+def test_status_page_cli_resolves_relative_archive_under_project_root(tmp_path, monkeypatch):
+    _write_project_files(tmp_path)
+    _write_archive(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    monkeypatch.chdir(outside)
+
+    output = tmp_path / "status.html"
+    result = main(
+        [
+            "--project-root",
+            str(tmp_path),
+            "--archive-dir",
+            "archive/agents",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    assert "root-agent" in output.read_text(encoding="utf-8")
