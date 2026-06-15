@@ -14,6 +14,7 @@ from agent.tools.base_tool import (
 )
 from agent.tools.bash_tool import BashTool
 from agent.tools.edit_tool import EditTool
+from sandbox.sandbox_manager import SandboxResult
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +132,75 @@ class TestBashTool:
         assert result.status == ToolExecutionStatus.SUCCESS
         assert "sk-test-secret" not in result.output
         assert "visible" in result.output
+
+    async def test_uses_sandbox_manager_when_enabled(self, tmp_path):
+        class FakeSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            async def execute_in_sandbox(self, command, workspace_path, timeout):
+                Path(workspace_path, "from_sandbox.txt").write_text("created in sandbox")
+                self.calls.append({
+                    "command": command,
+                    "workspace_path": workspace_path,
+                    "timeout": timeout,
+                })
+                return SandboxResult(
+                    success=True,
+                    output="sandbox hello\n",
+                    exit_code=0,
+                    execution_time=0.1,
+                )
+
+        sandbox_manager = FakeSandboxManager()
+        tool = BashTool(
+            working_directory=str(tmp_path),
+            timeout=10,
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({"command": "python3 hello.py", "timeout": 7})
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert result.output == "sandbox hello\n"
+        assert result.metadata == {"exit_code": 0, "sandboxed": True}
+        assert sandbox_manager.calls[0]["command"] == "python3 hello.py"
+        assert sandbox_manager.calls[0]["timeout"] == 7
+        assert sandbox_manager.calls[0]["workspace_path"] != str(tmp_path)
+        assert str(Path(sandbox_manager.calls[0]["workspace_path"])).startswith(
+            str(Path.home() / ".cache" / "dgm-sandbox")
+        )
+        assert (tmp_path / "from_sandbox.txt").read_text() == "created in sandbox"
+
+    async def test_sandbox_request_falls_back_when_unavailable(self, tmp_path):
+        class UnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return False
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when unavailable")
+
+        sandbox_manager = UnavailableSandboxManager()
+        tool = BashTool(
+            working_directory=str(tmp_path),
+            timeout=10,
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({"command": "echo fallback"})
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "fallback" in result.output
+        assert sandbox_manager.calls == []
 
     def test_tool_name(self):
         assert self.tool.get_name() == "bash"

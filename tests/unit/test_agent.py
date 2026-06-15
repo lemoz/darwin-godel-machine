@@ -65,6 +65,19 @@ class TestAgentInit:
         agent = Agent(_make_config(tmp_path))
         assert isinstance(agent.tool_registry.get_tool("bash"), BashTool)
 
+    def test_bash_tool_receives_sandbox_config(self, tmp_path):
+        sandbox_manager = object()
+        cfg = _make_config(tmp_path)
+        cfg.sandbox_manager = sandbox_manager
+        cfg.use_sandbox = True
+
+        agent = Agent(cfg)
+
+        bash_tool = agent.tool_registry.get_tool("bash")
+        assert isinstance(bash_tool, BashTool)
+        assert bash_tool.sandbox_manager is sandbox_manager
+        assert bash_tool.use_sandbox is True
+
     def test_edit_tool_is_edit_tool(self, tmp_path):
         agent = Agent(_make_config(tmp_path))
         assert isinstance(agent.tool_registry.get_tool("edit"), EditTool)

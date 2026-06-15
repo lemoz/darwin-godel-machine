@@ -26,14 +26,14 @@ cp .env.example .env
 - Benchmark and tool subprocesses run under hard timeouts, and the entire process group is killed on expiry
 - Agent modifications must parse, define a working Agent class, and load successfully before archive admission
 
-### Docker Benchmark Isolation (opt-in)
-- Set `evaluation.use_sandbox: true` to run generated benchmark test scripts in one-shot Docker containers when Docker is available
+### Docker Command Isolation (opt-in)
+- Set `evaluation.use_sandbox: true` to run generated benchmark test scripts and agent bash tool commands in one-shot Docker containers when Docker is available
 - Sandbox containers use the configured memory, CPU, timeout, working directory, and `network_mode: none` defaults from `config/dgm_config.yaml`
 - The sandbox image is built automatically when `sandbox.auto_build_image: true`
-- If Docker or the sandbox image is unavailable, benchmark execution falls back to the direct subprocess path rather than failing the default no-Docker workflow
+- If Docker or the sandbox image is unavailable, benchmark and bash command execution fall back to the direct subprocess path rather than failing the default no-Docker workflow
 
 ### Remaining Isolation Limits
-- Agent solving, tool use, and self-modification still execute in the configured workspace on the host
+- The model orchestration loop, file-edit tool, and archive/controller logic still execute in the configured workspace on the host
 - Treat every evolution run as executing model-written code on your machine: run inside your own container or VM if that is not acceptable
 
 ### Input Validation

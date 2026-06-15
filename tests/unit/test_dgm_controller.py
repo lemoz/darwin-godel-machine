@@ -153,3 +153,23 @@ class TestDGMControllerInit:
         assert redacted["nested"]["api_token"] == "[REDACTED]"
         assert redacted["nested"]["items"][0]["password"] == "[REDACTED]"
         assert redacted["nested"]["items"][1]["safe"] == "visible"
+
+    def test_init_wires_sandbox_manager_when_enabled(self, tmp_path, monkeypatch):
+        from dgm_controller import DGMController
+
+        class FakeSandboxManager:
+            def __init__(self, config):
+                self.config = config
+
+        monkeypatch.setattr("dgm_controller.SandboxManager", FakeSandboxManager)
+        cfg = _minimal_config(tmp_path)
+        cfg["evaluation"]["use_sandbox"] = True
+        cfg["sandbox"] = {"image_name": "custom-sandbox"}
+
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        assert isinstance(ctrl.sandbox_manager, FakeSandboxManager)
+        assert ctrl.sandbox_manager.config.image_name == "custom-sandbox"
+        assert ctrl.use_sandbox is True
+        assert ctrl.benchmark_runner.sandbox_manager is ctrl.sandbox_manager
+        assert ctrl.benchmark_runner.use_sandbox is True

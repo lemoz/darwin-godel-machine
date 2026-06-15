@@ -88,6 +88,8 @@ class DGMController:
                 }
             )
             sandbox_manager = SandboxManager(sandbox_config)
+        self.sandbox_manager = sandbox_manager
+        self.use_sandbox = use_sandbox
 
         self.benchmark_runner = BenchmarkRunner(
             benchmarks_dir=evaluation_config.get('benchmarks_dir', 'config/benchmarks'),
@@ -469,7 +471,9 @@ performance."""
                 fm_provider=primary_provider,
                 fm_config=self.config['fm_providers'][primary_provider],
                 working_directory=str(workspace_dir),
-                max_iterations=self.config['agents'].get('max_steps', 20)
+                max_iterations=self.config['agents'].get('max_steps', 20),
+                sandbox_manager=self.sandbox_manager,
+                use_sandbox=self.use_sandbox,
             )
 
             # Instantiate parent agent
@@ -545,6 +549,8 @@ performance."""
                     fm_config=provider_config,
                     working_directory=str(agent_path_obj.parent),
                     max_iterations=self.config['agents'].get('max_steps', 20),
+                    sandbox_manager=self.sandbox_manager,
+                    use_sandbox=self.use_sandbox,
                 )
 
                 # Load the agent class from the file path using load_from_path,
