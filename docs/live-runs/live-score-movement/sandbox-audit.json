@@ -1,0 +1,15 @@
+{
+  "allow_network": true,
+  "config": "config/live_score_movement.yaml",
+  "env_names": [
+    "ANTHROPIC_API_KEY"
+  ],
+  "env_values": "hidden",
+  "generations": 2,
+  "network_mode": "bridge",
+  "stage_parent": "~/.cache/dgm-sandbox",
+  "stage_project": true,
+  "sync_back": true,
+  "sync_mode": "sync-back",
+  "timeout": 300
+}
