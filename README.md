@@ -47,13 +47,22 @@ cd darwin-godel-machine
 pip install -r requirements.txt
 ```
 
-3. **Configure API keys:**
+3. **Verify the no-network demo path:**
+```bash
+python scripts/verify_demo_path.py
+```
+
+This checks benchmark loading, the HumanEval-style reference solution, the
+score-movement demo, the committed live-run proof, and the archive-lineage demo
+without API keys or model calls.
+
+4. **Configure API keys:**
 ```bash
 cp .env.example .env
 # Edit .env with your API keys
 ```
 
-4. **Run the system:**
+5. **Run the system:**
 ```bash
 python run_dgm.py
 ```
@@ -273,6 +282,9 @@ tail -f dgm_run.log
 ```bash
 # Run the full test suite (155 tests, no API keys needed)
 python -m pytest
+
+# Verify the no-network demo/setup path
+python scripts/verify_demo_path.py
 
 # Test specific components
 python -m pytest tests/unit/test_agent.py
