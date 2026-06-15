@@ -13,6 +13,10 @@ import yaml
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from scripts.estimate_live_run_cost import estimate_live_run_cost
 
 
 class LiveRunPlanError(RuntimeError):
@@ -125,6 +129,13 @@ def verify_live_score_movement_plan(
         "Cost gate must require current provider pricing check before run",
     )
     _require(
+        str(cost_gate.get("pricing_source", "")).startswith(
+            "https://platform.claude.com/docs/"
+        ),
+        "Cost gate must record the official Anthropic pricing source",
+    )
+    _require(cost_gate.get("pricing_checked_at"), "Cost gate must record pricing check date")
+    _require(
         cost_gate.get("max_generations_without_reapproval") == 2,
         "Cost gate must cap generations at 2 without reapproval",
     )
@@ -134,6 +145,14 @@ def verify_live_score_movement_plan(
         "Cost gate output-token cap must match provider max_tokens",
     )
     _require(cost_gate.get("max_enabled_benchmarks") == len(enabled), "Cost gate benchmark count must match config")
+    cost_estimate = estimate_live_run_cost(
+        config_path=config_path,
+        input_price_per_mtok=float(cost_gate.get("input_price_per_mtok", 0)),
+        output_price_per_mtok=float(cost_gate.get("output_price_per_mtok", 0)),
+        assumed_input_tokens_per_call=int(cost_gate.get("assumed_input_tokens_per_call", 0)),
+        max_budget=float(cost_gate.get("max_estimated_cost_usd", 0)),
+    )
+    _require(cost_estimate["within_budget"], "Configured live-run cost estimate exceeds budget")
 
     preflight = live_run.get("required_preflight", [])
     _require(
@@ -147,6 +166,10 @@ def verify_live_score_movement_plan(
     _require(
         any("scripts/verify_live_score_movement_plan.py" in command for command in preflight),
         "Preflight must include this live score-movement plan verifier",
+    )
+    _require(
+        any("scripts/estimate_live_run_cost.py" in command for command in preflight),
+        "Preflight must include live-run cost estimate",
     )
 
     recommended_run = " ".join(live_run.get("recommended_run", []))
@@ -182,6 +205,15 @@ def verify_live_score_movement_plan(
         "requires_current_pricing_check": True,
         "requires_full_process_sandbox": True,
         "requires_scorecard_improvement": True,
+        "pricing_checked_at": str(cost_gate["pricing_checked_at"]),
+        "input_price_per_mtok": cost_estimate["input_price_per_mtok"],
+        "output_price_per_mtok": cost_estimate["output_price_per_mtok"],
+        "assumed_input_tokens_per_call": cost_estimate["assumed_input_tokens_per_call"],
+        "request_ceiling": cost_estimate["request_ceiling"],
+        "input_token_ceiling": cost_estimate["input_token_ceiling"],
+        "output_token_ceiling": cost_estimate["output_token_ceiling"],
+        "estimated_total_cost_usd": cost_estimate["estimated_total_cost_usd"],
+        "max_estimated_cost_usd": cost_estimate["max_budget_usd"],
     }
 
 

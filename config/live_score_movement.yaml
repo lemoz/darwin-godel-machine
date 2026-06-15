@@ -58,6 +58,12 @@ live_run:
   recommended_generations: 2
   cost_gate:
     check_current_provider_pricing_before_run: true
+    pricing_source: https://platform.claude.com/docs/en/about-claude/pricing
+    pricing_checked_at: 2026-06-15
+    input_price_per_mtok: 3
+    output_price_per_mtok: 15
+    assumed_input_tokens_per_call: 50000
+    max_estimated_cost_usd: 5
     max_generations_without_reapproval: 2
     max_agent_steps: 5
     max_output_tokens_per_call: 2048
@@ -66,6 +72,7 @@ live_run:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_demo_path.py
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --require
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_live_score_movement_plan.py
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --input-price-per-mtok 3 --output-price-per-mtok 15 --assumed-input-tokens-per-call 50000 --max-budget 5
   recommended_run:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/run_dgm_in_sandbox.py --config config/live_score_movement.yaml --generations 2 --allow-network --env ANTHROPIC_API_KEY --audit-output .dgm-sandbox-runs/live-score-movement-audit.json
   post_run_scorecard:

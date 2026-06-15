@@ -53,3 +53,6 @@ async def test_no_network_demo_path_verifier_passes():
     assert live_plan_check["requires_current_pricing_check"] is True
     assert live_plan_check["requires_full_process_sandbox"] is True
     assert live_plan_check["requires_scorecard_improvement"] is True
+    assert live_plan_check["request_ceiling"] == 25
+    assert live_plan_check["estimated_total_cost_usd"] == pytest.approx(4.518)
+    assert live_plan_check["max_estimated_cost_usd"] == 5
