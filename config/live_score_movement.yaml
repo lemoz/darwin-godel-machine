@@ -44,7 +44,7 @@ benchmarks:
   timeout_default: 30
   max_attempts: 3
   enabled:
-    - humaneval_headroom
+    - humaneval_calibrated
 
 logging:
   level: INFO
@@ -57,14 +57,15 @@ live_run:
   approval_required: true
   recommended_generations: 2
   headroom_gate:
-    benchmark: humaneval_headroom
+    benchmark: humaneval_calibrated
     prompt_examples_are_public_only: true
-    baseline_solution: docs/demo/humaneval_headroom_baseline.py
-    candidate_solution: docs/demo/humaneval_headroom_improved.py
-    score_report: docs/demo/humaneval_headroom_score_movement.json
-    max_baseline_score: 0.75
+    baseline_solution: docs/demo/humaneval_calibrated_baseline.py
+    candidate_solution: docs/demo/humaneval_calibrated_improved.py
+    score_report: docs/demo/humaneval_calibrated_score_movement.json
+    min_baseline_score: 0.4
+    max_baseline_score: 0.7
     min_candidate_score: 1.0
-    min_delta: 0.25
+    min_delta: 0.3
   cost_gate:
     check_current_provider_pricing_before_run: true
     pricing_source: https://platform.claude.com/docs/en/about-claude/pricing

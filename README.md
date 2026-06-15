@@ -240,9 +240,10 @@ verified by the integration test suite; add `humaneval_style` to
 `benchmarks.enabled` when you want the DGM loop to evaluate against it.
 
 For live score-movement rehearsals, see
-`config/benchmarks/humaneval_headroom.yaml`. It uses public prompt examples plus
-additional hidden evaluation cases so the benchmark can show measurable
-headroom instead of handing every scored input/output pair to the agent.
+`config/benchmarks/humaneval_calibrated.yaml`. It uses 10 public prompt
+examples and 50 scored evaluation cases across 10 standalone functions, so the
+benchmark has broader hidden-case headroom than the earlier single-pack
+`humaneval_headroom` rehearsal.
 
 To demonstrate benchmark score movement without API keys or model calls, compare
 the bundled weak and improved HumanEval-style demo solutions:
@@ -259,19 +260,21 @@ This local comparison should report a baseline score of `0.500`, a candidate
 score of `1.000`, and `delta=+0.500`. It verifies the benchmark harness and
 reporting path; it is not evidence of autonomous DGM self-improvement.
 
-The planned live rehearsal uses the hidden-case headroom benchmark. Its
+The planned live rehearsal uses the calibrated hidden-case benchmark. Its
 no-network headroom check is:
 
 ```bash
 python scripts/compare_benchmark_solutions.py \
-  --benchmark humaneval_headroom \
-  --baseline docs/demo/humaneval_headroom_baseline.py \
-  --candidate docs/demo/humaneval_headroom_improved.py \
-  --output docs/demo/humaneval_headroom_score_movement.json
+  --benchmark humaneval_calibrated \
+  --baseline docs/demo/humaneval_calibrated_baseline.py \
+  --candidate docs/demo/humaneval_calibrated_improved.py \
+  --output docs/demo/humaneval_calibrated_score_movement.json
 ```
 
-This should report a baseline score below `0.750`, a candidate score of
-`1.000`, and a positive delta of at least `+0.250`.
+This should report a baseline score of `0.600` (`30/50`), a candidate score of
+`1.000` (`50/50`), and `delta=+0.400`. The live plan verifier requires the
+baseline to stay in a calibrated `0.400` to `0.700` band so the task is neither
+already saturated nor too weak to be a useful score-movement target.
 
 For live DGM runs, summarize the generated archive metadata before claiming
 score movement:
@@ -291,7 +294,7 @@ the already-perfect base score.
 
 The planned live score-movement rehearsal is captured in
 `config/live_score_movement.yaml`. It is bounded to two generations, five agent
-steps, one benchmark (`humaneval_headroom`), and a 2,048-token output cap per
+steps, one benchmark (`humaneval_calibrated`), and a 2,048-token output cap per
 model call. Before any live provider call, run the no-network plan check and
 verify current provider pricing:
 

@@ -98,7 +98,10 @@ def verify_live_score_movement_plan(
 
     benchmark_config = config.get("benchmarks", {})
     enabled = benchmark_config.get("enabled", [])
-    _require(enabled == ["humaneval_headroom"], "Live score-movement run must target humaneval_headroom only")
+    _require(
+        enabled == ["humaneval_calibrated"],
+        "Live score-movement run must target humaneval_calibrated only",
+    )
     _require(
         benchmark_config.get("max_attempts", 0) <= 3,
         "Benchmark max_attempts must stay <= 3",
@@ -165,6 +168,14 @@ def verify_live_score_movement_plan(
         len(test_pairs) > len(prompt_pairs),
         "Headroom benchmark must include hidden evaluation cases beyond prompt examples",
     )
+    _require(
+        len(prompt_pairs) >= 8,
+        "Headroom benchmark must include broad public examples",
+    )
+    _require(
+        len(test_pairs) >= 40,
+        "Headroom benchmark must include at least 40 evaluation cases",
+    )
 
     baseline_path = _require_project_file(headroom_gate.get("baseline_solution", ""), project_root)
     candidate_path = _require_project_file(headroom_gate.get("candidate_solution", ""), project_root)
@@ -184,6 +195,10 @@ def verify_live_score_movement_plan(
     _require(
         Path(score_report.get("candidate", {}).get("path", "")) == candidate_path.relative_to(project_root),
         "Headroom score report candidate path mismatch",
+    )
+    _require(
+        baseline_score >= float(headroom_gate.get("min_baseline_score", 0)),
+        "Headroom baseline score is too low for a calibrated live rehearsal",
     )
     _require(
         baseline_score <= float(headroom_gate.get("max_baseline_score", 0)),
@@ -284,6 +299,8 @@ def verify_live_score_movement_plan(
         "headroom_baseline_score": baseline_score,
         "headroom_candidate_score": candidate_score,
         "headroom_delta": delta,
+        "headroom_public_examples": len(prompt_pairs),
+        "headroom_evaluation_cases": len(test_pairs),
         "headroom_score_report": str(report_path.relative_to(project_root)),
         "pricing_checked_at": str(cost_gate["pricing_checked_at"]),
         "input_price_per_mtok": cost_estimate["input_price_per_mtok"],

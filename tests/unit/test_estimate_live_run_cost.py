@@ -22,7 +22,7 @@ def test_estimate_live_score_movement_cost_from_config():
     )
 
     assert estimate["model"] == "claude-sonnet-4-6"
-    assert estimate["enabled_benchmarks"] == ["humaneval_headroom"]
+    assert estimate["enabled_benchmarks"] == ["humaneval_calibrated"]
     assert estimate["benchmark_count"] == 1
     assert estimate["generations"] == 2
     assert estimate["max_agent_steps"] == 5

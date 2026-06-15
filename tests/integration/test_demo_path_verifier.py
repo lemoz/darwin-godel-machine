@@ -15,6 +15,7 @@ async def test_no_network_demo_path_verifier_passes():
     assert "humaneval_reference" in names
     assert "score_movement_demo" in names
     assert "live_headroom_score_movement_demo" in names
+    assert "calibrated_score_movement_demo" in names
     assert "live_run_docs" in names
     assert "archive_lineage_artifact" in names
     assert "sandbox_runner_cli" in names
@@ -35,6 +36,16 @@ async def test_no_network_demo_path_verifier_passes():
     assert headroom_check["candidate_score"] == 1.0
     assert headroom_check["delta"] == pytest.approx(7 / 17)
 
+    calibrated_check = next(
+        check for check in checks if check["name"] == "calibrated_score_movement_demo"
+    )
+    assert calibrated_check["benchmark"] == "humaneval_calibrated"
+    assert calibrated_check["baseline_score"] == pytest.approx(0.6)
+    assert calibrated_check["candidate_score"] == 1.0
+    assert calibrated_check["delta"] == pytest.approx(0.4)
+    assert calibrated_check["baseline_passed"] == 30
+    assert calibrated_check["total"] == 50
+
     live_run_check = next(check for check in checks if check["name"] == "live_run_docs")
     assert live_run_check["scorecard"] == "docs/live-runs/2026-06-12-proof/scorecard.json"
     assert live_run_check["top_score"] == 1.0
@@ -48,6 +59,8 @@ async def test_no_network_demo_path_verifier_passes():
     assert live_attempt_check["top_score"] == pytest.approx(15 / 17)
     assert live_attempt_check["best_average_delta"] == 0.0
     assert live_attempt_check["has_improvement"] is False
+    assert live_attempt_check["has_regression"] is True
+    assert live_attempt_check["total_benchmark_regressions"] == 1
     assert live_attempt_check["audit_hides_env_values"] is True
 
     sandbox_check = next(check for check in checks if check["name"] == "sandbox_runner_cli")
@@ -66,16 +79,18 @@ async def test_no_network_demo_path_verifier_passes():
     live_plan_check = next(
         check for check in checks if check["name"] == "live_score_movement_plan"
     )
-    assert live_plan_check["benchmark"] == "humaneval_headroom"
+    assert live_plan_check["benchmark"] == "humaneval_calibrated"
     assert live_plan_check["recommended_generations"] == 2
     assert live_plan_check["approval_required"] is True
     assert live_plan_check["requires_current_pricing_check"] is True
     assert live_plan_check["requires_full_process_sandbox"] is True
     assert live_plan_check["requires_scorecard_improvement"] is True
     assert live_plan_check["requires_headroom_gate"] is True
-    assert live_plan_check["headroom_baseline_score"] == pytest.approx(10 / 17)
+    assert live_plan_check["headroom_baseline_score"] == pytest.approx(0.6)
     assert live_plan_check["headroom_candidate_score"] == 1.0
-    assert live_plan_check["headroom_delta"] == pytest.approx(7 / 17)
+    assert live_plan_check["headroom_delta"] == pytest.approx(0.4)
+    assert live_plan_check["headroom_public_examples"] == 10
+    assert live_plan_check["headroom_evaluation_cases"] == 50
     assert live_plan_check["request_ceiling"] == 25
     assert live_plan_check["estimated_total_cost_usd"] == pytest.approx(4.518)
     assert live_plan_check["max_estimated_cost_usd"] == 5

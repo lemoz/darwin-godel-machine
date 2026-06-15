@@ -1,0 +1,233 @@
+name: humaneval_calibrated
+description: Calibrated HumanEval-style pack with public examples and broad hidden evaluation cases
+difficulty: medium
+timeout: 30
+category: algorithms
+scoring_method: partial
+
+task_prompt: |
+  Implement the requested standalone Python functions. The examples below are
+  public examples only; evaluation includes additional hidden edge cases. Return
+  only Python code that defines the requested functions.
+
+prompt_test_cases:
+  - function_name: normalize_whitespace
+    task_description: strips leading/trailing whitespace and collapses internal whitespace runs
+    inputs:
+      - "'  hello  world  '"
+    expected_outputs:
+      - "'hello world'"
+
+  - function_name: first_unique
+    task_description: returns the first item that appears exactly once, or None
+    inputs:
+      - "[2, 1, 2, 3, 1]"
+    expected_outputs:
+      - "3"
+
+  - function_name: rotate_left
+    task_description: rotates a list left by n positions, wrapping around
+    inputs:
+      - "[1, 2, 3, 4], 1"
+    expected_outputs:
+      - "[2, 3, 4, 1]"
+
+  - function_name: is_valid_slug
+    task_description: accepts lowercase alphanumeric slugs separated by single hyphens
+    inputs:
+      - "'valid-slug-1'"
+    expected_outputs:
+      - "True"
+
+  - function_name: parse_ints
+    task_description: extracts signed integers from comma or whitespace separated text
+    inputs:
+      - "'1,2,3'"
+    expected_outputs:
+      - "[1, 2, 3]"
+
+  - function_name: flatten_once
+    task_description: flattens one list or tuple nesting level and leaves strings intact
+    inputs:
+      - "[[1, 2], 3, [4]]"
+    expected_outputs:
+      - "[1, 2, 3, 4]"
+
+  - function_name: merge_intervals
+    task_description: merges overlapping intervals after sorting by start position
+    inputs:
+      - "[(1, 3), (2, 4)]"
+    expected_outputs:
+      - "[(1, 4)]"
+
+  - function_name: top_k_frequent
+    task_description: returns the k most frequent items, breaking ties by first appearance
+    inputs:
+      - "['a', 'b', 'a', 'c', 'b', 'a'], 2"
+    expected_outputs:
+      - "['a', 'b']"
+
+  - function_name: roman_to_int
+    task_description: converts a Roman numeral string to an integer
+    inputs:
+      - "'III'"
+    expected_outputs:
+      - "3"
+
+  - function_name: safe_get
+    task_description: follows a path through dictionaries and lists, returning default if missing
+    inputs:
+      - "{'a': {'b': 2}}, ['a', 'b'], None"
+    expected_outputs:
+      - "2"
+
+test_cases:
+  - function_name: normalize_whitespace
+    task_description: strips leading/trailing whitespace and collapses internal whitespace runs
+    inputs:
+      - "'  hello  world  '"
+      - "'\\nalpha\\t beta\\n'"
+      - "'one    two   three'"
+      - "''"
+      - "' spaced '"
+    expected_outputs:
+      - "'hello world'"
+      - "'alpha beta'"
+      - "'one two three'"
+      - "''"
+      - "'spaced'"
+
+  - function_name: first_unique
+    task_description: returns the first item that appears exactly once, or None
+    inputs:
+      - "[2, 1, 2, 3, 1]"
+      - "['a', 'b', 'a']"
+      - "[1, 1]"
+      - "[]"
+      - "['x', 'y', 'x', 'z']"
+    expected_outputs:
+      - "3"
+      - "'b'"
+      - "None"
+      - "None"
+      - "'y'"
+
+  - function_name: rotate_left
+    task_description: rotates a list left by n positions, wrapping around
+    inputs:
+      - "[1, 2, 3, 4], 1"
+      - "[1, 2, 3], 4"
+      - "[], 3"
+      - "[1, 2, 3], 0"
+      - "['a', 'b', 'c'], -1"
+    expected_outputs:
+      - "[2, 3, 4, 1]"
+      - "[2, 3, 1]"
+      - "[]"
+      - "[1, 2, 3]"
+      - "['c', 'a', 'b']"
+
+  - function_name: is_valid_slug
+    task_description: accepts lowercase alphanumeric slugs separated by single hyphens
+    inputs:
+      - "'valid-slug-1'"
+      - "'-bad'"
+      - "'bad--slug'"
+      - "'Bad'"
+      - "'ok'"
+    expected_outputs:
+      - "True"
+      - "False"
+      - "False"
+      - "False"
+      - "True"
+
+  - function_name: parse_ints
+    task_description: extracts signed integers from comma or whitespace separated text
+    inputs:
+      - "'1,2,3'"
+      - "'1, 2, -3'"
+      - "''"
+      - "'4 -5 6'"
+      - "'7,,8'"
+    expected_outputs:
+      - "[1, 2, 3]"
+      - "[1, 2, -3]"
+      - "[]"
+      - "[4, -5, 6]"
+      - "[7, 8]"
+
+  - function_name: flatten_once
+    task_description: flattens one list or tuple nesting level and leaves strings intact
+    inputs:
+      - "[[1, 2], 3, [4]]"
+      - "[(1, 2), [3]]"
+      - "[]"
+      - "[[[]], 1]"
+      - "['ab', [1, 2]]"
+    expected_outputs:
+      - "[1, 2, 3, 4]"
+      - "[1, 2, 3]"
+      - "[]"
+      - "[[], 1]"
+      - "['ab', 1, 2]"
+
+  - function_name: merge_intervals
+    task_description: merges overlapping intervals after sorting by start position
+    inputs:
+      - "[(1, 3), (2, 4)]"
+      - "[(5, 6), (1, 3)]"
+      - "[]"
+      - "[(1, 2), (3, 4)]"
+      - "[(1, 5), (2, 3)]"
+    expected_outputs:
+      - "[(1, 4)]"
+      - "[(1, 3), (5, 6)]"
+      - "[]"
+      - "[(1, 2), (3, 4)]"
+      - "[(1, 5)]"
+
+  - function_name: top_k_frequent
+    task_description: returns the k most frequent items, breaking ties by first appearance
+    inputs:
+      - "['a', 'b', 'a', 'c', 'b', 'a'], 2"
+      - "[3, 3, 2, 1, 2, 2], 1"
+      - "[], 3"
+      - "['b', 'a', 'b', 'a'], 2"
+      - "[5, 4, 5, 4, 4, 5], 1"
+    expected_outputs:
+      - "['a', 'b']"
+      - "[2]"
+      - "[]"
+      - "['b', 'a']"
+      - "[5]"
+
+  - function_name: roman_to_int
+    task_description: converts a Roman numeral string to an integer
+    inputs:
+      - "'III'"
+      - "'IV'"
+      - "'IX'"
+      - "'LVIII'"
+      - "''"
+    expected_outputs:
+      - "3"
+      - "4"
+      - "9"
+      - "58"
+      - "0"
+
+  - function_name: safe_get
+    task_description: follows a path through dictionaries and lists, returning default if missing
+    inputs:
+      - "{'a': {'b': 2}}, ['a', 'b'], None"
+      - "{'a': [10]}, ['a', 0], None"
+      - "{}, ['x'], 'missing'"
+      - "{'a': None}, ['a', 'b'], 7"
+      - "[1, {'x': 3}], [1, 'x'], None"
+    expected_outputs:
+      - "2"
+      - "10"
+      - "'missing'"
+      - "7"
+      - "3"

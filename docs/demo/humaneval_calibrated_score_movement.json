@@ -1,0 +1,883 @@
+{
+  "baseline": {
+    "label": "baseline",
+    "passed": 30,
+    "path": "docs/demo/humaneval_calibrated_baseline.py",
+    "score": 0.6,
+    "test_cases": [
+      {
+        "function_name": "normalize_whitespace",
+        "individual_results": [
+          {
+            "actual_output": "'hello world'",
+            "error": null,
+            "expected_output": "'hello world'",
+            "input": "'  hello  world  '",
+            "success": true
+          },
+          {
+            "actual_output": "'alpha\\t beta'",
+            "error": null,
+            "expected_output": "'alpha beta'",
+            "input": "'\\nalpha\\t beta\\n'",
+            "success": false
+          },
+          {
+            "actual_output": "'one  two  three'",
+            "error": null,
+            "expected_output": "'one two three'",
+            "input": "'one    two   three'",
+            "success": false
+          },
+          {
+            "actual_output": "''",
+            "error": null,
+            "expected_output": "''",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": "'spaced'",
+            "error": null,
+            "expected_output": "'spaced'",
+            "input": "' spaced '",
+            "success": true
+          }
+        ],
+        "passed": 3,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "first_unique",
+        "individual_results": [
+          {
+            "actual_output": "2",
+            "error": null,
+            "expected_output": "3",
+            "input": "[2, 1, 2, 3, 1]",
+            "success": false
+          },
+          {
+            "actual_output": "'a'",
+            "error": null,
+            "expected_output": "'b'",
+            "input": "['a', 'b', 'a']",
+            "success": false
+          },
+          {
+            "actual_output": "1",
+            "error": null,
+            "expected_output": "None",
+            "input": "[1, 1]",
+            "success": false
+          },
+          {
+            "actual_output": "None",
+            "error": null,
+            "expected_output": "None",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "'x'",
+            "error": null,
+            "expected_output": "'y'",
+            "input": "['x', 'y', 'x', 'z']",
+            "success": false
+          }
+        ],
+        "passed": 1,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "rotate_left",
+        "individual_results": [
+          {
+            "actual_output": "[2, 3, 4, 1]",
+            "error": null,
+            "expected_output": "[2, 3, 4, 1]",
+            "input": "[1, 2, 3, 4], 1",
+            "success": true
+          },
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[2, 3, 1]",
+            "input": "[1, 2, 3], 4",
+            "success": false
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[], 3",
+            "success": true
+          },
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[1, 2, 3]",
+            "input": "[1, 2, 3], 0",
+            "success": true
+          },
+          {
+            "actual_output": "['c', 'a', 'b']",
+            "error": null,
+            "expected_output": "['c', 'a', 'b']",
+            "input": "['a', 'b', 'c'], -1",
+            "success": true
+          }
+        ],
+        "passed": 4,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "is_valid_slug",
+        "individual_results": [
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "'valid-slug-1'",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "False",
+            "input": "'-bad'",
+            "success": false
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "False",
+            "input": "'bad--slug'",
+            "success": false
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "'Bad'",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "'ok'",
+            "success": true
+          }
+        ],
+        "passed": 3,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "parse_ints",
+        "individual_results": [
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[1, 2, 3]",
+            "input": "'1,2,3'",
+            "success": true
+          },
+          {
+            "actual_output": "[1, 2, -3]",
+            "error": null,
+            "expected_output": "[1, 2, -3]",
+            "input": "'1, 2, -3'",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": null,
+            "error": "CallError: invalid literal for int() with base 10: '4 -5 6'",
+            "expected_output": "[4, -5, 6]",
+            "input": "'4 -5 6'",
+            "success": false
+          },
+          {
+            "actual_output": null,
+            "error": "CallError: invalid literal for int() with base 10: ''",
+            "expected_output": "[7, 8]",
+            "input": "'7,,8'",
+            "success": false
+          }
+        ],
+        "passed": 3,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "flatten_once",
+        "individual_results": [
+          {
+            "actual_output": "[1, 2, 3, 4]",
+            "error": null,
+            "expected_output": "[1, 2, 3, 4]",
+            "input": "[[1, 2], 3, [4]]",
+            "success": true
+          },
+          {
+            "actual_output": "[(1, 2), 3]",
+            "error": null,
+            "expected_output": "[1, 2, 3]",
+            "input": "[(1, 2), [3]]",
+            "success": false
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "[[], 1]",
+            "error": null,
+            "expected_output": "[[], 1]",
+            "input": "[[[]], 1]",
+            "success": true
+          },
+          {
+            "actual_output": "['ab', 1, 2]",
+            "error": null,
+            "expected_output": "['ab', 1, 2]",
+            "input": "['ab', [1, 2]]",
+            "success": true
+          }
+        ],
+        "passed": 4,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "merge_intervals",
+        "individual_results": [
+          {
+            "actual_output": "[(1, 4)]",
+            "error": null,
+            "expected_output": "[(1, 4)]",
+            "input": "[(1, 3), (2, 4)]",
+            "success": true
+          },
+          {
+            "actual_output": "[(5, 6)]",
+            "error": null,
+            "expected_output": "[(1, 3), (5, 6)]",
+            "input": "[(5, 6), (1, 3)]",
+            "success": false
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "[(1, 2), (3, 4)]",
+            "error": null,
+            "expected_output": "[(1, 2), (3, 4)]",
+            "input": "[(1, 2), (3, 4)]",
+            "success": true
+          },
+          {
+            "actual_output": "[(1, 5)]",
+            "error": null,
+            "expected_output": "[(1, 5)]",
+            "input": "[(1, 5), (2, 3)]",
+            "success": true
+          }
+        ],
+        "passed": 4,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "top_k_frequent",
+        "individual_results": [
+          {
+            "actual_output": "['a', 'b']",
+            "error": null,
+            "expected_output": "['a', 'b']",
+            "input": "['a', 'b', 'a', 'c', 'b', 'a'], 2",
+            "success": true
+          },
+          {
+            "actual_output": "[1]",
+            "error": null,
+            "expected_output": "[2]",
+            "input": "[3, 3, 2, 1, 2, 2], 1",
+            "success": false
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[], 3",
+            "success": true
+          },
+          {
+            "actual_output": "['a', 'b']",
+            "error": null,
+            "expected_output": "['b', 'a']",
+            "input": "['b', 'a', 'b', 'a'], 2",
+            "success": false
+          },
+          {
+            "actual_output": "[4]",
+            "error": null,
+            "expected_output": "[5]",
+            "input": "[5, 4, 5, 4, 4, 5], 1",
+            "success": false
+          }
+        ],
+        "passed": 2,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "roman_to_int",
+        "individual_results": [
+          {
+            "actual_output": "3",
+            "error": null,
+            "expected_output": "3",
+            "input": "'III'",
+            "success": true
+          },
+          {
+            "actual_output": "6",
+            "error": null,
+            "expected_output": "4",
+            "input": "'IV'",
+            "success": false
+          },
+          {
+            "actual_output": "11",
+            "error": null,
+            "expected_output": "9",
+            "input": "'IX'",
+            "success": false
+          },
+          {
+            "actual_output": "58",
+            "error": null,
+            "expected_output": "58",
+            "input": "'LVIII'",
+            "success": true
+          },
+          {
+            "actual_output": "0",
+            "error": null,
+            "expected_output": "0",
+            "input": "''",
+            "success": true
+          }
+        ],
+        "passed": 3,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "safe_get",
+        "individual_results": [
+          {
+            "actual_output": "2",
+            "error": null,
+            "expected_output": "2",
+            "input": "{'a': {'b': 2}}, ['a', 'b'], None",
+            "success": true
+          },
+          {
+            "actual_output": "None",
+            "error": null,
+            "expected_output": "10",
+            "input": "{'a': [10]}, ['a', 0], None",
+            "success": false
+          },
+          {
+            "actual_output": "'missing'",
+            "error": null,
+            "expected_output": "'missing'",
+            "input": "{}, ['x'], 'missing'",
+            "success": true
+          },
+          {
+            "actual_output": "7",
+            "error": null,
+            "expected_output": "7",
+            "input": "{'a': None}, ['a', 'b'], 7",
+            "success": true
+          },
+          {
+            "actual_output": "None",
+            "error": null,
+            "expected_output": "3",
+            "input": "[1, {'x': 3}], [1, 'x'], None",
+            "success": false
+          }
+        ],
+        "passed": 3,
+        "success": false,
+        "total": 5
+      }
+    ],
+    "total": 50
+  },
+  "benchmark": "humaneval_calibrated",
+  "benchmarks_dir": "config/benchmarks",
+  "candidate": {
+    "label": "candidate",
+    "passed": 50,
+    "path": "docs/demo/humaneval_calibrated_improved.py",
+    "score": 1.0,
+    "test_cases": [
+      {
+        "function_name": "normalize_whitespace",
+        "individual_results": [
+          {
+            "actual_output": "'hello world'",
+            "error": null,
+            "expected_output": "'hello world'",
+            "input": "'  hello  world  '",
+            "success": true
+          },
+          {
+            "actual_output": "'alpha beta'",
+            "error": null,
+            "expected_output": "'alpha beta'",
+            "input": "'\\nalpha\\t beta\\n'",
+            "success": true
+          },
+          {
+            "actual_output": "'one two three'",
+            "error": null,
+            "expected_output": "'one two three'",
+            "input": "'one    two   three'",
+            "success": true
+          },
+          {
+            "actual_output": "''",
+            "error": null,
+            "expected_output": "''",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": "'spaced'",
+            "error": null,
+            "expected_output": "'spaced'",
+            "input": "' spaced '",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "first_unique",
+        "individual_results": [
+          {
+            "actual_output": "3",
+            "error": null,
+            "expected_output": "3",
+            "input": "[2, 1, 2, 3, 1]",
+            "success": true
+          },
+          {
+            "actual_output": "'b'",
+            "error": null,
+            "expected_output": "'b'",
+            "input": "['a', 'b', 'a']",
+            "success": true
+          },
+          {
+            "actual_output": "None",
+            "error": null,
+            "expected_output": "None",
+            "input": "[1, 1]",
+            "success": true
+          },
+          {
+            "actual_output": "None",
+            "error": null,
+            "expected_output": "None",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "'y'",
+            "error": null,
+            "expected_output": "'y'",
+            "input": "['x', 'y', 'x', 'z']",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "rotate_left",
+        "individual_results": [
+          {
+            "actual_output": "[2, 3, 4, 1]",
+            "error": null,
+            "expected_output": "[2, 3, 4, 1]",
+            "input": "[1, 2, 3, 4], 1",
+            "success": true
+          },
+          {
+            "actual_output": "[2, 3, 1]",
+            "error": null,
+            "expected_output": "[2, 3, 1]",
+            "input": "[1, 2, 3], 4",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[], 3",
+            "success": true
+          },
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[1, 2, 3]",
+            "input": "[1, 2, 3], 0",
+            "success": true
+          },
+          {
+            "actual_output": "['c', 'a', 'b']",
+            "error": null,
+            "expected_output": "['c', 'a', 'b']",
+            "input": "['a', 'b', 'c'], -1",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "is_valid_slug",
+        "individual_results": [
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "'valid-slug-1'",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "'-bad'",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "'bad--slug'",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "'Bad'",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "'ok'",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "parse_ints",
+        "individual_results": [
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[1, 2, 3]",
+            "input": "'1,2,3'",
+            "success": true
+          },
+          {
+            "actual_output": "[1, 2, -3]",
+            "error": null,
+            "expected_output": "[1, 2, -3]",
+            "input": "'1, 2, -3'",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": "[4, -5, 6]",
+            "error": null,
+            "expected_output": "[4, -5, 6]",
+            "input": "'4 -5 6'",
+            "success": true
+          },
+          {
+            "actual_output": "[7, 8]",
+            "error": null,
+            "expected_output": "[7, 8]",
+            "input": "'7,,8'",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "flatten_once",
+        "individual_results": [
+          {
+            "actual_output": "[1, 2, 3, 4]",
+            "error": null,
+            "expected_output": "[1, 2, 3, 4]",
+            "input": "[[1, 2], 3, [4]]",
+            "success": true
+          },
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[1, 2, 3]",
+            "input": "[(1, 2), [3]]",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "[[], 1]",
+            "error": null,
+            "expected_output": "[[], 1]",
+            "input": "[[[]], 1]",
+            "success": true
+          },
+          {
+            "actual_output": "['ab', 1, 2]",
+            "error": null,
+            "expected_output": "['ab', 1, 2]",
+            "input": "['ab', [1, 2]]",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "merge_intervals",
+        "individual_results": [
+          {
+            "actual_output": "[(1, 4)]",
+            "error": null,
+            "expected_output": "[(1, 4)]",
+            "input": "[(1, 3), (2, 4)]",
+            "success": true
+          },
+          {
+            "actual_output": "[(1, 3), (5, 6)]",
+            "error": null,
+            "expected_output": "[(1, 3), (5, 6)]",
+            "input": "[(5, 6), (1, 3)]",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "[(1, 2), (3, 4)]",
+            "error": null,
+            "expected_output": "[(1, 2), (3, 4)]",
+            "input": "[(1, 2), (3, 4)]",
+            "success": true
+          },
+          {
+            "actual_output": "[(1, 5)]",
+            "error": null,
+            "expected_output": "[(1, 5)]",
+            "input": "[(1, 5), (2, 3)]",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "top_k_frequent",
+        "individual_results": [
+          {
+            "actual_output": "['a', 'b']",
+            "error": null,
+            "expected_output": "['a', 'b']",
+            "input": "['a', 'b', 'a', 'c', 'b', 'a'], 2",
+            "success": true
+          },
+          {
+            "actual_output": "[2]",
+            "error": null,
+            "expected_output": "[2]",
+            "input": "[3, 3, 2, 1, 2, 2], 1",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[], 3",
+            "success": true
+          },
+          {
+            "actual_output": "['b', 'a']",
+            "error": null,
+            "expected_output": "['b', 'a']",
+            "input": "['b', 'a', 'b', 'a'], 2",
+            "success": true
+          },
+          {
+            "actual_output": "[5]",
+            "error": null,
+            "expected_output": "[5]",
+            "input": "[5, 4, 5, 4, 4, 5], 1",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "roman_to_int",
+        "individual_results": [
+          {
+            "actual_output": "3",
+            "error": null,
+            "expected_output": "3",
+            "input": "'III'",
+            "success": true
+          },
+          {
+            "actual_output": "4",
+            "error": null,
+            "expected_output": "4",
+            "input": "'IV'",
+            "success": true
+          },
+          {
+            "actual_output": "9",
+            "error": null,
+            "expected_output": "9",
+            "input": "'IX'",
+            "success": true
+          },
+          {
+            "actual_output": "58",
+            "error": null,
+            "expected_output": "58",
+            "input": "'LVIII'",
+            "success": true
+          },
+          {
+            "actual_output": "0",
+            "error": null,
+            "expected_output": "0",
+            "input": "''",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "safe_get",
+        "individual_results": [
+          {
+            "actual_output": "2",
+            "error": null,
+            "expected_output": "2",
+            "input": "{'a': {'b': 2}}, ['a', 'b'], None",
+            "success": true
+          },
+          {
+            "actual_output": "10",
+            "error": null,
+            "expected_output": "10",
+            "input": "{'a': [10]}, ['a', 0], None",
+            "success": true
+          },
+          {
+            "actual_output": "'missing'",
+            "error": null,
+            "expected_output": "'missing'",
+            "input": "{}, ['x'], 'missing'",
+            "success": true
+          },
+          {
+            "actual_output": "7",
+            "error": null,
+            "expected_output": "7",
+            "input": "{'a': None}, ['a', 'b'], 7",
+            "success": true
+          },
+          {
+            "actual_output": "3",
+            "error": null,
+            "expected_output": "3",
+            "input": "[1, {'x': 3}], [1, 'x'], None",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      }
+    ],
+    "total": 50
+  },
+  "delta": 0.4
+}

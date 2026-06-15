@@ -104,6 +104,21 @@ def summarize_archive_scores(
                 set(parent["benchmark_scores"]) & set(child["benchmark_scores"])
             )
         }
+        benchmark_improvements = {
+            name: delta
+            for name, delta in benchmark_deltas.items()
+            if delta > min_delta
+        }
+        benchmark_regressions = {
+            name: delta
+            for name, delta in benchmark_deltas.items()
+            if delta < -min_delta
+        }
+        benchmark_unchanged = [
+            name
+            for name, delta in benchmark_deltas.items()
+            if -min_delta <= delta <= min_delta
+        ]
         average_delta = child["average_score"] - parent["average_score"]
         parent_child_deltas.append(
             {
@@ -115,6 +130,9 @@ def summarize_archive_scores(
                 "child_average_score": child["average_score"],
                 "average_delta": average_delta,
                 "benchmark_deltas": benchmark_deltas,
+                "benchmark_improvements": benchmark_improvements,
+                "benchmark_regressions": benchmark_regressions,
+                "benchmark_unchanged": benchmark_unchanged,
                 "is_improvement": average_delta > min_delta,
             }
         )
@@ -141,6 +159,18 @@ def summarize_archive_scores(
         "best_average_delta": best_delta,
         "min_delta": min_delta,
         "has_improvement": bool(improvements),
+        "has_regression": any(
+            delta["benchmark_regressions"] for delta in parent_child_deltas
+        ),
+        "total_benchmark_improvements": sum(
+            len(delta["benchmark_improvements"]) for delta in parent_child_deltas
+        ),
+        "total_benchmark_regressions": sum(
+            len(delta["benchmark_regressions"]) for delta in parent_child_deltas
+        ),
+        "total_benchmark_unchanged": sum(
+            len(delta["benchmark_unchanged"]) for delta in parent_child_deltas
+        ),
         "generation_best_scores": _generation_best_scores(agents),
         "parent_child_deltas": parent_child_deltas,
         "improvements": improvements,
