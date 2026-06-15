@@ -154,6 +154,7 @@ def build_status_model(
         "python scripts/verify_demo_path.py",
         "python scripts/generate_webui_status.py --output docs/webui-status.html",
         "python scripts/run_dgm_in_sandbox.py --help",
+        "python scripts/run_dgm_in_sandbox.py --config config/dgm_config.yaml --generations 1 --discard-changes",
     ]
 
     return WebUIStatusModel(

@@ -102,6 +102,7 @@ def test_render_status_page_includes_lineage_artifacts_and_commands(tmp_path):
     assert "docs/live-runs/2026-06-12-proof" in html
     assert "python scripts/verify_demo_path.py" in html
     assert "python scripts/run_dgm_in_sandbox.py --help" in html
+    assert "python scripts/run_dgm_in_sandbox.py --config config/dgm_config.yaml --generations 1 --discard-changes" in html
 
 
 def test_render_status_page_handles_missing_archive_without_creating_it(tmp_path):
