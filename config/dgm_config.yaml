@@ -51,9 +51,9 @@ evaluation:
   timeout_seconds: 30
   use_sandbox: false
 
-# Optional Docker sandbox settings for benchmark test scripts and agent bash
-# tool commands. The model orchestration loop and edit tool still run in the
-# configured host workspace.
+# Optional Docker sandbox settings for benchmark test scripts plus agent bash
+# and edit tool operations. The model orchestration loop and controller/archive
+# logic still run in the configured host workspace.
 sandbox:
   image_name: dgm-sandbox
   memory_limit: 2g

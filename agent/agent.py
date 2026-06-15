@@ -127,8 +127,13 @@ class Agent:
         )
         self.tool_registry.register_tool(bash_tool)
         
-        # Register edit tool (placeholder for now)
-        edit_tool = EditTool(working_directory=str(self.working_directory))
+        # Register edit tool
+        edit_tool = EditTool(
+            working_directory=str(self.working_directory),
+            sandbox_manager=self.config.sandbox_manager,
+            use_sandbox=self.config.use_sandbox,
+            timeout=self.config.tool_timeout,
+        )
         self.tool_registry.register_tool(edit_tool)
     
     async def solve_task(self, task: Task) -> Dict[str, Any]:

@@ -78,6 +78,21 @@ class TestAgentInit:
         assert bash_tool.sandbox_manager is sandbox_manager
         assert bash_tool.use_sandbox is True
 
+    def test_edit_tool_receives_sandbox_config(self, tmp_path):
+        sandbox_manager = object()
+        cfg = _make_config(tmp_path)
+        cfg.sandbox_manager = sandbox_manager
+        cfg.use_sandbox = True
+        cfg.tool_timeout = 17
+
+        agent = Agent(cfg)
+
+        edit_tool = agent.tool_registry.get_tool("edit")
+        assert isinstance(edit_tool, EditTool)
+        assert edit_tool.sandbox_manager is sandbox_manager
+        assert edit_tool.use_sandbox is True
+        assert edit_tool.default_timeout == 17
+
     def test_edit_tool_is_edit_tool(self, tmp_path):
         agent = Agent(_make_config(tmp_path))
         assert isinstance(agent.tool_registry.get_tool("edit"), EditTool)

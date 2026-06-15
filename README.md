@@ -25,7 +25,7 @@ For more details, see the [official blog post](https://sakana.ai/dgm/) from Saka
 - **🛠️ Tool-Equipped Agents**: Agents use Bash and file editing tools to solve problems
 - **🏪 Agent Archive System**: Stores successful agents with performance and novelty metrics
 - **🎯 Benchmark-Driven Evolution**: Uses custom coding challenges to measure improvement
-- **🔒 Guarded Execution**: Workspace-scoped file access, command filtering, hard timeouts, and opt-in Docker isolation for benchmark test scripts and agent bash commands
+- **🔒 Guarded Execution**: Workspace-scoped file access, command filtering, hard timeouts, and opt-in Docker isolation for benchmark test scripts plus agent bash/edit operations
 
 ## 🚀 Quick Start
 
@@ -79,7 +79,7 @@ dgm_settings:
   sandbox_timeout: 300
 
 evaluation:
-  use_sandbox: false  # set true to run benchmark tests and bash tool commands in Docker when available
+  use_sandbox: false  # set true to run benchmark tests and agent bash/edit operations in Docker when available
 
 sandbox:
   image_name: dgm-sandbox
@@ -280,12 +280,12 @@ Results are stored in the `results/` directory with detailed JSON reports.
 - **Workspace Containment**: File edits and bash redirects are resolved and confined to the agent's workspace; path-traversal escapes are rejected
 - **Command Filtering**: Dangerous commands are blocked before execution
 - **Hard Timeouts**: Benchmark and tool subprocesses are killed (entire process group) on timeout
-- **Opt-in Docker Command Isolation**: With `evaluation.use_sandbox: true`, generated benchmark test scripts and agent bash tool commands run in one-shot Docker containers with image, memory, CPU, timeout, and network settings from `sandbox`
+- **Opt-in Docker Command Isolation**: With `evaluation.use_sandbox: true`, generated benchmark test scripts plus agent bash and edit tool operations run in one-shot Docker containers with image, memory, CPU, timeout, and network settings from `sandbox`
 - **Validation Checks**: Modified agents must parse, define a working Agent class, and load before admission to the archive
 - **Human Oversight**: Optional pause points for review
 - **Comprehensive Logging**: Full audit trail of all changes
 
-> **Note**: Docker isolation currently covers generated benchmark test scripts and bash tool commands. The model orchestration loop, file-edit tool, and archive/controller logic still execute in the configured host workspace with guards and timeouts, so run untrusted evolution experiments inside your own container or VM.
+> **Note**: Docker isolation currently covers generated benchmark test scripts plus agent bash and edit tool operations. The model orchestration loop and archive/controller logic still execute in the configured host workspace with guards and timeouts, so run untrusted evolution experiments inside your own container or VM.
 
 ## 🐛 Troubleshooting
 
