@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import os
 import shlex
 import sys
@@ -150,6 +151,29 @@ def format_run_audit(audit: Mapping[str, Any]) -> str:
     ])
 
 
+def resolve_audit_output_path(
+    audit_output: Optional[str],
+    project_root: Path,
+) -> Optional[Path]:
+    """Resolve an optional audit artifact path inside the project root."""
+    if not audit_output:
+        return None
+    relative_output = _project_relative(Path(audit_output), project_root)
+    return project_root.resolve() / relative_output
+
+
+def write_run_audit(audit: Mapping[str, Any], output_path: Path) -> None:
+    """Write a non-secret audit artifact as JSON."""
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            json.dumps(dict(audit), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        raise SandboxRunError(f"Could not write sandbox audit artifact: {exc}") from exc
+
+
 async def run_sandboxed_dgm(
     *,
     config_path: Path,
@@ -220,6 +244,13 @@ def _build_parser() -> argparse.ArgumentParser:
             "writes/deletes back to the host checkout."
         ),
     )
+    parser.add_argument(
+        "--audit-output",
+        help=(
+            "Optional project-relative path for a non-secret JSON audit artifact. "
+            "The artifact records flags and env variable names, not env values."
+        ),
+    )
     return parser
 
 
@@ -244,6 +275,13 @@ async def _main_async(args: argparse.Namespace) -> int:
             sandbox_config=sandbox_config,
         )
         print(format_run_audit(audit), file=sys.stderr)
+        audit_output = resolve_audit_output_path(args.audit_output, project_root)
+        if audit_output is not None:
+            write_run_audit(audit, audit_output)
+            print(
+                f"[audit] artifact={audit_output.relative_to(project_root)}",
+                file=sys.stderr,
+            )
         result = await run_sandboxed_dgm(
             config_path=config_path,
             generations=args.generations,

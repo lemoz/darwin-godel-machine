@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -12,9 +13,11 @@ from scripts.run_dgm_in_sandbox import (
     collect_environment,
     format_run_audit,
     load_sandbox_config,
+    resolve_audit_output_path,
     resolve_network_mode,
     run_sandboxed_dgm,
     validate_environment_pass_through,
+    write_run_audit,
 )
 
 
@@ -88,6 +91,41 @@ def test_run_audit_summarizes_flags_without_secret_values(tmp_path):
     assert "ANTHROPIC_API_KEY" in text
     assert "env_values=hidden" in text
     assert "secret" not in text.lower()
+
+
+def test_resolve_audit_output_path_stays_inside_project(tmp_path):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+
+    assert resolve_audit_output_path(None, project_root) is None
+    assert resolve_audit_output_path(
+        ".dgm-sandbox-runs/audit.json",
+        project_root,
+    ) == project_root.resolve() / ".dgm-sandbox-runs" / "audit.json"
+    assert resolve_audit_output_path(
+        str(project_root / "logs" / "audit.json"),
+        project_root,
+    ) == project_root.resolve() / "logs" / "audit.json"
+
+    with pytest.raises(SandboxRunError, match="outside project root"):
+        resolve_audit_output_path(tmp_path / "outside.json", project_root)
+
+
+def test_write_run_audit_writes_json_without_secret_values(tmp_path):
+    artifact = tmp_path / ".dgm-sandbox-runs" / "audit.json"
+    audit = {
+        "env_names": ["ANTHROPIC_API_KEY"],
+        "env_values": "hidden",
+        "network_mode": "bridge",
+    }
+
+    write_run_audit(audit, artifact)
+
+    artifact_text = artifact.read_text(encoding="utf-8")
+    written = json.loads(artifact_text)
+    assert written["env_names"] == ["ANTHROPIC_API_KEY"]
+    assert written["env_values"] == "hidden"
+    assert "secret-value" not in artifact_text
 
 
 def test_load_sandbox_config_reads_project_config(tmp_path):
@@ -457,10 +495,15 @@ async def test_main_prints_non_secret_audit(monkeypatch, tmp_path, capsys):
         "--env",
         "ANTHROPIC_API_KEY",
         "--discard-changes",
+        "--audit-output",
+        ".dgm-sandbox-runs/audit.json",
     ])
 
     exit_code = await _main_async(args)
     captured = capsys.readouterr()
+    audit_artifact = project_root / ".dgm-sandbox-runs" / "audit.json"
+    audit_text = audit_artifact.read_text(encoding="utf-8")
+    audit_json = json.loads(audit_text)
 
     assert exit_code == 0
     assert captured.out == "ok\n"
@@ -469,4 +512,9 @@ async def test_main_prints_non_secret_audit(monkeypatch, tmp_path, capsys):
     assert "env_names=ANTHROPIC_API_KEY" in captured.err
     assert "env_values=hidden" in captured.err
     assert "sync_mode=discard-changes" in captured.err
+    assert "[audit] artifact=.dgm-sandbox-runs/audit.json" in captured.err
     assert "secret-value" not in captured.err
+    assert audit_artifact.exists()
+    assert audit_json["env_names"] == ["ANTHROPIC_API_KEY"]
+    assert audit_json["env_values"] == "hidden"
+    assert "secret-value" not in audit_text

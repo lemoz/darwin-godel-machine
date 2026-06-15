@@ -39,6 +39,7 @@ cp .env.example .env
 - The runner stages the repository through `~/.cache/dgm-sandbox` as the container workspace and syncs successful non-ignored writes and deletes back so archives, results, workspaces, and logs can persist in the host checkout unless `--discard-changes` is set
 - Live provider calls require explicit `--allow-network` plus explicit `--env NAME` pass-through for each required secret; no credentials are passed by default, `--env` is rejected unless `--allow-network` is also set, and the runner forces Docker `network_mode: none` unless `--allow-network` is set
 - Before execution, the runner prints a non-secret audit summary with effective network mode, requested environment variable names, sync mode, timeout, and staged-workspace behavior; it does not print environment values
+- If `--audit-output PATH` is supplied, the runner writes the same non-secret audit summary as JSON inside the project root; the artifact records environment variable names only, not values
 
 ### Remaining Isolation Limits
 - The default `python run_dgm.py` path still executes model orchestration and archive/controller logic in the configured workspace on the host

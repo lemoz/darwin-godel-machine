@@ -30,8 +30,10 @@ from scripts.run_dgm_in_sandbox import (
     SandboxRunError,
     build_run_audit,
     format_run_audit,
+    resolve_audit_output_path,
     resolve_network_mode,
     validate_environment_pass_through,
+    write_run_audit,
 )
 
 
@@ -174,14 +176,22 @@ def _verify_sandbox_runner_cli(project_root: Path) -> dict[str, Any]:
         "--env",
         "ANTHROPIC_API_KEY",
         "--discard-changes",
+        "--audit-output",
+        ".dgm-sandbox-runs/audit.json",
     ])
 
     _require("--allow-network" in help_text, "Sandbox runner help missing --allow-network")
     _require("--env" in help_text, "Sandbox runner help missing --env")
     _require("--discard-changes" in help_text, "Sandbox runner help missing --discard-changes")
+    _require("--audit-output" in help_text, "Sandbox runner help missing --audit-output")
     _require(args.allow_network is True, "Sandbox runner parser did not accept --allow-network")
     _require(args.env == ["ANTHROPIC_API_KEY"], "Sandbox runner parser did not collect --env")
     _require(args.discard_changes is True, "Sandbox runner parser did not accept --discard-changes")
+    _require(
+        resolve_audit_output_path(args.audit_output, project_root)
+        == project_root / ".dgm-sandbox-runs" / "audit.json",
+        "Sandbox runner parser did not accept project-local --audit-output",
+    )
     _require(
         resolve_network_mode(False, "bridge") == "none",
         "Sandbox runner must keep network disabled without --allow-network",
@@ -199,31 +209,49 @@ def _verify_sandbox_runner_cli(project_root: Path) -> dict[str, Any]:
             "Sandbox runner must reject --env without explicit --allow-network"
         )
     validate_environment_pass_through(["ANTHROPIC_API_KEY"], allow_network=True)
-    audit_text = format_run_audit(
-        build_run_audit(
-            config_path=project_root / "config" / "dgm_config.yaml",
-            generations=1,
-            project_root=project_root,
-            env_names=["ANTHROPIC_API_KEY"],
-            allow_network=True,
-            network_mode="bridge",
-            timeout=7,
-            sync_back=False,
-            sandbox_config=SandboxConfig(timeout=300),
-        )
+    audit = build_run_audit(
+        config_path=project_root / "config" / "dgm_config.yaml",
+        generations=1,
+        project_root=project_root,
+        env_names=["ANTHROPIC_API_KEY"],
+        allow_network=True,
+        network_mode="bridge",
+        timeout=7,
+        sync_back=False,
+        sandbox_config=SandboxConfig(timeout=300),
     )
+    audit_text = format_run_audit(audit)
     _require("env_names=ANTHROPIC_API_KEY" in audit_text, "Sandbox audit missing env names")
     _require("env_values=hidden" in audit_text, "Sandbox audit must hide env values")
     _require("sync_mode=discard-changes" in audit_text, "Sandbox audit missing sync mode")
+
+    with tempfile.TemporaryDirectory(prefix="dgm-sandbox-audit-") as temp_dir:
+        artifact = Path(temp_dir) / "audit.json"
+        write_run_audit(audit, artifact)
+        artifact_text = artifact.read_text(encoding="utf-8")
+        artifact_json = json.loads(artifact_text)
+        _require(
+            artifact_json["env_names"] == ["ANTHROPIC_API_KEY"],
+            "Sandbox audit artifact missing env names",
+        )
+        _require(
+            artifact_json["env_values"] == "hidden",
+            "Sandbox audit artifact must hide env values",
+        )
+        _require(
+            "secret" not in artifact_text.lower(),
+            "Sandbox audit artifact must not contain secret values",
+        )
 
     return {
         "name": "sandbox_runner_cli",
         "status": "ok",
         "path": str(runner.relative_to(project_root)),
-        "safe_flags": ["--allow-network", "--env", "--discard-changes"],
+        "safe_flags": ["--allow-network", "--env", "--discard-changes", "--audit-output"],
         "network_default": "none",
         "env_requires_network": True,
         "audit_hides_env_values": True,
+        "audit_artifact_writable": True,
     }
 
 
