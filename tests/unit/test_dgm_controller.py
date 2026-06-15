@@ -175,3 +175,26 @@ class TestDGMControllerInit:
         assert ctrl.benchmark_runner.use_sandbox is True
         assert ctrl.validator.sandbox_manager is ctrl.sandbox_manager
         assert ctrl.validator.use_sandbox is True
+
+    def test_init_disables_sandbox_when_manager_not_ready(self, tmp_path, monkeypatch):
+        from dgm_controller import DGMController
+
+        class NotReadySandboxManager:
+            def __init__(self, config):
+                self.config = config
+
+            def is_sandbox_ready(self):
+                return False
+
+        monkeypatch.setattr("dgm_controller.SandboxManager", NotReadySandboxManager)
+        cfg = _minimal_config(tmp_path)
+        cfg["evaluation"]["use_sandbox"] = True
+
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        assert ctrl.sandbox_manager is None
+        assert ctrl.use_sandbox is False
+        assert ctrl.benchmark_runner.sandbox_manager is None
+        assert ctrl.benchmark_runner.use_sandbox is False
+        assert ctrl.validator.sandbox_manager is None
+        assert ctrl.validator.use_sandbox is False

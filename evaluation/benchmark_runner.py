@@ -118,16 +118,24 @@ class BenchmarkRunner:
                 self.use_sandbox = False
 
         if self.use_sandbox and self.sandbox_manager:
-            ensure_image = getattr(self.sandbox_manager, "ensure_sandbox_image", None)
-            if ensure_image is not None:
-                try:
-                    ensure_image()
-                except Exception as exc:
+            readiness_check = getattr(self.sandbox_manager, "is_sandbox_ready", None)
+            if readiness_check is not None:
+                if not readiness_check():
                     logger.warning(
-                        "Docker sandbox image unavailable; using direct subprocess execution: %s",
-                        exc,
+                        "Docker sandbox image unavailable; using direct subprocess execution"
                     )
                     self.use_sandbox = False
+            else:
+                ensure_image = getattr(self.sandbox_manager, "ensure_sandbox_image", None)
+                if ensure_image is not None:
+                    try:
+                        ensure_image()
+                    except Exception as exc:
+                        logger.warning(
+                            "Docker sandbox image unavailable; using direct subprocess execution: %s",
+                            exc,
+                        )
+                        self.use_sandbox = False
 
     def _load_benchmarks(self) -> None:
         """Load all benchmark configurations."""

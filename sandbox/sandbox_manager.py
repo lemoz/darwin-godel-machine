@@ -228,6 +228,23 @@ class SandboxManager:
         except Exception:
             return False
 
+    def is_sandbox_ready(self) -> bool:
+        """
+        Check whether Docker is reachable and the configured image is available.
+
+        This is the readiness predicate callers should use before opting into
+        sandbox execution. It includes the image build/presence check so callers
+        can fall back consistently when Docker is installed but the configured
+        sandbox image cannot be built or found.
+        """
+        if not self.is_docker_available():
+            return False
+        try:
+            self.ensure_sandbox_image()
+            return True
+        except Exception:
+            return False
+
     def _execute_in_sandbox_sync(
         self,
         command: str,

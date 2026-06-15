@@ -88,6 +88,22 @@ class DGMController:
                 }
             )
             sandbox_manager = SandboxManager(sandbox_config)
+            readiness_check = getattr(sandbox_manager, "is_sandbox_ready", None)
+            if readiness_check is not None:
+                if not readiness_check():
+                    logger.warning(
+                        "Docker sandbox requested but unavailable; using direct host execution"
+                    )
+                    sandbox_manager = None
+                    use_sandbox = False
+            else:
+                availability_check = getattr(sandbox_manager, "is_docker_available", None)
+                if availability_check is not None and not availability_check():
+                    logger.warning(
+                        "Docker sandbox requested but unavailable; using direct host execution"
+                    )
+                    sandbox_manager = None
+                    use_sandbox = False
         self.sandbox_manager = sandbox_manager
         self.use_sandbox = use_sandbox
 

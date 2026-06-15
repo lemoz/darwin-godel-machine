@@ -132,10 +132,21 @@ class EditTool(BaseTool):
         """Return True when sandboxed edit execution is configured."""
         if not self.use_sandbox or self.sandbox_manager is None:
             return False
+        readiness_check = getattr(self.sandbox_manager, "is_sandbox_ready", None)
+        if readiness_check is not None:
+            return bool(readiness_check())
         availability_check = getattr(self.sandbox_manager, "is_docker_available", None)
         if availability_check is None:
             return True
-        return bool(availability_check())
+        if not bool(availability_check()):
+            return False
+        ensure_image = getattr(self.sandbox_manager, "ensure_sandbox_image", None)
+        if ensure_image is not None:
+            try:
+                ensure_image()
+            except Exception:
+                return False
+        return True
     
     def get_name(self) -> str:
         """Get the name of this tool."""

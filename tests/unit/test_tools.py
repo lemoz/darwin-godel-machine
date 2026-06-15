@@ -203,6 +203,35 @@ class TestBashTool:
         assert "fallback" in result.output
         assert sandbox_manager.calls == []
 
+    async def test_sandbox_image_setup_failure_falls_back(self, tmp_path):
+        class ImageUnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            def ensure_sandbox_image(self):
+                raise RuntimeError("image unavailable")
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when image setup fails")
+
+        sandbox_manager = ImageUnavailableSandboxManager()
+        tool = BashTool(
+            working_directory=str(tmp_path),
+            timeout=10,
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({"command": "echo image fallback"})
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "image fallback" in result.output
+        assert sandbox_manager.calls == []
+
     def test_tool_name(self):
         assert self.tool.get_name() == "bash"
 
@@ -457,6 +486,38 @@ class TestEditTool:
                 raise AssertionError("Sandbox should not be used when unavailable")
 
         sandbox_manager = UnavailableSandboxManager()
+        tool = EditTool(
+            working_directory=str(tmp_path),
+            sandbox_manager=sandbox_manager,
+            use_sandbox=True,
+        )
+
+        result = await tool.execute({
+            "action": "write",
+            "file_path": "fallback.txt",
+            "content": "direct write",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (tmp_path / "fallback.txt").read_text() == "direct write"
+        assert sandbox_manager.calls == []
+
+    async def test_sandbox_image_setup_failure_falls_back(self, tmp_path):
+        class ImageUnavailableSandboxManager:
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            def ensure_sandbox_image(self):
+                raise RuntimeError("image unavailable")
+
+            async def execute_in_sandbox(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                raise AssertionError("Sandbox should not be used when image setup fails")
+
+        sandbox_manager = ImageUnavailableSandboxManager()
         tool = EditTool(
             working_directory=str(tmp_path),
             sandbox_manager=sandbox_manager,
