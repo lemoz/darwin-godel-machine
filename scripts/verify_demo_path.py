@@ -266,8 +266,8 @@ def _verify_live_score_movement_attempt_docs(project_root: Path) -> dict[str, An
     _require(scorecard_json["total_agents"] == 3, "Live scorecard must record three agents")
     _require(scorecard_json["valid_agents"] == 3, "Live scorecard must record three valid agents")
     _require(
-        abs(scorecard_json["top_score"] - (15 / 17)) < 1e-12,
-        "Live scorecard top score must record the approved headroom run",
+        scorecard_json["top_score"] == 0.88,
+        "Live scorecard top score must record the approved calibrated run",
     )
     _require(
         scorecard_json["best_average_delta"] == 0.0,
@@ -275,22 +275,26 @@ def _verify_live_score_movement_attempt_docs(project_root: Path) -> dict[str, An
     )
     _require(
         all(
-            "humaneval_headroom" in item["benchmark_scores"]
+            "humaneval_calibrated" in item["benchmark_scores"]
             for item in scorecard_json["generation_best_scores"]
         ),
-        "Live scorecard must use the headroom benchmark",
+        "Live scorecard must use the calibrated benchmark",
     )
     _require(
         scorecard_json["has_improvement"] is False,
         "Live scorecard must preserve the failed-improvement gate",
     )
     _require(
-        scorecard_json["has_regression"] is True,
-        "Live scorecard must preserve benchmark regression evidence",
+        scorecard_json["has_regression"] is False,
+        "Live scorecard must preserve absence of benchmark regressions",
     )
     _require(
-        scorecard_json["total_benchmark_regressions"] == 1,
-        "Live scorecard must record the regressed child benchmark",
+        scorecard_json["total_benchmark_regressions"] == 0,
+        "Live scorecard must record zero benchmark regressions",
+    )
+    _require(
+        scorecard_json["total_benchmark_unchanged"] == 2,
+        "Live scorecard must record tied child benchmark comparisons",
     )
 
     audit_text = audit.read_text(encoding="utf-8")
@@ -318,6 +322,7 @@ def _verify_live_score_movement_attempt_docs(project_root: Path) -> dict[str, An
         "has_improvement": scorecard_json["has_improvement"],
         "has_regression": scorecard_json["has_regression"],
         "total_benchmark_regressions": scorecard_json["total_benchmark_regressions"],
+        "total_benchmark_unchanged": scorecard_json["total_benchmark_unchanged"],
         "audit_hides_env_values": True,
     }
 
