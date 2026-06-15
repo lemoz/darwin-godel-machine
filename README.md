@@ -337,6 +337,16 @@ archives, results, workspaces, and logs still persist in the host checkout.
 Add `--discard-changes` to keep successful writes/deletes inside the staged
 workspace and remove them when the container run finishes.
 
+To smoke-test the real Docker mount/sync path without API keys or model calls:
+
+```bash
+python scripts/verify_sandbox_docker.py
+```
+
+This optional check skips successfully when Docker or the `dgm-sandbox` image is
+not ready. Add `--build-image --require` when you want the command to build a
+missing image and fail instead of skipping.
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
