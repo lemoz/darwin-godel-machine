@@ -16,8 +16,12 @@ async def test_no_network_demo_path_verifier_passes():
     assert "score_movement_demo" in names
     assert "live_run_docs" in names
     assert "archive_lineage_artifact" in names
+    assert "sandbox_runner_cli" in names
 
     score_check = next(check for check in checks if check["name"] == "score_movement_demo")
     assert score_check["baseline_score"] == 0.5
     assert score_check["candidate_score"] == 1.0
     assert score_check["delta"] == 0.5
+
+    sandbox_check = next(check for check in checks if check["name"] == "sandbox_runner_cli")
+    assert "--discard-changes" in sandbox_check["safe_flags"]
