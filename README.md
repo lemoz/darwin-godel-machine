@@ -339,6 +339,10 @@ archives, results, workspaces, and logs still persist in the host checkout.
 Add `--discard-changes` to keep successful writes/deletes inside the staged
 workspace and remove them when the container run finishes.
 
+Before the container starts, the runner prints an audit summary to stderr with
+the effective network mode, requested environment variable names, sync mode,
+timeout, and staged-workspace cache parent. It never prints environment values.
+
 To smoke-test the real Docker mount/sync path without API keys or model calls:
 
 ```bash

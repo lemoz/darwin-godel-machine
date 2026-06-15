@@ -9,7 +9,7 @@ import os
 import shlex
 import sys
 from pathlib import Path
-from typing import List, Mapping, Optional
+from typing import Any, List, Mapping, Optional
 
 import yaml
 
@@ -98,6 +98,58 @@ def resolve_network_mode(allow_network: bool, requested_network_mode: str) -> st
     return requested_network_mode if allow_network else "none"
 
 
+def build_run_audit(
+    *,
+    config_path: Path,
+    generations: int,
+    project_root: Path,
+    env_names: List[str],
+    allow_network: bool,
+    network_mode: str,
+    timeout: Optional[int],
+    sync_back: bool,
+    sandbox_config: SandboxConfig,
+) -> dict[str, Any]:
+    """Build a non-secret audit summary for a full-process sandbox run."""
+    project_root = project_root.resolve()
+    config_label = str(_project_relative(config_path, project_root))
+    return {
+        "config": config_label,
+        "generations": generations,
+        "timeout": timeout or sandbox_config.timeout,
+        "allow_network": allow_network,
+        "network_mode": resolve_network_mode(allow_network, network_mode),
+        "env_names": list(env_names),
+        "env_values": "hidden",
+        "stage_project": True,
+        "stage_parent": "~/.cache/dgm-sandbox",
+        "sync_back": sync_back,
+        "sync_mode": "sync-back" if sync_back else "discard-changes",
+    }
+
+
+def format_run_audit(audit: Mapping[str, Any]) -> str:
+    """Format a non-secret audit summary for stderr."""
+    env_names = audit["env_names"]
+    env_label = ", ".join(env_names) if env_names else "(none)"
+    return "\n".join([
+        "[audit] full-process sandbox run",
+        (
+            f"[audit] config={audit['config']} generations={audit['generations']} "
+            f"timeout={audit['timeout']}"
+        ),
+        (
+            f"[audit] network_mode={audit['network_mode']} "
+            f"allow_network={str(audit['allow_network']).lower()}"
+        ),
+        f"[audit] env_names={env_label} env_values=hidden",
+        (
+            f"[audit] workspace=staged-copy stage_parent={audit['stage_parent']} "
+            f"sync_mode={audit['sync_mode']}"
+        ),
+    ])
+
+
 async def run_sandboxed_dgm(
     *,
     config_path: Path,
@@ -173,10 +225,29 @@ def _build_parser() -> argparse.ArgumentParser:
 
 async def _main_async(args: argparse.Namespace) -> int:
     try:
-        result = await run_sandboxed_dgm(
-            config_path=Path(args.config),
+        project_root = Path(args.project_root).resolve()
+        config_path = Path(args.config)
+        if not config_path.is_absolute():
+            config_path = project_root / config_path
+        config_path = config_path.resolve()
+        validate_environment_pass_through(args.env, args.allow_network)
+        sandbox_config = load_sandbox_config(config_path, timeout=args.timeout)
+        audit = build_run_audit(
+            config_path=config_path,
             generations=args.generations,
-            project_root=Path(args.project_root),
+            project_root=project_root,
+            env_names=args.env,
+            allow_network=args.allow_network,
+            network_mode=args.network_mode,
+            timeout=args.timeout,
+            sync_back=not args.discard_changes,
+            sandbox_config=sandbox_config,
+        )
+        print(format_run_audit(audit), file=sys.stderr)
+        result = await run_sandboxed_dgm(
+            config_path=config_path,
+            generations=args.generations,
+            project_root=project_root,
             env_names=args.env,
             allow_network=args.allow_network,
             network_mode=args.network_mode,

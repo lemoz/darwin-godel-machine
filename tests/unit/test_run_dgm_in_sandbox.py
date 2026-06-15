@@ -5,9 +5,12 @@ import pytest
 from sandbox.sandbox_manager import SandboxConfig, SandboxManager, SandboxResult
 from scripts.run_dgm_in_sandbox import (
     SandboxRunError,
+    _main_async,
     _build_parser,
+    build_run_audit,
     build_dgm_command,
     collect_environment,
+    format_run_audit,
     load_sandbox_config,
     resolve_network_mode,
     run_sandboxed_dgm,
@@ -57,6 +60,34 @@ def test_validate_environment_pass_through_requires_network_opt_in():
 def test_resolve_network_mode_requires_explicit_allow_network():
     assert resolve_network_mode(False, "bridge") == "none"
     assert resolve_network_mode(True, "bridge") == "bridge"
+
+
+def test_run_audit_summarizes_flags_without_secret_values(tmp_path):
+    project_root = tmp_path / "project"
+    config = project_root / "config" / "dgm_config.yaml"
+    config.parent.mkdir(parents=True)
+    config.write_text("sandbox: {}\n", encoding="utf-8")
+
+    audit = build_run_audit(
+        config_path=config,
+        generations=2,
+        project_root=project_root,
+        env_names=["ANTHROPIC_API_KEY"],
+        allow_network=True,
+        network_mode="bridge",
+        timeout=12,
+        sync_back=False,
+        sandbox_config=SandboxConfig(timeout=300),
+    )
+    text = format_run_audit(audit)
+
+    assert audit["config"] == "config/dgm_config.yaml"
+    assert audit["env_names"] == ["ANTHROPIC_API_KEY"]
+    assert audit["env_values"] == "hidden"
+    assert audit["sync_mode"] == "discard-changes"
+    assert "ANTHROPIC_API_KEY" in text
+    assert "env_values=hidden" in text
+    assert "secret" not in text.lower()
 
 
 def test_load_sandbox_config_reads_project_config(tmp_path):
@@ -399,3 +430,43 @@ async def test_run_sandboxed_dgm_requires_ready_sandbox(tmp_path):
             project_root=project_root,
             manager=NotReadyManager(),
         )
+
+
+@pytest.mark.asyncio
+async def test_main_prints_non_secret_audit(monkeypatch, tmp_path, capsys):
+    from scripts import run_dgm_in_sandbox as sandbox_cli
+
+    project_root = tmp_path / "project"
+    config = project_root / "config" / "dgm_config.yaml"
+    config.parent.mkdir(parents=True)
+    config.write_text("sandbox:\n  timeout: 30\n", encoding="utf-8")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "secret-value")
+
+    async def fake_run_sandboxed_dgm(**kwargs):
+        return SandboxResult(success=True, output="ok\n", exit_code=0)
+
+    monkeypatch.setattr(sandbox_cli, "run_sandboxed_dgm", fake_run_sandboxed_dgm)
+    args = _build_parser().parse_args([
+        "--project-root",
+        str(project_root),
+        "--config",
+        "config/dgm_config.yaml",
+        "--generations",
+        "1",
+        "--allow-network",
+        "--env",
+        "ANTHROPIC_API_KEY",
+        "--discard-changes",
+    ])
+
+    exit_code = await _main_async(args)
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out == "ok\n"
+    assert "[audit] full-process sandbox run" in captured.err
+    assert "network_mode=bridge" in captured.err
+    assert "env_names=ANTHROPIC_API_KEY" in captured.err
+    assert "env_values=hidden" in captured.err
+    assert "sync_mode=discard-changes" in captured.err
+    assert "secret-value" not in captured.err
