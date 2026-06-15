@@ -55,8 +55,8 @@ python scripts/verify_demo_path.py
 This checks benchmark loading, the HumanEval-style reference solution, the
 score-movement demo, the committed live-run proof, and the archive-lineage demo
 without API keys or model calls. It also checks that the full-process sandbox
-runner exposes the explicit network, secret pass-through, and discard-changes
-flags used for safer local runs.
+runner exposes the explicit network, secret pass-through, discard-changes, and
+optional audit-artifact flags used for safer local runs.
 
 4. **Configure API keys:**
 ```bash
@@ -342,6 +342,9 @@ workspace and remove them when the container run finishes.
 Before the container starts, the runner prints an audit summary to stderr with
 the effective network mode, requested environment variable names, sync mode,
 timeout, and staged-workspace cache parent. It never prints environment values.
+Add `--audit-output .dgm-sandbox-runs/audit.json` to also write the same
+non-secret audit summary as JSON inside the project root. The artifact records
+environment variable names only, never values.
 
 To smoke-test the real Docker mount/sync path without API keys or model calls:
 
