@@ -28,6 +28,8 @@ from scripts.compare_benchmark_solutions import compare_solutions
 from scripts.run_dgm_in_sandbox import (
     _build_parser as build_sandbox_runner_parser,
     SandboxRunError,
+    build_run_audit,
+    format_run_audit,
     resolve_network_mode,
     validate_environment_pass_through,
 )
@@ -197,6 +199,22 @@ def _verify_sandbox_runner_cli(project_root: Path) -> dict[str, Any]:
             "Sandbox runner must reject --env without explicit --allow-network"
         )
     validate_environment_pass_through(["ANTHROPIC_API_KEY"], allow_network=True)
+    audit_text = format_run_audit(
+        build_run_audit(
+            config_path=project_root / "config" / "dgm_config.yaml",
+            generations=1,
+            project_root=project_root,
+            env_names=["ANTHROPIC_API_KEY"],
+            allow_network=True,
+            network_mode="bridge",
+            timeout=7,
+            sync_back=False,
+            sandbox_config=SandboxConfig(timeout=300),
+        )
+    )
+    _require("env_names=ANTHROPIC_API_KEY" in audit_text, "Sandbox audit missing env names")
+    _require("env_values=hidden" in audit_text, "Sandbox audit must hide env values")
+    _require("sync_mode=discard-changes" in audit_text, "Sandbox audit missing sync mode")
 
     return {
         "name": "sandbox_runner_cli",
@@ -205,6 +223,7 @@ def _verify_sandbox_runner_cli(project_root: Path) -> dict[str, Any]:
         "safe_flags": ["--allow-network", "--env", "--discard-changes"],
         "network_default": "none",
         "env_requires_network": True,
+        "audit_hides_env_values": True,
     }
 
 

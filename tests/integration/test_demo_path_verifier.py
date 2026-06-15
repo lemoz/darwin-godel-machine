@@ -28,6 +28,7 @@ async def test_no_network_demo_path_verifier_passes():
     assert "--discard-changes" in sandbox_check["safe_flags"]
     assert sandbox_check["network_default"] == "none"
     assert sandbox_check["env_requires_network"] is True
+    assert sandbox_check["audit_hides_env_values"] is True
 
     discard_check = next(
         check for check in checks if check["name"] == "sandbox_discard_changes_contract"
