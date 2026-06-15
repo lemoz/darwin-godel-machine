@@ -56,11 +56,12 @@ async def test_no_network_demo_path_verifier_passes():
         check for check in checks if check["name"] == "live_score_movement_attempt_docs"
     )
     assert live_attempt_check["scorecard"] == "docs/live-runs/live-score-movement/scorecard.json"
-    assert live_attempt_check["top_score"] == pytest.approx(15 / 17)
+    assert live_attempt_check["top_score"] == pytest.approx(0.88)
     assert live_attempt_check["best_average_delta"] == 0.0
     assert live_attempt_check["has_improvement"] is False
-    assert live_attempt_check["has_regression"] is True
-    assert live_attempt_check["total_benchmark_regressions"] == 1
+    assert live_attempt_check["has_regression"] is False
+    assert live_attempt_check["total_benchmark_regressions"] == 0
+    assert live_attempt_check["total_benchmark_unchanged"] == 2
     assert live_attempt_check["audit_hides_env_values"] is True
 
     sandbox_check = next(check for check in checks if check["name"] == "sandbox_runner_cli")

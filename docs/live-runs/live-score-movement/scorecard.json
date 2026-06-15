@@ -3,69 +3,77 @@
   "best_average_delta": 0.0,
   "generation_best_scores": [
     {
-      "agent_id": "5719cca2-7188-4ed3-b805-603252f204c3",
-      "average_score": 0.8823529411764706,
+      "agent_id": "95d56997-b6b5-454b-ac4d-24867f351b3c",
+      "average_score": 0.88,
       "benchmark_scores": {
-        "humaneval_headroom": 0.8823529411764706
+        "humaneval_calibrated": 0.88
       },
       "generation": 0
     },
     {
-      "agent_id": "aaace30a-fdc4-465b-892a-83bbcf1d1c75",
-      "average_score": 0.8823529411764706,
+      "agent_id": "947dafe9-6c9b-4020-83d9-273d3ace1da6",
+      "average_score": 0.88,
       "benchmark_scores": {
-        "humaneval_headroom": 0.8823529411764706
+        "humaneval_calibrated": 0.88
       },
       "generation": 1
+    },
+    {
+      "agent_id": "4fb5bd47-350c-4537-9a88-b05e8d13e7f7",
+      "average_score": 0.88,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.88
+      },
+      "generation": 2
     }
   ],
   "has_improvement": false,
-  "has_regression": true,
+  "has_regression": false,
   "improvements": [],
   "min_delta": 0.0,
   "parent_child_deltas": [
     {
       "average_delta": 0.0,
       "benchmark_deltas": {
-        "humaneval_headroom": 0.0
+        "humaneval_calibrated": 0.0
       },
       "benchmark_improvements": {},
       "benchmark_regressions": {},
       "benchmark_unchanged": [
-        "humaneval_headroom"
+        "humaneval_calibrated"
       ],
-      "child_average_score": 0.8823529411764706,
+      "child_average_score": 0.88,
       "child_generation": 1,
-      "child_id": "aaace30a-fdc4-465b-892a-83bbcf1d1c75",
+      "child_id": "947dafe9-6c9b-4020-83d9-273d3ace1da6",
       "is_improvement": false,
-      "parent_average_score": 0.8823529411764706,
+      "parent_average_score": 0.88,
       "parent_generation": 0,
-      "parent_id": "5719cca2-7188-4ed3-b805-603252f204c3"
+      "parent_id": "95d56997-b6b5-454b-ac4d-24867f351b3c"
     },
     {
-      "average_delta": -0.8823529411764706,
+      "average_delta": 0.0,
       "benchmark_deltas": {
-        "humaneval_headroom": -0.8823529411764706
+        "humaneval_calibrated": 0.0
       },
       "benchmark_improvements": {},
-      "benchmark_regressions": {
-        "humaneval_headroom": -0.8823529411764706
-      },
-      "benchmark_unchanged": [],
-      "child_average_score": 0.0,
-      "child_generation": 1,
-      "child_id": "509181a6-d257-4bbc-a5da-9c6a9b01bff8",
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "humaneval_calibrated"
+      ],
+      "child_average_score": 0.88,
+      "child_generation": 2,
+      "child_id": "4fb5bd47-350c-4537-9a88-b05e8d13e7f7",
       "is_improvement": false,
-      "parent_average_score": 0.8823529411764706,
-      "parent_generation": 0,
-      "parent_id": "5719cca2-7188-4ed3-b805-603252f204c3"
+      "parent_average_score": 0.88,
+      "parent_generation": 1,
+      "parent_id": "947dafe9-6c9b-4020-83d9-273d3ace1da6"
     }
   ],
-  "top_agent_id": "5719cca2-7188-4ed3-b805-603252f204c3",
-  "top_score": 0.8823529411764706,
+  "top_agent_id": "95d56997-b6b5-454b-ac4d-24867f351b3c",
+  "top_score": 0.88,
   "total_agents": 3,
   "total_benchmark_improvements": 0,
-  "total_benchmark_regressions": 1,
-  "total_benchmark_unchanged": 1,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 2,
   "valid_agents": 3
 }
