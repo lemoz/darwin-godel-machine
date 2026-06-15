@@ -34,8 +34,14 @@ cp .env.example .env
 - The sandbox image is built automatically when `sandbox.auto_build_image: true`
 - If Docker or the sandbox image is unavailable, benchmark execution, agent tool execution, and runtime load validation fall back to the direct host path rather than failing the default no-Docker workflow
 
+### Full-Process Docker Runner (opt-in)
+- Use `scripts/run_dgm_in_sandbox.py` when the controller/orchestration process itself should run inside Docker
+- The runner stages the repository through `~/.cache/dgm-sandbox` as the container workspace and syncs successful writes back so archives, results, workspaces, and logs can persist in the host checkout
+- Live provider calls require explicit `--allow-network` plus explicit `--env NAME` pass-through for each required secret; no credentials are passed by default
+
 ### Remaining Isolation Limits
-- The model orchestration loop and archive/controller logic still execute in the configured workspace on the host
+- The default `python run_dgm.py` path still executes model orchestration and archive/controller logic in the configured workspace on the host
+- The full-process Docker runner is still a staged-workspace boundary, not a disposable VM; successful writes intentionally persist to the host checkout
 - Treat every evolution run as executing model-written code on your machine: run inside your own container or VM if that is not acceptable
 
 ### Input Validation
