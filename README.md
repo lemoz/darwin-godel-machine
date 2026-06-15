@@ -309,10 +309,29 @@ Results are stored in the `results/` directory with detailed JSON reports.
 - **Hard Timeouts**: Benchmark and tool subprocesses are killed (entire process group) on timeout
 - **Opt-in Docker Command Isolation**: With `evaluation.use_sandbox: true`, generated benchmark test scripts plus agent bash and edit tool operations run in one-shot Docker containers with image, memory, CPU, timeout, and network settings from `sandbox`
 - **Validation Checks**: Modified agents must parse, define a working Agent class, and pass a runtime load check before admission to the archive; with sandboxing enabled, the runtime load check runs in Docker
+- **Opt-in Full-Process Runner**: `scripts/run_dgm_in_sandbox.py` can run the `run_dgm.py` controller process inside Docker with the project mounted as the sandbox workspace
 - **Human Oversight**: Optional pause points for review
 - **Comprehensive Logging**: Full audit trail of all changes
 
-> **Note**: Docker isolation currently covers generated benchmark test scripts, agent bash/edit operations, and modified-agent runtime load checks. The model orchestration loop and archive/controller logic still execute in the configured host workspace with guards and timeouts, so run untrusted evolution experiments inside your own container or VM.
+> **Note**: the default `python run_dgm.py` path still runs orchestration and controller/archive logic on the host. Use `scripts/run_dgm_in_sandbox.py` to move the full DGM process into Docker. The runner stages the checkout through `~/.cache/dgm-sandbox` for Docker-mounted execution and syncs successful writes/deletes back to the host checkout; live provider runs require explicit network and secret pass-through. For untrusted evolution experiments, keep using your own container or VM boundary.
+
+### Full-Process Docker Runner
+
+To run the DGM controller process itself inside Docker:
+
+```bash
+python scripts/run_dgm_in_sandbox.py \
+  --config config/live_dgm_proof.yaml \
+  --generations 2 \
+  --allow-network \
+  --env ANTHROPIC_API_KEY
+```
+
+The runner does not pass credentials into the container unless each variable is
+named with `--env`. Network access is disabled unless `--allow-network` is set.
+The checkout is copied into a Docker-mountable cache workspace first, then
+successful non-ignored writes and deletes are synced back, so generated
+archives, results, workspaces, and logs still persist in the host checkout.
 
 ## 🐛 Troubleshooting
 

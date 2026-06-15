@@ -7,6 +7,8 @@ package does not crash the entire program at startup. Callers can check
 
 import asyncio
 import os
+import shutil
+import tempfile
 import time
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
@@ -141,7 +143,11 @@ class SandboxManager:
         command: str,
         agent_code_path: Optional[str] = None,
         workspace_path: Optional[str] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
+        environment: Optional[Dict[str, str]] = None,
+        network_mode: Optional[str] = None,
+        read_only_workspace: bool = False,
+        working_dir: Optional[str] = None,
     ) -> SandboxResult:
         """Execute a shell command inside a one-shot Docker container."""
         return await asyncio.to_thread(
@@ -150,7 +156,135 @@ class SandboxManager:
             agent_code_path,
             workspace_path,
             timeout,
+            environment,
+            network_mode,
+            read_only_workspace,
+            working_dir,
         )
+
+    async def execute_project_command(
+        self,
+        command: str,
+        project_path: str,
+        timeout: Optional[int] = None,
+        environment: Optional[Dict[str, str]] = None,
+        network_mode: Optional[str] = None,
+        read_only: bool = False,
+        stage_project: bool = True,
+        sync_back: bool = True,
+    ) -> SandboxResult:
+        """
+        Execute a command with the whole project mounted as the workspace.
+
+        This is the full-process boundary used by wrapper scripts that want the
+        controller/orchestration process itself to run inside Docker. The mount
+        may still be writable, so callers must document any host sync boundary.
+        """
+        project = Path(project_path).expanduser().resolve()
+        if stage_project:
+            sandbox_temp_parent = Path.home() / ".cache" / "dgm-sandbox"
+            sandbox_temp_parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(dir=str(sandbox_temp_parent)) as temp_dir:
+                staged_project = Path(temp_dir) / "project"
+                self._copy_project_tree(project, staged_project)
+                result = await self.execute_in_sandbox(
+                    command=command,
+                    workspace_path=str(staged_project),
+                    timeout=timeout,
+                    environment=environment,
+                    network_mode=network_mode,
+                    read_only_workspace=read_only,
+                    working_dir=self.config.working_dir,
+                )
+                if result.success and sync_back and not read_only:
+                    self._sync_project_tree(staged_project, project)
+                return result
+
+        return await self.execute_in_sandbox(
+            command=command,
+            workspace_path=str(project),
+            timeout=timeout,
+            environment=environment,
+            network_mode=network_mode,
+            read_only_workspace=read_only,
+            working_dir=self.config.working_dir,
+        )
+
+    @staticmethod
+    def _copy_project_tree(source: Path, destination: Path) -> None:
+        """Copy a project tree while skipping local caches and virtualenvs."""
+        source = source.resolve()
+        destination = destination.resolve()
+        if not source.exists():
+            destination.mkdir(parents=True, exist_ok=True)
+            return
+
+        def ignore(_dir: str, names: List[str]) -> set:
+            return SandboxManager._ignored_project_names(names)
+
+        shutil.copytree(
+            source,
+            destination,
+            dirs_exist_ok=True,
+            ignore=ignore,
+        )
+
+    @staticmethod
+    def _ignored_project_names(names: List[str]) -> set:
+        """Return project-local names that should not stage or sync back."""
+        ignored_names = {
+            ".git",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".venv",
+            "__pycache__",
+        }
+        return {
+            name
+            for name in names
+            if name in ignored_names or name.endswith((".pyc", ".pyo"))
+        }
+
+    @staticmethod
+    def _sync_project_tree(source: Path, destination: Path) -> None:
+        """
+        Mirror a staged project tree back to the host checkout.
+
+        Ignored local state is preserved. Non-ignored files removed inside the
+        staged project are removed from the destination before copying updated
+        files back.
+        """
+        source = source.resolve()
+        destination = destination.resolve()
+        if not source.exists():
+            destination.mkdir(parents=True, exist_ok=True)
+            return
+
+        destination.mkdir(parents=True, exist_ok=True)
+        ignored = SandboxManager._ignored_project_names([
+            child.name for child in destination.iterdir()
+        ])
+
+        for dest_child in list(destination.iterdir()):
+            if dest_child.name in ignored:
+                continue
+            source_child = source / dest_child.name
+            if not source_child.exists():
+                if dest_child.is_dir():
+                    shutil.rmtree(dest_child)
+                else:
+                    dest_child.unlink()
+                continue
+            if dest_child.is_dir() and source_child.is_dir():
+                SandboxManager._sync_project_tree(source_child, dest_child)
+            elif dest_child.is_dir() != source_child.is_dir():
+                if dest_child.is_dir():
+                    shutil.rmtree(dest_child)
+                else:
+                    dest_child.unlink()
+
+        SandboxManager._copy_project_tree(source, destination)
 
     async def create_sandbox_environment(self, agent_id: str) -> str:
         """Create a stopped container and return its id."""
@@ -251,6 +385,10 @@ class SandboxManager:
         agent_code_path: Optional[str],
         workspace_path: Optional[str],
         timeout: Optional[int],
+        environment: Optional[Dict[str, str]],
+        network_mode: Optional[str],
+        read_only_workspace: bool,
+        working_dir: Optional[str],
     ) -> SandboxResult:
         """Synchronous Docker execution body used via ``asyncio.to_thread``."""
         client = self._get_client()
@@ -263,7 +401,7 @@ class SandboxManager:
             workspace = Path(workspace_path).resolve()
             volumes[str(workspace)] = {
                 "bind": self.config.working_dir,
-                "mode": "rw",
+                "mode": "ro" if read_only_workspace else "rw",
             }
 
         if agent_code_path:
@@ -279,11 +417,12 @@ class SandboxManager:
                 image=self.config.image_name,
                 command=["/bin/bash", "-lc", command],
                 detach=True,
-                working_dir=self.config.working_dir,
+                working_dir=working_dir or self.config.working_dir,
                 volumes=volumes,
                 mem_limit=self.config.memory_limit,
                 nano_cpus=self._cpu_limit_to_nano_cpus(self.config.cpu_limit),
-                network_mode=self.config.network_mode,
+                network_mode=network_mode or self.config.network_mode,
+                environment=environment or None,
             )
             wait_result = container.wait(timeout=effective_timeout)
             exit_code = wait_result.get("StatusCode", 1)
