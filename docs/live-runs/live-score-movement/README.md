@@ -4,12 +4,12 @@ Run date: 2026-06-15
 
 This was a bounded live DGM run for `config/live_score_movement.yaml`. It was
 intended to prove that the cost-gated, full-process Docker runner can execute a
-real provider-backed DGM cycle against `humaneval_style` and then fail closed if
-there is no parent-child score improvement.
+real provider-backed DGM cycle against `humaneval_headroom` and then fail closed
+if there is no parent-child score improvement.
 
 Preflight gates passed before the live call:
 
-- `python -m pytest`: 225 passed, 7 skipped
+- `python -m pytest`: 228 passed, 7 skipped
 - `python scripts/verify_demo_path.py`
 - `python scripts/verify_sandbox_docker.py --require`
 - `python scripts/verify_live_score_movement_plan.py`
@@ -31,17 +31,19 @@ Observed live evidence:
   name and hid the value.
 - The run logged successful `POST https://api.anthropic.com/v1/messages`
   responses from Anthropic.
+- The run logged 22 Anthropic API usage records.
 - The DGM controller completed two generations and wrote
-  `.dgm-live-runs/live-score-movement/results/dgm_report_20260615_154225.json`.
+  `.dgm-live-runs/live-score-movement/results/dgm_report_20260615_224945.json`.
 
 Outcome:
 
 - The archive contained 3 valid agents.
-- Top score remained `1.000`.
+- Top score was `0.8823529411764706` (`15/17`) on `humaneval_headroom`.
 - Best parent-child average-score delta was `+0.000`.
 - `scripts/summarize_archive_scores.py --require-improvement` failed as
   designed because `has_improvement` is `false`.
 
 This proves a fully live, sandboxed, provider-backed DGM run completed. It does
-not prove benchmark improvement. The configured benchmark still needs a live
-score-movement setup where the initial parent has measurable headroom.
+not prove benchmark improvement. The configured benchmark did have hidden-case
+headroom, but the initial parent already solved most cases and neither child
+improved on it in this bounded two-generation run.

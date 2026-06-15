@@ -20,6 +20,7 @@ async def test_no_network_demo_path_verifier_passes():
     assert "sandbox_runner_cli" in names
     assert "sandbox_discard_changes_contract" in names
     assert "live_score_movement_plan" in names
+    assert "live_score_movement_attempt_docs" in names
 
     score_check = next(check for check in checks if check["name"] == "score_movement_demo")
     assert score_check["baseline_score"] == 0.5
@@ -39,6 +40,15 @@ async def test_no_network_demo_path_verifier_passes():
     assert live_run_check["top_score"] == 1.0
     assert live_run_check["best_average_delta"] == 0.0
     assert live_run_check["has_improvement"] is False
+
+    live_attempt_check = next(
+        check for check in checks if check["name"] == "live_score_movement_attempt_docs"
+    )
+    assert live_attempt_check["scorecard"] == "docs/live-runs/live-score-movement/scorecard.json"
+    assert live_attempt_check["top_score"] == pytest.approx(15 / 17)
+    assert live_attempt_check["best_average_delta"] == 0.0
+    assert live_attempt_check["has_improvement"] is False
+    assert live_attempt_check["audit_hides_env_values"] is True
 
     sandbox_check = next(check for check in checks if check["name"] == "sandbox_runner_cli")
     assert "--discard-changes" in sandbox_check["safe_flags"]
