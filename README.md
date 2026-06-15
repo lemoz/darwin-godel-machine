@@ -270,6 +270,30 @@ improves on its parent by average benchmark score. The committed
 `has_improvement=false` for the first live proof because both child agents tied
 the already-perfect base score.
 
+The planned live score-movement rehearsal is captured in
+`config/live_score_movement.yaml`. It is bounded to two generations, five agent
+steps, one benchmark (`humaneval_style`), and a 2,048-token output cap per model
+call. Before any live provider call, run the no-network plan check and verify
+current provider pricing:
+
+```bash
+python scripts/verify_live_score_movement_plan.py
+```
+
+After explicit approval, run it through the full-process sandbox runner:
+
+```bash
+python scripts/run_dgm_in_sandbox.py \
+  --config config/live_score_movement.yaml \
+  --generations 2 \
+  --allow-network \
+  --env ANTHROPIC_API_KEY \
+  --audit-output .dgm-sandbox-runs/live-score-movement-audit.json
+```
+
+Then summarize the run archive with `scripts/summarize_archive_scores.py
+--require-improvement` before claiming benchmark improvement.
+
 ## 🧪 Running Experiments
 
 ### Basic Evolution Run

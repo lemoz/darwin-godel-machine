@@ -35,6 +35,7 @@ from scripts.run_dgm_in_sandbox import (
     validate_environment_pass_through,
     write_run_audit,
 )
+from scripts.verify_live_score_movement_plan import verify_live_score_movement_plan
 
 
 class VerificationError(RuntimeError):
@@ -362,6 +363,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
         project_root / "README.md",
         project_root / "requirements.txt",
         project_root / "config" / "dgm_config.yaml",
+        project_root / "config" / "live_score_movement.yaml",
         project_root / "config" / "benchmarks" / "humaneval_style.yaml",
         project_root / "docs" / "demo" / "humaneval_style_baseline.py",
         project_root / "docs" / "demo" / "humaneval_style_improved.py",
@@ -374,6 +376,12 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
     checks.append(_verify_archive_lineage(project_root))
     checks.append(_verify_sandbox_runner_cli(project_root))
     checks.append(await _verify_sandbox_discard_changes_contract())
+    checks.append(
+        verify_live_score_movement_plan(
+            project_root / "config" / "live_score_movement.yaml",
+            project_root=project_root,
+        )
+    )
     return checks
 
 
