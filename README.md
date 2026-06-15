@@ -330,9 +330,10 @@ python scripts/run_dgm_in_sandbox.py \
 ```
 
 The runner does not pass credentials into the container unless each variable is
-named with `--env`. Network access is forced off unless `--allow-network` is set,
-even if the project config names a permissive Docker network mode. The checkout
-is copied into a Docker-mountable cache workspace first, then
+named with `--env`, and `--env` is rejected unless `--allow-network` is also set.
+Network access is forced off unless `--allow-network` is set, even if the project
+config names a permissive Docker network mode. The checkout is copied into a
+Docker-mountable cache workspace first, then
 successful non-ignored writes and deletes are synced back, so generated
 archives, results, workspaces, and logs still persist in the host checkout.
 Add `--discard-changes` to keep successful writes/deletes inside the staged

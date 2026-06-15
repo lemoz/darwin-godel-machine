@@ -79,6 +79,15 @@ def collect_environment(
     return selected
 
 
+def validate_environment_pass_through(env_names: List[str], allow_network: bool) -> None:
+    """Require explicit network opt-in before passing host environment values."""
+    if env_names and not allow_network:
+        raise SandboxRunError(
+            "Refusing to pass environment variables without --allow-network; "
+            "rerun without --env or add --allow-network for live provider calls"
+        )
+
+
 def resolve_network_mode(allow_network: bool, requested_network_mode: str) -> str:
     """Resolve Docker networking for full-process runs.
 
@@ -110,6 +119,7 @@ async def run_sandboxed_dgm(
     config_path = (project_root / config_path).resolve() if not config_path.is_absolute() else config_path.resolve()
     project_root = project_root.resolve()
     command = build_dgm_command(config_path, generations, project_root)
+    validate_environment_pass_through(env_names or [], allow_network)
     environment = collect_environment(env_names or [])
     sandbox_config = load_sandbox_config(config_path, timeout=timeout)
     manager = manager or SandboxManager(sandbox_config)

@@ -11,6 +11,7 @@ from scripts.run_dgm_in_sandbox import (
     load_sandbox_config,
     resolve_network_mode,
     run_sandboxed_dgm,
+    validate_environment_pass_through,
 )
 
 
@@ -43,6 +44,14 @@ def test_collect_environment_requires_explicit_existing_values():
     }
     with pytest.raises(SandboxRunError, match="not set"):
         collect_environment(["GEMINI_API_KEY"], env)
+
+
+def test_validate_environment_pass_through_requires_network_opt_in():
+    validate_environment_pass_through([], allow_network=False)
+    validate_environment_pass_through(["ANTHROPIC_API_KEY"], allow_network=True)
+
+    with pytest.raises(SandboxRunError, match="without --allow-network"):
+        validate_environment_pass_through(["ANTHROPIC_API_KEY"], allow_network=False)
 
 
 def test_resolve_network_mode_requires_explicit_allow_network():
@@ -269,6 +278,74 @@ async def test_run_sandboxed_dgm_uses_requested_network_with_opt_in(tmp_path):
         manager=manager,
     )
 
+    assert manager.calls[0]["network_mode"] == "bridge"
+
+
+@pytest.mark.asyncio
+async def test_run_sandboxed_dgm_rejects_env_without_network_opt_in(tmp_path, monkeypatch):
+    project_root = tmp_path / "project"
+    config = project_root / "config" / "dgm_config.yaml"
+    config.parent.mkdir(parents=True)
+    config.write_text("sandbox:\n  network_mode: none\n", encoding="utf-8")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "secret")
+
+    class FakeManager:
+        def __init__(self):
+            self.calls = []
+
+        def is_sandbox_ready(self):
+            return True
+
+        async def execute_project_command(self, **kwargs):
+            self.calls.append(kwargs)
+            return SandboxResult(success=True, output="ok\n", exit_code=0)
+
+    manager = FakeManager()
+
+    with pytest.raises(SandboxRunError, match="without --allow-network"):
+        await run_sandboxed_dgm(
+            config_path=config,
+            generations=1,
+            project_root=project_root,
+            env_names=["ANTHROPIC_API_KEY"],
+            allow_network=False,
+            manager=manager,
+        )
+
+    assert manager.calls == []
+
+
+@pytest.mark.asyncio
+async def test_run_sandboxed_dgm_passes_env_with_network_opt_in(tmp_path, monkeypatch):
+    project_root = tmp_path / "project"
+    config = project_root / "config" / "dgm_config.yaml"
+    config.parent.mkdir(parents=True)
+    config.write_text("sandbox:\n  network_mode: none\n", encoding="utf-8")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "secret")
+
+    class FakeManager:
+        def __init__(self):
+            self.calls = []
+
+        def is_sandbox_ready(self):
+            return True
+
+        async def execute_project_command(self, **kwargs):
+            self.calls.append(kwargs)
+            return SandboxResult(success=True, output="ok\n", exit_code=0)
+
+    manager = FakeManager()
+    await run_sandboxed_dgm(
+        config_path=config,
+        generations=1,
+        project_root=project_root,
+        env_names=["ANTHROPIC_API_KEY"],
+        allow_network=True,
+        network_mode="bridge",
+        manager=manager,
+    )
+
+    assert manager.calls[0]["environment"] == {"ANTHROPIC_API_KEY": "secret"}
     assert manager.calls[0]["network_mode"] == "bridge"
 
 

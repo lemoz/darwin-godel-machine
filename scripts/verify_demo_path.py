@@ -27,7 +27,9 @@ from sandbox.sandbox_manager import SandboxConfig, SandboxManager, SandboxResult
 from scripts.compare_benchmark_solutions import compare_solutions
 from scripts.run_dgm_in_sandbox import (
     _build_parser as build_sandbox_runner_parser,
+    SandboxRunError,
     resolve_network_mode,
+    validate_environment_pass_through,
 )
 
 
@@ -186,6 +188,15 @@ def _verify_sandbox_runner_cli(project_root: Path) -> dict[str, Any]:
         resolve_network_mode(True, "bridge") == "bridge",
         "Sandbox runner did not honor explicit --allow-network network mode",
     )
+    try:
+        validate_environment_pass_through(["ANTHROPIC_API_KEY"], allow_network=False)
+    except SandboxRunError:
+        pass
+    else:
+        raise VerificationError(
+            "Sandbox runner must reject --env without explicit --allow-network"
+        )
+    validate_environment_pass_through(["ANTHROPIC_API_KEY"], allow_network=True)
 
     return {
         "name": "sandbox_runner_cli",
@@ -193,6 +204,7 @@ def _verify_sandbox_runner_cli(project_root: Path) -> dict[str, Any]:
         "path": str(runner.relative_to(project_root)),
         "safe_flags": ["--allow-network", "--env", "--discard-changes"],
         "network_default": "none",
+        "env_requires_network": True,
     }
 
 
