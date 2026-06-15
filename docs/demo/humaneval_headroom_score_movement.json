@@ -1,0 +1,325 @@
+{
+  "baseline": {
+    "label": "baseline",
+    "passed": 10,
+    "path": "docs/demo/humaneval_headroom_baseline.py",
+    "score": 0.5882352941176471,
+    "test_cases": [
+      {
+        "function_name": "dedupe_preserve_order",
+        "individual_results": [
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[1, 2, 3]",
+            "input": "[1, 2, 1, 3]",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "['a', 'b']",
+            "error": null,
+            "expected_output": "['b', 'a']",
+            "input": "['b', 'a', 'b']",
+            "success": false
+          },
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[3, 1, 2]",
+            "input": "[3, 1, 3, 2]",
+            "success": false
+          }
+        ],
+        "passed": 2,
+        "success": false,
+        "total": 4
+      },
+      {
+        "function_name": "chunked",
+        "individual_results": [
+          {
+            "actual_output": "[[1, 2], [3, 4]]",
+            "error": null,
+            "expected_output": "[[1, 2], [3, 4]]",
+            "input": "[1, 2, 3, 4], 2",
+            "success": true
+          },
+          {
+            "actual_output": "[[1, 2], [3, 4]]",
+            "error": null,
+            "expected_output": "[[1, 2], [3, 4], [5]]",
+            "input": "[1, 2, 3, 4, 5], 2",
+            "success": false
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[], 3",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[[1, 2]]",
+            "input": "[1, 2], 5",
+            "success": false
+          }
+        ],
+        "passed": 2,
+        "success": false,
+        "total": 4
+      },
+      {
+        "function_name": "parse_key_values",
+        "individual_results": [
+          {
+            "actual_output": "{'a': '1', 'b': '2'}",
+            "error": null,
+            "expected_output": "{'a': '1', 'b': '2'}",
+            "input": "'a=1,b=2'",
+            "success": true
+          },
+          {
+            "actual_output": "{' a ': ' 1 ', ' b': '2 '}",
+            "error": null,
+            "expected_output": "{'a': '1', 'b': '2'}",
+            "input": "' a = 1 , b=2 '",
+            "success": false
+          },
+          {
+            "actual_output": "{}",
+            "error": null,
+            "expected_output": "{}",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": null,
+            "error": "CallError: dictionary update sequence element #1 has length 1; 2 is required",
+            "expected_output": "{'a': '1', 'b': '2'}",
+            "input": "'a=1,,b=2'",
+            "success": false
+          }
+        ],
+        "passed": 2,
+        "success": false,
+        "total": 4
+      },
+      {
+        "function_name": "balanced_brackets",
+        "individual_results": [
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "'()'",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "'(]'",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "'([{}])'",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "False",
+            "input": "'([)]'",
+            "success": false
+          }
+        ],
+        "passed": 4,
+        "success": false,
+        "total": 5
+      }
+    ],
+    "total": 17
+  },
+  "benchmark": "humaneval_headroom",
+  "benchmarks_dir": "config/benchmarks",
+  "candidate": {
+    "label": "candidate",
+    "passed": 17,
+    "path": "docs/demo/humaneval_headroom_improved.py",
+    "score": 1.0,
+    "test_cases": [
+      {
+        "function_name": "dedupe_preserve_order",
+        "individual_results": [
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[1, 2, 3]",
+            "input": "[1, 2, 1, 3]",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "['b', 'a']",
+            "error": null,
+            "expected_output": "['b', 'a']",
+            "input": "['b', 'a', 'b']",
+            "success": true
+          },
+          {
+            "actual_output": "[3, 1, 2]",
+            "error": null,
+            "expected_output": "[3, 1, 2]",
+            "input": "[3, 1, 3, 2]",
+            "success": true
+          }
+        ],
+        "passed": 4,
+        "success": true,
+        "total": 4
+      },
+      {
+        "function_name": "chunked",
+        "individual_results": [
+          {
+            "actual_output": "[[1, 2], [3, 4]]",
+            "error": null,
+            "expected_output": "[[1, 2], [3, 4]]",
+            "input": "[1, 2, 3, 4], 2",
+            "success": true
+          },
+          {
+            "actual_output": "[[1, 2], [3, 4], [5]]",
+            "error": null,
+            "expected_output": "[[1, 2], [3, 4], [5]]",
+            "input": "[1, 2, 3, 4, 5], 2",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[], 3",
+            "success": true
+          },
+          {
+            "actual_output": "[[1, 2]]",
+            "error": null,
+            "expected_output": "[[1, 2]]",
+            "input": "[1, 2], 5",
+            "success": true
+          }
+        ],
+        "passed": 4,
+        "success": true,
+        "total": 4
+      },
+      {
+        "function_name": "parse_key_values",
+        "individual_results": [
+          {
+            "actual_output": "{'a': '1', 'b': '2'}",
+            "error": null,
+            "expected_output": "{'a': '1', 'b': '2'}",
+            "input": "'a=1,b=2'",
+            "success": true
+          },
+          {
+            "actual_output": "{'a': '1', 'b': '2'}",
+            "error": null,
+            "expected_output": "{'a': '1', 'b': '2'}",
+            "input": "' a = 1 , b=2 '",
+            "success": true
+          },
+          {
+            "actual_output": "{}",
+            "error": null,
+            "expected_output": "{}",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": "{'a': '1', 'b': '2'}",
+            "error": null,
+            "expected_output": "{'a': '1', 'b': '2'}",
+            "input": "'a=1,,b=2'",
+            "success": true
+          }
+        ],
+        "passed": 4,
+        "success": true,
+        "total": 4
+      },
+      {
+        "function_name": "balanced_brackets",
+        "individual_results": [
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "'()'",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "'(]'",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "'([{}])'",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "'([)]'",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      }
+    ],
+    "total": 17
+  },
+  "delta": 0.4117647058823529
+}

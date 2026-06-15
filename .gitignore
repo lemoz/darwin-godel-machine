@@ -2,6 +2,7 @@
 *.json
 !docs/live-runs/**/scorecard.json
 !docs/live-runs/**/sandbox-audit.json
+!docs/demo/*score_movement.json
 *.csv
 *.tsv
 *.xlsx

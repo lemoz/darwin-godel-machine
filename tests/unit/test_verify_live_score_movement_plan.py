@@ -32,7 +32,7 @@ def test_live_score_movement_plan_verifies_default_config():
     report = verify_live_score_movement_plan(project_root=project_root)
 
     assert report["config"] == "config/live_score_movement.yaml"
-    assert report["benchmark"] == "humaneval_style"
+    assert report["benchmark"] == "humaneval_headroom"
     assert report["recommended_generations"] == 2
     assert report["max_agent_steps"] == 5
     assert report["max_output_tokens_per_call"] == 2048
@@ -41,6 +41,11 @@ def test_live_score_movement_plan_verifies_default_config():
     assert report["requires_current_pricing_check"] is True
     assert report["requires_full_process_sandbox"] is True
     assert report["requires_scorecard_improvement"] is True
+    assert report["requires_headroom_gate"] is True
+    assert report["headroom_baseline_score"] == pytest.approx(10 / 17)
+    assert report["headroom_candidate_score"] == 1.0
+    assert report["headroom_delta"] == pytest.approx(7 / 17)
+    assert report["headroom_score_report"] == "docs/demo/humaneval_headroom_score_movement.json"
     assert report["pricing_checked_at"] == "2026-06-15"
     assert report["input_price_per_mtok"] == 3
     assert report["output_price_per_mtok"] == 15
@@ -65,10 +70,20 @@ def test_live_score_movement_plan_rejects_unapproved_run(tmp_path):
 def test_live_score_movement_plan_rejects_extra_benchmarks(tmp_path):
     project_root = Path(__file__).resolve().parents[2]
     plan = deepcopy(_load_default_plan(project_root))
-    plan["benchmarks"]["enabled"] = ["humaneval_style", "list_processing"]
+    plan["benchmarks"]["enabled"] = ["humaneval_headroom", "list_processing"]
     config_path = _write_plan(tmp_path, plan)
 
-    with pytest.raises(LiveRunPlanError, match="humaneval_style only"):
+    with pytest.raises(LiveRunPlanError, match="humaneval_headroom only"):
+        verify_live_score_movement_plan(config_path, project_root=project_root)
+
+
+def test_live_score_movement_plan_rejects_missing_headroom(tmp_path):
+    project_root = Path(__file__).resolve().parents[2]
+    plan = deepcopy(_load_default_plan(project_root))
+    plan["live_run"]["headroom_gate"]["max_baseline_score"] = 0.1
+    config_path = _write_plan(tmp_path, plan)
+
+    with pytest.raises(LiveRunPlanError, match="baseline score is too high"):
         verify_live_score_movement_plan(config_path, project_root=project_root)
 
 
@@ -80,4 +95,4 @@ def test_live_score_movement_plan_cli_json(capsys):
 
     assert exit_code == 0
     assert '"status": "ok"' in captured.out
-    assert '"benchmark": "humaneval_style"' in captured.out
+    assert '"benchmark": "humaneval_headroom"' in captured.out
