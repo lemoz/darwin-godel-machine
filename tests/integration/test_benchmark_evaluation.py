@@ -115,6 +115,48 @@ class TestBenchmarkEvaluationPipeline:
         avg = self.runner.get_average_score(results)
         assert avg == pytest.approx(0.7)
 
+    async def test_prompt_test_cases_are_public_examples_only(self, tmp_path):
+        bdir = tmp_path / "hidden_benchmarks"
+        bdir.mkdir()
+        cfg = {
+            "name": "hidden_add",
+            "description": "Add two numbers",
+            "task_prompt": "Implement add(a, b).",
+            "prompt_test_cases": [
+                {
+                    "function_name": "add",
+                    "inputs": ["1, 2"],
+                    "expected_outputs": ["3"],
+                }
+            ],
+            "test_cases": [
+                {
+                    "function_name": "add",
+                    "inputs": ["10, 20"],
+                    "expected_outputs": ["30"],
+                }
+            ],
+            "timeout": 10,
+            "scoring_method": "partial",
+        }
+        (bdir / "hidden_add.yaml").write_text(yaml.safe_dump(cfg))
+        runner = BenchmarkRunner(benchmarks_dir=str(bdir), use_sandbox=False)
+        captured = {}
+
+        class CapturingAgent:
+            agent_id = "agent"
+
+            async def solve_task(self, task):
+                captured["description"] = task.description
+                return {"solution": "def add(a, b):\n    return a + b\n"}
+
+        result = await runner.run_benchmark(CapturingAgent(), "hidden_add")
+
+        assert result.score == pytest.approx(1.0)
+        assert "PUBLIC EXAMPLES" in captured["description"]
+        assert "1, 2" in captured["description"]
+        assert "10, 20" not in captured["description"]
+
 
 async def test_humaneval_style_reference_solution_passes():
     """The shipped HumanEval-style pack must be verified without API calls."""

@@ -72,6 +72,7 @@ async def _verify_humaneval_reference(project_root: Path) -> dict[str, Any]:
         use_sandbox=False,
     )
     expected = {
+        "humaneval_headroom",
         "humaneval_style",
         "list_processing",
         "simple_algorithm",
@@ -125,6 +126,37 @@ async def _verify_score_movement(project_root: Path) -> dict[str, Any]:
         "baseline_score": report["baseline"]["score"],
         "candidate_score": report["candidate"]["score"],
         "delta": report["delta"],
+    }
+
+
+async def _verify_live_headroom_score_movement(project_root: Path) -> dict[str, Any]:
+    report = await compare_solutions(
+        benchmarks_dir=project_root / "config" / "benchmarks",
+        benchmark_name="humaneval_headroom",
+        baseline_path=project_root / "docs" / "demo" / "humaneval_headroom_baseline.py",
+        candidate_path=project_root / "docs" / "demo" / "humaneval_headroom_improved.py",
+    )
+    checked_in = _load_json(
+        project_root / "docs" / "demo" / "humaneval_headroom_score_movement.json"
+    )
+
+    _require(report["baseline"]["score"] <= 0.75, "Expected headroom baseline score <= 0.75")
+    _require(report["candidate"]["score"] == 1.0, "Expected headroom candidate score 1.0")
+    _require(report["delta"] >= 0.25, "Expected headroom score delta >= 0.25")
+    _require(checked_in["baseline"]["score"] == report["baseline"]["score"], "Stale headroom baseline JSON report")
+    _require(checked_in["candidate"]["score"] == report["candidate"]["score"], "Stale headroom candidate JSON report")
+    _require(checked_in["delta"] == report["delta"], "Stale headroom delta JSON report")
+
+    return {
+        "name": "live_headroom_score_movement_demo",
+        "status": "ok",
+        "benchmark": report["benchmark"],
+        "baseline_score": report["baseline"]["score"],
+        "candidate_score": report["candidate"]["score"],
+        "delta": report["delta"],
+        "baseline_passed": report["baseline"]["passed"],
+        "candidate_passed": report["candidate"]["passed"],
+        "total": report["candidate"]["total"],
     }
 
 
@@ -422,7 +454,11 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
         project_root / "requirements.txt",
         project_root / "config" / "dgm_config.yaml",
         project_root / "config" / "live_score_movement.yaml",
+        project_root / "config" / "benchmarks" / "humaneval_headroom.yaml",
         project_root / "config" / "benchmarks" / "humaneval_style.yaml",
+        project_root / "docs" / "demo" / "humaneval_headroom_baseline.py",
+        project_root / "docs" / "demo" / "humaneval_headroom_improved.py",
+        project_root / "docs" / "demo" / "humaneval_headroom_score_movement.json",
         project_root / "docs" / "demo" / "humaneval_style_baseline.py",
         project_root / "docs" / "demo" / "humaneval_style_improved.py",
         project_root / "docs" / "demo" / "humaneval_score_movement.json",
@@ -430,6 +466,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
     checks.extend(_check_file(path, project_root) for path in required_files)
     checks.append(await _verify_humaneval_reference(project_root))
     checks.append(await _verify_score_movement(project_root))
+    checks.append(await _verify_live_headroom_score_movement(project_root))
     checks.append(_verify_live_run_docs(project_root))
     checks.append(_verify_live_score_movement_attempt_docs(project_root))
     checks.append(_verify_archive_lineage(project_root))

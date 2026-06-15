@@ -239,6 +239,11 @@ It contains HumanEval-style standalone function tasks with reference solutions
 verified by the integration test suite; add `humaneval_style` to
 `benchmarks.enabled` when you want the DGM loop to evaluate against it.
 
+For live score-movement rehearsals, see
+`config/benchmarks/humaneval_headroom.yaml`. It uses public prompt examples plus
+additional hidden evaluation cases so the benchmark can show measurable
+headroom instead of handing every scored input/output pair to the agent.
+
 To demonstrate benchmark score movement without API keys or model calls, compare
 the bundled weak and improved HumanEval-style demo solutions:
 
@@ -253,6 +258,20 @@ python scripts/compare_benchmark_solutions.py \
 This local comparison should report a baseline score of `0.500`, a candidate
 score of `1.000`, and `delta=+0.500`. It verifies the benchmark harness and
 reporting path; it is not evidence of autonomous DGM self-improvement.
+
+The planned live rehearsal uses the hidden-case headroom benchmark. Its
+no-network headroom check is:
+
+```bash
+python scripts/compare_benchmark_solutions.py \
+  --benchmark humaneval_headroom \
+  --baseline docs/demo/humaneval_headroom_baseline.py \
+  --candidate docs/demo/humaneval_headroom_improved.py \
+  --output docs/demo/humaneval_headroom_score_movement.json
+```
+
+This should report a baseline score below `0.750`, a candidate score of
+`1.000`, and a positive delta of at least `+0.250`.
 
 For live DGM runs, summarize the generated archive metadata before claiming
 score movement:
@@ -272,9 +291,9 @@ the already-perfect base score.
 
 The planned live score-movement rehearsal is captured in
 `config/live_score_movement.yaml`. It is bounded to two generations, five agent
-steps, one benchmark (`humaneval_style`), and a 2,048-token output cap per model
-call. Before any live provider call, run the no-network plan check and verify
-current provider pricing:
+steps, one benchmark (`humaneval_headroom`), and a 2,048-token output cap per
+model call. Before any live provider call, run the no-network plan check and
+verify current provider pricing:
 
 ```bash
 python scripts/verify_live_score_movement_plan.py

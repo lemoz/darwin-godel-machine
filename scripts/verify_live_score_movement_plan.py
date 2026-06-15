@@ -59,6 +59,24 @@ def _require_under_run_dir(path_text: str, project_root: Path, run_dir: Path) ->
     return str(relative_path)
 
 
+def _require_project_file(path_text: str, project_root: Path) -> Path:
+    relative_path = _project_relative(path_text, project_root)
+    path = project_root / relative_path
+    _require(path.is_file(), f"Missing required project file: {relative_path}")
+    return path
+
+
+def _case_pairs(cases: list[dict[str, Any]]) -> set[tuple[str, str, str]]:
+    pairs = set()
+    for case in cases:
+        function_name = str(case.get("function_name", "solve"))
+        inputs = case.get("inputs", [])
+        expected_outputs = case.get("expected_outputs", [])
+        for raw_input, raw_expected in zip(inputs, expected_outputs):
+            pairs.add((function_name, str(raw_input), str(raw_expected)))
+    return pairs
+
+
 def verify_live_score_movement_plan(
     config_path: Path = PROJECT_ROOT / "config" / "live_score_movement.yaml",
     *,
@@ -80,7 +98,7 @@ def verify_live_score_movement_plan(
 
     benchmark_config = config.get("benchmarks", {})
     enabled = benchmark_config.get("enabled", [])
-    _require(enabled == ["humaneval_style"], "Live score-movement run must target humaneval_style only")
+    _require(enabled == ["humaneval_headroom"], "Live score-movement run must target humaneval_headroom only")
     _require(
         benchmark_config.get("max_attempts", 0) <= 3,
         "Benchmark max_attempts must stay <= 3",
@@ -122,6 +140,63 @@ def verify_live_score_movement_plan(
     _require(live_run.get("purpose") == "live_score_movement_rehearsal", "Missing live-run purpose")
     _require(live_run.get("approval_required") is True, "Live run must require explicit approval")
     _require(live_run.get("recommended_generations") == 2, "Recommended generations must be 2")
+
+    headroom_gate = live_run.get("headroom_gate", {})
+    _require(headroom_gate.get("benchmark") == enabled[0], "Headroom gate benchmark must match enabled benchmark")
+    _require(
+        headroom_gate.get("prompt_examples_are_public_only") is True,
+        "Headroom gate must require public-only prompt examples",
+    )
+    benchmark_path = project_root / "config" / "benchmarks" / f"{enabled[0]}.yaml"
+    benchmark_data = _load_yaml(benchmark_path)
+    prompt_cases = benchmark_data.get("prompt_test_cases")
+    test_cases = benchmark_data.get("test_cases")
+    _require(prompt_cases, "Headroom benchmark must define prompt_test_cases")
+    _require(test_cases, "Headroom benchmark must define hidden evaluation test_cases")
+    prompt_pairs = _case_pairs(prompt_cases)
+    test_pairs = _case_pairs(test_cases)
+    _require(prompt_pairs, "Headroom benchmark prompt examples must not be empty")
+    _require(test_pairs, "Headroom benchmark evaluation cases must not be empty")
+    _require(
+        prompt_pairs.issubset(test_pairs),
+        "Headroom benchmark prompt examples must be included in evaluation cases",
+    )
+    _require(
+        len(test_pairs) > len(prompt_pairs),
+        "Headroom benchmark must include hidden evaluation cases beyond prompt examples",
+    )
+
+    baseline_path = _require_project_file(headroom_gate.get("baseline_solution", ""), project_root)
+    candidate_path = _require_project_file(headroom_gate.get("candidate_solution", ""), project_root)
+    report_path = _require_project_file(headroom_gate.get("score_report", ""), project_root)
+    try:
+        score_report = json.loads(report_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise LiveRunPlanError(f"Invalid headroom score report JSON: {report_path}: {exc}") from exc
+    baseline_score = float(score_report.get("baseline", {}).get("score", -1))
+    candidate_score = float(score_report.get("candidate", {}).get("score", -1))
+    delta = float(score_report.get("delta", -1))
+    _require(score_report.get("benchmark") == enabled[0], "Headroom score report benchmark mismatch")
+    _require(
+        Path(score_report.get("baseline", {}).get("path", "")) == baseline_path.relative_to(project_root),
+        "Headroom score report baseline path mismatch",
+    )
+    _require(
+        Path(score_report.get("candidate", {}).get("path", "")) == candidate_path.relative_to(project_root),
+        "Headroom score report candidate path mismatch",
+    )
+    _require(
+        baseline_score <= float(headroom_gate.get("max_baseline_score", 0)),
+        "Headroom baseline score is too high for a live score-movement rehearsal",
+    )
+    _require(
+        candidate_score >= float(headroom_gate.get("min_candidate_score", 1)),
+        "Headroom candidate score is below the required reference score",
+    )
+    _require(
+        delta >= float(headroom_gate.get("min_delta", 0)),
+        "Headroom score delta is too small for a live score-movement rehearsal",
+    )
 
     cost_gate = live_run.get("cost_gate", {})
     _require(
@@ -205,6 +280,11 @@ def verify_live_score_movement_plan(
         "requires_current_pricing_check": True,
         "requires_full_process_sandbox": True,
         "requires_scorecard_improvement": True,
+        "requires_headroom_gate": True,
+        "headroom_baseline_score": baseline_score,
+        "headroom_candidate_score": candidate_score,
+        "headroom_delta": delta,
+        "headroom_score_report": str(report_path.relative_to(project_root)),
         "pricing_checked_at": str(cost_gate["pricing_checked_at"]),
         "input_price_per_mtok": cost_estimate["input_price_per_mtok"],
         "output_price_per_mtok": cost_estimate["output_price_per_mtok"],

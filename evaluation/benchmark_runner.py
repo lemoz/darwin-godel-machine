@@ -52,6 +52,7 @@ class BenchmarkTask:
     timeout: int
     validation_code: str
     scoring_method: str
+    prompt_test_cases: Optional[List[Dict[str, Any]]] = None
 
     @classmethod
     def from_config(cls, config_path: str) -> 'BenchmarkTask':
@@ -66,7 +67,8 @@ class BenchmarkTask:
             test_cases=config['test_cases'],
             timeout=config.get('timeout', 60),
             validation_code=config.get('validation_code', ''),
-            scoring_method=config.get('scoring_method', 'pass_fail')
+            scoring_method=config.get('scoring_method', 'pass_fail'),
+            prompt_test_cases=config.get('prompt_test_cases'),
         )
 
 
@@ -175,9 +177,19 @@ class BenchmarkRunner:
         start_time = time.time()
 
         try:
-            # Build enhanced task description with test cases.
-            test_cases_text = "\n\nOFFICIAL TEST CASES:\n"
-            for i, test_case in enumerate(benchmark.test_cases, 1):
+            # Build enhanced task description with prompt-visible examples.
+            # When prompt_test_cases is configured, evaluation still runs the
+            # full test_cases set below. This lets benchmark configs keep a
+            # hidden scoring set instead of handing every expected output to
+            # the agent before it writes a solution.
+            prompt_cases = benchmark.prompt_test_cases or benchmark.test_cases
+            prompt_label = (
+                "PUBLIC EXAMPLES"
+                if benchmark.prompt_test_cases is not None
+                else "OFFICIAL TEST CASES"
+            )
+            test_cases_text = f"\n\n{prompt_label}:\n"
+            for i, test_case in enumerate(prompt_cases, 1):
                 func_name = test_case.get('function_name', 'function')
                 test_cases_text += f"{i}. Function: {func_name}\n"
                 for j, (inp, exp) in enumerate(zip(test_case['inputs'], test_case['expected_outputs'])):
@@ -185,7 +197,7 @@ class BenchmarkRunner:
 
             enhanced_description = (
                 f"{benchmark.task_prompt}{test_cases_text}"
-                "\nFocus on these exact test cases - do not invent additional ones."
+                "\nFocus on the requested behavior and the examples above."
             )
 
             task = Task(
