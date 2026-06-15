@@ -282,7 +282,7 @@ tail -f dgm_run.log
 
 ### Testing Components
 ```bash
-# Run the full test suite (155 tests, no API keys needed)
+# Run the full test suite (no API keys needed)
 python -m pytest
 
 # Verify the no-network demo/setup path
