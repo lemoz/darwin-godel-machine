@@ -13,6 +13,7 @@ PATH="$PWD/.venv/bin:$PATH" python run_dgm.py \
 ```
 
 The full captured transcript is in `transcript.txt`.
+The machine-readable scorecard is in `scorecard.json`.
 
 ## Scope
 
@@ -65,6 +66,7 @@ Final report summary:
 - Final archive size: 3
 - Successful improvements: 0
 - Top score: 1.000
+- Best parent-child average-score delta: 0.000
 
 ## Evidence Notes
 

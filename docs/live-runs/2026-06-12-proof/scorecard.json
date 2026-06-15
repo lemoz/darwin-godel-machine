@@ -1,0 +1,65 @@
+{
+  "archive_metadata": ".dgm-live-runs/2026-06-12-proof/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "686d489b-7bcb-4d8d-a007-d971ddafcfdd",
+      "average_score": 1.0,
+      "benchmark_scores": {
+        "list_processing": 1.0
+      },
+      "generation": 0
+    },
+    {
+      "agent_id": "08150f6d-25ca-4bce-93ef-3172cc3a5a0d",
+      "average_score": 1.0,
+      "benchmark_scores": {
+        "list_processing": 1.0
+      },
+      "generation": 1
+    },
+    {
+      "agent_id": "321422b4-3747-4896-af61-c2060fcf6884",
+      "average_score": 1.0,
+      "benchmark_scores": {
+        "list_processing": 1.0
+      },
+      "generation": 2
+    }
+  ],
+  "has_improvement": false,
+  "improvements": [],
+  "min_delta": 0.0,
+  "parent_child_deltas": [
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "list_processing": 0.0
+      },
+      "child_average_score": 1.0,
+      "child_generation": 1,
+      "child_id": "08150f6d-25ca-4bce-93ef-3172cc3a5a0d",
+      "is_improvement": false,
+      "parent_average_score": 1.0,
+      "parent_generation": 0,
+      "parent_id": "686d489b-7bcb-4d8d-a007-d971ddafcfdd"
+    },
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "list_processing": 0.0
+      },
+      "child_average_score": 1.0,
+      "child_generation": 2,
+      "child_id": "321422b4-3747-4896-af61-c2060fcf6884",
+      "is_improvement": false,
+      "parent_average_score": 1.0,
+      "parent_generation": 1,
+      "parent_id": "08150f6d-25ca-4bce-93ef-3172cc3a5a0d"
+    }
+  ],
+  "top_agent_id": "686d489b-7bcb-4d8d-a007-d971ddafcfdd",
+  "top_score": 1.0,
+  "total_agents": 3,
+  "valid_agents": 3
+}

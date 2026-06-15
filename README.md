@@ -254,6 +254,22 @@ This local comparison should report a baseline score of `0.500`, a candidate
 score of `1.000`, and `delta=+0.500`. It verifies the benchmark harness and
 reporting path; it is not evidence of autonomous DGM self-improvement.
 
+For live DGM runs, summarize the generated archive metadata before claiming
+score movement:
+
+```bash
+python scripts/summarize_archive_scores.py \
+  --archive-metadata .dgm-live-runs/<run-id>/archive/archive_metadata.json \
+  --output docs/live-runs/<run-id>/scorecard.json \
+  --require-improvement
+```
+
+`--require-improvement` exits non-zero unless at least one valid child agent
+improves on its parent by average benchmark score. The committed
+`docs/live-runs/2026-06-12-proof/scorecard.json` intentionally records
+`has_improvement=false` for the first live proof because both child agents tied
+the already-perfect base score.
+
 ## 🧪 Running Experiments
 
 ### Basic Evolution Run

@@ -24,6 +24,12 @@ async def test_no_network_demo_path_verifier_passes():
     assert score_check["candidate_score"] == 1.0
     assert score_check["delta"] == 0.5
 
+    live_run_check = next(check for check in checks if check["name"] == "live_run_docs")
+    assert live_run_check["scorecard"] == "docs/live-runs/2026-06-12-proof/scorecard.json"
+    assert live_run_check["top_score"] == 1.0
+    assert live_run_check["best_average_delta"] == 0.0
+    assert live_run_check["has_improvement"] is False
+
     sandbox_check = next(check for check in checks if check["name"] == "sandbox_runner_cli")
     assert "--discard-changes" in sandbox_check["safe_flags"]
     assert "--audit-output" in sandbox_check["safe_flags"]
