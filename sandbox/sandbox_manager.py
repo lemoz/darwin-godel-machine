@@ -197,7 +197,7 @@ class SandboxManager:
                     working_dir=self.config.working_dir,
                 )
                 if result.success and sync_back and not read_only:
-                    self._copy_project_tree(staged_project, project)
+                    self._sync_project_tree(staged_project, project)
                 return result
 
         return await self.execute_in_sandbox(
@@ -220,19 +220,7 @@ class SandboxManager:
             return
 
         def ignore(_dir: str, names: List[str]) -> set:
-            ignored_names = {
-                ".git",
-                ".pytest_cache",
-                ".mypy_cache",
-                ".ruff_cache",
-                ".venv",
-                "__pycache__",
-            }
-            return {
-                name
-                for name in names
-                if name in ignored_names or name.endswith((".pyc", ".pyo"))
-            }
+            return SandboxManager._ignored_project_names(names)
 
         shutil.copytree(
             source,
@@ -240,6 +228,63 @@ class SandboxManager:
             dirs_exist_ok=True,
             ignore=ignore,
         )
+
+    @staticmethod
+    def _ignored_project_names(names: List[str]) -> set:
+        """Return project-local names that should not stage or sync back."""
+        ignored_names = {
+            ".git",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".venv",
+            "__pycache__",
+        }
+        return {
+            name
+            for name in names
+            if name in ignored_names or name.endswith((".pyc", ".pyo"))
+        }
+
+    @staticmethod
+    def _sync_project_tree(source: Path, destination: Path) -> None:
+        """
+        Mirror a staged project tree back to the host checkout.
+
+        Ignored local state is preserved. Non-ignored files removed inside the
+        staged project are removed from the destination before copying updated
+        files back.
+        """
+        source = source.resolve()
+        destination = destination.resolve()
+        if not source.exists():
+            destination.mkdir(parents=True, exist_ok=True)
+            return
+
+        destination.mkdir(parents=True, exist_ok=True)
+        ignored = SandboxManager._ignored_project_names([
+            child.name for child in destination.iterdir()
+        ])
+
+        for dest_child in list(destination.iterdir()):
+            if dest_child.name in ignored:
+                continue
+            source_child = source / dest_child.name
+            if not source_child.exists():
+                if dest_child.is_dir():
+                    shutil.rmtree(dest_child)
+                else:
+                    dest_child.unlink()
+                continue
+            if dest_child.is_dir() and source_child.is_dir():
+                SandboxManager._sync_project_tree(source_child, dest_child)
+            elif dest_child.is_dir() != source_child.is_dir():
+                if dest_child.is_dir():
+                    shutil.rmtree(dest_child)
+                else:
+                    dest_child.unlink()
+
+        SandboxManager._copy_project_tree(source, destination)
 
     async def create_sandbox_environment(self, agent_id: str) -> str:
         """Create a stopped container and return its id."""

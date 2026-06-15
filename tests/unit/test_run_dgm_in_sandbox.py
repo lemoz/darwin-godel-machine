@@ -81,6 +81,37 @@ def test_project_tree_copy_skips_local_caches(tmp_path):
     assert not (destination / "__pycache__").exists()
 
 
+def test_project_tree_sync_propagates_deletes_and_preserves_ignored(tmp_path):
+    staged = tmp_path / "staged"
+    host = tmp_path / "host"
+    staged.mkdir()
+    host.mkdir()
+
+    (staged / "kept.txt").write_text("updated\n")
+    (staged / "new.txt").write_text("new\n")
+    (staged / "nested").mkdir()
+    (staged / "nested" / "inside.txt").write_text("inside\n")
+
+    (host / "kept.txt").write_text("old\n")
+    (host / "removed.txt").write_text("remove me\n")
+    (host / "nested").mkdir()
+    (host / "nested" / "old.txt").write_text("remove me\n")
+    (host / ".git").mkdir()
+    (host / ".git" / "HEAD").write_text("preserve\n")
+    (host / ".venv").mkdir()
+    (host / ".venv" / "local.py").write_text("preserve\n")
+
+    SandboxManager._sync_project_tree(staged, host)
+
+    assert (host / "kept.txt").read_text() == "updated\n"
+    assert (host / "new.txt").read_text() == "new\n"
+    assert not (host / "removed.txt").exists()
+    assert not (host / "nested" / "old.txt").exists()
+    assert (host / "nested" / "inside.txt").read_text() == "inside\n"
+    assert (host / ".git" / "HEAD").read_text() == "preserve\n"
+    assert (host / ".venv" / "local.py").read_text() == "preserve\n"
+
+
 @pytest.mark.asyncio
 async def test_run_sandboxed_dgm_invokes_project_command(tmp_path):
     project_root = tmp_path / "project"
