@@ -228,6 +228,21 @@ It contains HumanEval-style standalone function tasks with reference solutions
 verified by the integration test suite; add `humaneval_style` to
 `benchmarks.enabled` when you want the DGM loop to evaluate against it.
 
+To demonstrate benchmark score movement without API keys or model calls, compare
+the bundled weak and improved HumanEval-style demo solutions:
+
+```bash
+python scripts/compare_benchmark_solutions.py \
+  --benchmark humaneval_style \
+  --baseline docs/demo/humaneval_style_baseline.py \
+  --candidate docs/demo/humaneval_style_improved.py \
+  --output docs/demo/humaneval_score_movement.json
+```
+
+This local comparison should report a baseline score of `0.500`, a candidate
+score of `1.000`, and `delta=+0.500`. It verifies the benchmark harness and
+reporting path; it is not evidence of autonomous DGM self-improvement.
+
 ## 🧪 Running Experiments
 
 ### Basic Evolution Run

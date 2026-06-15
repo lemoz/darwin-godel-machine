@@ -1,0 +1,367 @@
+{
+  "baseline": {
+    "label": "baseline",
+    "passed": 10,
+    "path": "docs/demo/humaneval_style_baseline.py",
+    "score": 0.5,
+    "test_cases": [
+      {
+        "function_name": "has_close_pair",
+        "individual_results": [
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[1.0, 2.0, 3.0], 0.5",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "True",
+            "input": "[1.0, 2.0, 3.0], 1.1",
+            "success": false
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[], 1.0",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[5.0], 0.1",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "True",
+            "input": "[-1.0, -1.4, 2.0], 0.5",
+            "success": false
+          }
+        ],
+        "passed": 3,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "split_balanced_parens",
+        "individual_results": [
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "['(())', '()']",
+            "input": "'(())()'",
+            "success": false
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "['(()())', '(())']",
+            "input": "'(()())(())'",
+            "success": false
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "['()', '()', '()']",
+            "input": "'()()()'",
+            "success": false
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "['((()))']",
+            "input": "'((()))'",
+            "success": false
+          }
+        ],
+        "passed": 1,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "rolling_minimum",
+        "individual_results": [
+          {
+            "actual_output": "[3, 2, 5, 1, 4]",
+            "error": null,
+            "expected_output": "[3, 2, 2, 1, 1]",
+            "input": "[3, 2, 5, 1, 4]",
+            "success": false
+          },
+          {
+            "actual_output": "[1, 2, 3]",
+            "error": null,
+            "expected_output": "[1, 1, 1]",
+            "input": "[1, 2, 3]",
+            "success": false
+          },
+          {
+            "actual_output": "[-1, -3, 0, -2]",
+            "error": null,
+            "expected_output": "[-1, -3, -3, -3]",
+            "input": "[-1, -3, 0, -2]",
+            "success": false
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "[5]",
+            "error": null,
+            "expected_output": "[5]",
+            "input": "[5]",
+            "success": true
+          }
+        ],
+        "passed": 2,
+        "success": false,
+        "total": 5
+      },
+      {
+        "function_name": "below_zero",
+        "individual_results": [
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "True",
+            "input": "[1, 2, -4, 1]",
+            "success": false
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[5, -3, -1]",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "[-1]",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "[2, -2, -1]",
+            "success": true
+          }
+        ],
+        "passed": 4,
+        "success": false,
+        "total": 5
+      }
+    ],
+    "total": 20
+  },
+  "benchmark": "humaneval_style",
+  "benchmarks_dir": "config/benchmarks",
+  "candidate": {
+    "label": "candidate",
+    "passed": 20,
+    "path": "docs/demo/humaneval_style_improved.py",
+    "score": 1.0,
+    "test_cases": [
+      {
+        "function_name": "has_close_pair",
+        "individual_results": [
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[1.0, 2.0, 3.0], 0.5",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "[1.0, 2.0, 3.0], 1.1",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[], 1.0",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[5.0], 0.1",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "[-1.0, -1.4, 2.0], 0.5",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "split_balanced_parens",
+        "individual_results": [
+          {
+            "actual_output": "['(())', '()']",
+            "error": null,
+            "expected_output": "['(())', '()']",
+            "input": "'(())()'",
+            "success": true
+          },
+          {
+            "actual_output": "['(()())', '(())']",
+            "error": null,
+            "expected_output": "['(()())', '(())']",
+            "input": "'(()())(())'",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "''",
+            "success": true
+          },
+          {
+            "actual_output": "['()', '()', '()']",
+            "error": null,
+            "expected_output": "['()', '()', '()']",
+            "input": "'()()()'",
+            "success": true
+          },
+          {
+            "actual_output": "['((()))']",
+            "error": null,
+            "expected_output": "['((()))']",
+            "input": "'((()))'",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "rolling_minimum",
+        "individual_results": [
+          {
+            "actual_output": "[3, 2, 2, 1, 1]",
+            "error": null,
+            "expected_output": "[3, 2, 2, 1, 1]",
+            "input": "[3, 2, 5, 1, 4]",
+            "success": true
+          },
+          {
+            "actual_output": "[1, 1, 1]",
+            "error": null,
+            "expected_output": "[1, 1, 1]",
+            "input": "[1, 2, 3]",
+            "success": true
+          },
+          {
+            "actual_output": "[-1, -3, -3, -3]",
+            "error": null,
+            "expected_output": "[-1, -3, -3, -3]",
+            "input": "[-1, -3, 0, -2]",
+            "success": true
+          },
+          {
+            "actual_output": "[]",
+            "error": null,
+            "expected_output": "[]",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "[5]",
+            "error": null,
+            "expected_output": "[5]",
+            "input": "[5]",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      },
+      {
+        "function_name": "below_zero",
+        "individual_results": [
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "[1, 2, -4, 1]",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[5, -3, -1]",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "[-1]",
+            "success": true
+          },
+          {
+            "actual_output": "False",
+            "error": null,
+            "expected_output": "False",
+            "input": "[]",
+            "success": true
+          },
+          {
+            "actual_output": "True",
+            "error": null,
+            "expected_output": "True",
+            "input": "[2, -2, -1]",
+            "success": true
+          }
+        ],
+        "passed": 5,
+        "success": true,
+        "total": 5
+      }
+    ],
+    "total": 20
+  },
+  "delta": 0.5
+}
