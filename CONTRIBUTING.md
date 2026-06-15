@@ -47,7 +47,7 @@ python run_dgm.py
 - Use GitHub Issues for bug reports and feature requests
 - Include steps to reproduce for bugs
 - Provide context and use cases for feature requests
-- For larger product-direction requests such as WebUI, web search, knowledge learning, or new tool ecosystems, open an issue with the intended workflow first so maintainers can scope it before implementation.
+- For larger product-direction requests such as WebUI, web search, knowledge learning, or new tool ecosystems, open an issue with the intended workflow first so maintainers can scope it before implementation. See `docs/webui-roadmap.md` for the current WebUI sequencing.
 
 ### Code Contributions
 1. Create a feature branch: `git checkout -b feature/your-feature-name`
@@ -104,6 +104,7 @@ We welcome contributions in these areas:
 - Enhanced safety and security measures
 - Performance optimizations
 - Integration with additional foundation models
+- Local WebUI work that follows `docs/webui-roadmap.md`
 
 ## 📝 Pull Request Process
 
@@ -144,6 +145,7 @@ This project aims to:
 - [Architecture Documentation](reference-design/)
 - [Memory Bank System](memory-bank/)
 - [Security Guidelines](SECURITY.md)
+- [WebUI Roadmap](docs/webui-roadmap.md)
 
 ## ❓ Questions?
 

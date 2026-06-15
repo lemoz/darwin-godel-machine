@@ -398,6 +398,7 @@ python -m pytest
 - **Architecture Overview**: `reference-design/dgm-mvp-architecture.md`
 - **FM Integration**: `reference-design/fm-interaction-layer.md`
 - **Tool Management**: `reference-design/tool-management.md`
+- **WebUI Roadmap**: `docs/webui-roadmap.md`
 - **Research Paper**: `dgm_research_paper.md`
 - **Memory Bank**: `memory-bank/` directory
 
@@ -424,7 +425,7 @@ The system has achieved:
 - **Advanced Benchmarks**: Integration with SWE-bench and HumanEval
 - **Multi-Agent Collaboration**: Cooperative improvement strategies
 - **Foundation Model Fine-tuning**: Custom model training integration
-- **Web Interface**: GUI for monitoring and controlling evolution
+- **Web Interface**: Local UI for verified setup, run monitoring, and archive browsing; see `docs/webui-roadmap.md`
 - **Advanced Novelty Metrics**: More sophisticated diversity measures
 - **Distributed Archive**: Scaling to larger agent populations
 
