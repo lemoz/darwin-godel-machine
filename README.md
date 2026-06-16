@@ -21,7 +21,7 @@ For more details, see the [official blog post](https://sakana.ai/dgm/) from Saka
 - **🔄 Self-Referential Self-Improvement**: Agents modify their own source code to improve performance
 - **📊 Empirical Validation**: Changes validated through coding benchmarks rather than formal proofs
 - **🏗️ Population-Based Evolution**: Maintains archive of all valid agents for diverse exploration
-- **🤖 Foundation Model Integration**: Supports Claude, Gemini, and OpenAI models
+- **🤖 Foundation Model Integration**: Supports Claude, Gemini, OpenAI, and OpenAI-compatible endpoints
 - **🛠️ Tool-Equipped Agents**: Agents use Bash and file editing tools to solve problems
 - **🏪 Agent Archive System**: Stores successful agents with performance and novelty metrics
 - **🎯 Benchmark-Driven Evolution**: Uses custom coding challenges to measure improvement
@@ -32,7 +32,7 @@ For more details, see the [official blog post](https://sakana.ai/dgm/) from Saka
 ### Prerequisites
 
 - Python 3.9+
-- API keys for supported Foundation Models (Claude, Gemini, or OpenAI)
+- API keys for supported Foundation Models (Claude, Gemini, OpenAI, or an OpenAI-compatible provider)
 
 ### Installation
 
@@ -83,6 +83,10 @@ fm_providers:
   gemini:
     model: gemini-2.5-flash-preview-05-20
     api_key: ${GEMINI_API_KEY}
+  openai_compatible:
+    model: moonshotai/kimi-k2.7-code
+    api_key: ${OPENROUTER_API_KEY}
+    base_url: https://openrouter.ai/api/v1
 
 dgm_settings:
   max_iterations: 100
@@ -328,6 +332,26 @@ python scripts/run_dgm_in_sandbox.py \
 
 Then summarize the run archive with `scripts/summarize_archive_scores.py
 --require-improvement` before claiming benchmark improvement.
+
+### Dry-run model matrix
+
+`config/live_model_matrix.yaml` captures the next comparison harness without
+making provider calls. It estimates five bounded trials per model against the
+same calibrated live-run shape: Claude Sonnet 4.6 through Anthropic and Kimi
+K2.7 Code through an OpenAI-compatible OpenRouter endpoint. Run the verifier
+before any live matrix spend:
+
+```bash
+python scripts/estimate_model_matrix_cost.py
+```
+
+As checked on 2026-06-16, the matrix uses Anthropic's published Claude Sonnet
+4.6 pricing (`$3 / MTok` input, `$15 / MTok` output) and OpenRouter's Kimi K2.7
+Code listing (`$0.75 / MTok` input, `$3.50 / MTok` output). With the existing
+25-request live-run ceiling, a 50,000 input-token assumption per call, 2,048
+output-token cap, and five trials per model, the dry-run estimate is
+250 model-call slots and `$28.1735` total. This script performs no live calls
+and does not require provider API keys.
 
 ## 🧪 Running Experiments
 

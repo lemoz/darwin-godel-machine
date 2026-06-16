@@ -36,6 +36,7 @@ from scripts.run_dgm_in_sandbox import (
     write_run_audit,
 )
 from scripts.verify_live_score_movement_plan import verify_live_score_movement_plan
+from scripts.estimate_model_matrix_cost import estimate_model_matrix_cost
 
 
 class VerificationError(RuntimeError):
@@ -512,6 +513,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
         project_root / "README.md",
         project_root / "requirements.txt",
         project_root / "config" / "dgm_config.yaml",
+        project_root / "config" / "live_model_matrix.yaml",
         project_root / "config" / "live_score_movement.yaml",
         project_root / "config" / "benchmarks" / "humaneval_calibrated.yaml",
         project_root / "config" / "benchmarks" / "humaneval_headroom.yaml",
@@ -525,6 +527,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
         project_root / "docs" / "demo" / "humaneval_style_baseline.py",
         project_root / "docs" / "demo" / "humaneval_style_improved.py",
         project_root / "docs" / "demo" / "humaneval_score_movement.json",
+        project_root / "scripts" / "estimate_model_matrix_cost.py",
     ]
     checks.extend(_check_file(path, project_root) for path in required_files)
     checks.append(await _verify_humaneval_reference(project_root))
@@ -539,6 +542,12 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
     checks.append(
         verify_live_score_movement_plan(
             project_root / "config" / "live_score_movement.yaml",
+            project_root=project_root,
+        )
+    )
+    checks.append(
+        estimate_model_matrix_cost(
+            project_root / "config" / "live_model_matrix.yaml",
             project_root=project_root,
         )
     )
