@@ -17,9 +17,13 @@ model_matrix:
   max_estimated_cost_usd: 30
   assumed_input_tokens_per_call: 50000
   pricing_checked_at: 2026-06-16
+  output:
+    run_dir: .dgm-live-runs/model-matrix
+    audit_dir: .dgm-sandbox-runs/model-matrix
   required_preflight:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_demo_path.py
     - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_model_matrix_cost.py --json
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/run_model_matrix.py --dry-run --json
   post_run_scorecard_template:
     command: PATH="$PWD/.venv/bin:$PATH" python scripts/summarize_archive_scores.py --archive-metadata <archive_metadata.json> --output <scorecard.json> --require-improvement
     require_improvement: true
@@ -31,7 +35,7 @@ model_matrix:
       max_tokens: 2048
       temperature: 0.1
       timeout: 60
-      pricing_source: https://platform.claude.com/docs/en/about-claude/models/overview
+      pricing_source: https://www.anthropic.com/news/claude-sonnet-4-6
       input_price_per_mtok: 3
       output_price_per_mtok: 15
     - id: kimi-k2.7-code-openrouter
