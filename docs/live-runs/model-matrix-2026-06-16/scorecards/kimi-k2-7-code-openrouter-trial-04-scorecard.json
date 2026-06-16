@@ -1,0 +1,79 @@
+{
+  "archive_metadata": ".dgm-live-runs/model-matrix-2026-06-16/kimi-k2-7-code-openrouter-trial-04/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "c7e2cbb8-f06f-48d8-a540-22f70e80c848",
+      "average_score": 0.92,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.92
+      },
+      "generation": 0
+    },
+    {
+      "agent_id": "cd97553c-280c-44d8-8b26-36d002b34ff7",
+      "average_score": 0.92,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.92
+      },
+      "generation": 1
+    },
+    {
+      "agent_id": "35cd5326-bb34-42ae-b5d7-089c07f4e2d5",
+      "average_score": 0.88,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.88
+      },
+      "generation": 2
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": true,
+  "improvements": [],
+  "min_delta": 0.0,
+  "parent_child_deltas": [
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "humaneval_calibrated": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "humaneval_calibrated"
+      ],
+      "child_average_score": 0.92,
+      "child_generation": 1,
+      "child_id": "cd97553c-280c-44d8-8b26-36d002b34ff7",
+      "is_improvement": false,
+      "parent_average_score": 0.92,
+      "parent_generation": 0,
+      "parent_id": "c7e2cbb8-f06f-48d8-a540-22f70e80c848"
+    },
+    {
+      "average_delta": -0.040000000000000036,
+      "benchmark_deltas": {
+        "humaneval_calibrated": -0.040000000000000036
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {
+        "humaneval_calibrated": -0.040000000000000036
+      },
+      "benchmark_unchanged": [],
+      "child_average_score": 0.88,
+      "child_generation": 2,
+      "child_id": "35cd5326-bb34-42ae-b5d7-089c07f4e2d5",
+      "is_improvement": false,
+      "parent_average_score": 0.92,
+      "parent_generation": 1,
+      "parent_id": "cd97553c-280c-44d8-8b26-36d002b34ff7"
+    }
+  ],
+  "top_agent_id": "c7e2cbb8-f06f-48d8-a540-22f70e80c848",
+  "top_score": 0.92,
+  "total_agents": 3,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 1,
+  "total_benchmark_unchanged": 1,
+  "valid_agents": 3
+}

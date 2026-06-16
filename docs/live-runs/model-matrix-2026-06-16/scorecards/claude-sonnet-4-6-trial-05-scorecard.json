@@ -1,0 +1,79 @@
+{
+  "archive_metadata": ".dgm-live-runs/model-matrix-2026-06-16/claude-sonnet-4-6-trial-05/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "03f09fea-65c6-4df9-a564-02dad25a6379",
+      "average_score": 0.88,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.88
+      },
+      "generation": 0
+    },
+    {
+      "agent_id": "6cd27368-81cd-4d00-b98a-59bc0eabc284",
+      "average_score": 0.88,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.88
+      },
+      "generation": 1
+    },
+    {
+      "agent_id": "fba7c03c-784c-4922-9178-c186b80fe6d9",
+      "average_score": 0.88,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.88
+      },
+      "generation": 2
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "min_delta": 0.0,
+  "parent_child_deltas": [
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "humaneval_calibrated": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "humaneval_calibrated"
+      ],
+      "child_average_score": 0.88,
+      "child_generation": 1,
+      "child_id": "6cd27368-81cd-4d00-b98a-59bc0eabc284",
+      "is_improvement": false,
+      "parent_average_score": 0.88,
+      "parent_generation": 0,
+      "parent_id": "03f09fea-65c6-4df9-a564-02dad25a6379"
+    },
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "humaneval_calibrated": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "humaneval_calibrated"
+      ],
+      "child_average_score": 0.88,
+      "child_generation": 2,
+      "child_id": "fba7c03c-784c-4922-9178-c186b80fe6d9",
+      "is_improvement": false,
+      "parent_average_score": 0.88,
+      "parent_generation": 1,
+      "parent_id": "6cd27368-81cd-4d00-b98a-59bc0eabc284"
+    }
+  ],
+  "top_agent_id": "03f09fea-65c6-4df9-a564-02dad25a6379",
+  "top_score": 0.88,
+  "total_agents": 3,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 2,
+  "valid_agents": 3
+}

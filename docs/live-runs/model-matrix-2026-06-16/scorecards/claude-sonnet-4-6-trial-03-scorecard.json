@@ -1,0 +1,71 @@
+{
+  "archive_metadata": ".dgm-live-runs/model-matrix-2026-06-16/claude-sonnet-4-6-trial-03/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "853e0e46-4ac0-4510-8f04-73d8c30440c2",
+      "average_score": 0.88,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.88
+      },
+      "generation": 0
+    },
+    {
+      "agent_id": "3ff13969-ba67-4f7d-b0ff-6befd8c59bdd",
+      "average_score": 0.88,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.88
+      },
+      "generation": 1
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "min_delta": 0.0,
+  "parent_child_deltas": [
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "humaneval_calibrated": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "humaneval_calibrated"
+      ],
+      "child_average_score": 0.88,
+      "child_generation": 1,
+      "child_id": "3ff13969-ba67-4f7d-b0ff-6befd8c59bdd",
+      "is_improvement": false,
+      "parent_average_score": 0.88,
+      "parent_generation": 0,
+      "parent_id": "853e0e46-4ac0-4510-8f04-73d8c30440c2"
+    },
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "humaneval_calibrated": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "humaneval_calibrated"
+      ],
+      "child_average_score": 0.88,
+      "child_generation": 1,
+      "child_id": "14afbfe6-c1bd-4a42-ac35-5213adce95ae",
+      "is_improvement": false,
+      "parent_average_score": 0.88,
+      "parent_generation": 0,
+      "parent_id": "853e0e46-4ac0-4510-8f04-73d8c30440c2"
+    }
+  ],
+  "top_agent_id": "853e0e46-4ac0-4510-8f04-73d8c30440c2",
+  "top_score": 0.88,
+  "total_agents": 3,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 2,
+  "valid_agents": 3
+}

@@ -1,0 +1,214 @@
+{
+  "audit_count": 10,
+  "audit_dir": ".dgm-sandbox-runs/model-matrix-2026-06-16",
+  "base_live_run_config": "config/live_score_movement.yaml",
+  "benchmark": "humaneval_calibrated",
+  "command": ".venv/bin/python scripts/run_model_matrix.py --execute --allow-network --run-dir .dgm-live-runs/model-matrix-2026-06-16 --audit-dir .dgm-sandbox-runs/model-matrix-2026-06-16 --json",
+  "completed_trials": 10,
+  "estimated_total_cost_usd": 28.1735,
+  "matrix_config": "config/live_model_matrix.yaml",
+  "max_estimated_cost_usd": 30.0,
+  "model_count": 2,
+  "models": [
+    {
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "best_average_deltas": [
+        0.88,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "estimated_total_cost_usd_per_trial": 4.518,
+      "generations_per_trial": 2,
+      "improvement_trials": [
+        "claude-sonnet-4-6-trial-01"
+      ],
+      "model": "claude-sonnet-4-6",
+      "model_id": "claude-sonnet-4-6",
+      "provider": "anthropic",
+      "regression_trials": [],
+      "success_count": 5,
+      "top_score_max": 0.88,
+      "top_score_mean": 0.88,
+      "top_score_median": 0.88,
+      "top_score_min": 0.88,
+      "top_scores": [
+        0.88,
+        0.88,
+        0.88,
+        0.88,
+        0.88
+      ],
+      "trial_count": 5,
+      "trials": [
+        {
+          "audit": "audits/claude-sonnet-4-6-trial-01-audit.json",
+          "best_average_delta": 0.88,
+          "has_improvement": true,
+          "has_regression": false,
+          "scorecard": "scorecards/claude-sonnet-4-6-trial-01-scorecard.json",
+          "top_score": 0.88,
+          "total_agents": 3,
+          "trial_id": "claude-sonnet-4-6-trial-01",
+          "valid_agents": 3
+        },
+        {
+          "audit": "audits/claude-sonnet-4-6-trial-02-audit.json",
+          "best_average_delta": 0.0,
+          "has_improvement": false,
+          "has_regression": false,
+          "scorecard": "scorecards/claude-sonnet-4-6-trial-02-scorecard.json",
+          "top_score": 0.88,
+          "total_agents": 3,
+          "trial_id": "claude-sonnet-4-6-trial-02",
+          "valid_agents": 3
+        },
+        {
+          "audit": "audits/claude-sonnet-4-6-trial-03-audit.json",
+          "best_average_delta": 0.0,
+          "has_improvement": false,
+          "has_regression": false,
+          "scorecard": "scorecards/claude-sonnet-4-6-trial-03-scorecard.json",
+          "top_score": 0.88,
+          "total_agents": 3,
+          "trial_id": "claude-sonnet-4-6-trial-03",
+          "valid_agents": 3
+        },
+        {
+          "audit": "audits/claude-sonnet-4-6-trial-04-audit.json",
+          "best_average_delta": 0.0,
+          "has_improvement": false,
+          "has_regression": false,
+          "scorecard": "scorecards/claude-sonnet-4-6-trial-04-scorecard.json",
+          "top_score": 0.88,
+          "total_agents": 3,
+          "trial_id": "claude-sonnet-4-6-trial-04",
+          "valid_agents": 3
+        },
+        {
+          "audit": "audits/claude-sonnet-4-6-trial-05-audit.json",
+          "best_average_delta": 0.0,
+          "has_improvement": false,
+          "has_regression": false,
+          "scorecard": "scorecards/claude-sonnet-4-6-trial-05-scorecard.json",
+          "top_score": 0.88,
+          "total_agents": 3,
+          "trial_id": "claude-sonnet-4-6-trial-05",
+          "valid_agents": 3
+        }
+      ]
+    },
+    {
+      "api_key_env": "OPENROUTER_API_KEY",
+      "best_average_deltas": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.020000000000000018
+      ],
+      "estimated_total_cost_usd_per_trial": 1.1167,
+      "generations_per_trial": 2,
+      "improvement_trials": [],
+      "model": "moonshotai/kimi-k2.7-code",
+      "model_id": "kimi-k2.7-code-openrouter",
+      "provider": "openai_compatible",
+      "regression_trials": [
+        "kimi-k2-7-code-openrouter-trial-02",
+        "kimi-k2-7-code-openrouter-trial-04",
+        "kimi-k2-7-code-openrouter-trial-05"
+      ],
+      "success_count": 5,
+      "top_score_max": 0.92,
+      "top_score_mean": 0.92,
+      "top_score_median": 0.92,
+      "top_score_min": 0.92,
+      "top_scores": [
+        0.92,
+        0.92,
+        0.92,
+        0.92,
+        0.92
+      ],
+      "trial_count": 5,
+      "trials": [
+        {
+          "audit": "audits/kimi-k2-7-code-openrouter-trial-01-audit.json",
+          "best_average_delta": 0.0,
+          "has_improvement": false,
+          "has_regression": false,
+          "scorecard": "scorecards/kimi-k2-7-code-openrouter-trial-01-scorecard.json",
+          "top_score": 0.92,
+          "total_agents": 3,
+          "trial_id": "kimi-k2-7-code-openrouter-trial-01",
+          "valid_agents": 3
+        },
+        {
+          "audit": "audits/kimi-k2-7-code-openrouter-trial-02-audit.json",
+          "best_average_delta": 0.0,
+          "has_improvement": false,
+          "has_regression": true,
+          "scorecard": "scorecards/kimi-k2-7-code-openrouter-trial-02-scorecard.json",
+          "top_score": 0.92,
+          "total_agents": 3,
+          "trial_id": "kimi-k2-7-code-openrouter-trial-02",
+          "valid_agents": 3
+        },
+        {
+          "audit": "audits/kimi-k2-7-code-openrouter-trial-03-audit.json",
+          "best_average_delta": 0.0,
+          "has_improvement": false,
+          "has_regression": false,
+          "scorecard": "scorecards/kimi-k2-7-code-openrouter-trial-03-scorecard.json",
+          "top_score": 0.92,
+          "total_agents": 3,
+          "trial_id": "kimi-k2-7-code-openrouter-trial-03",
+          "valid_agents": 3
+        },
+        {
+          "audit": "audits/kimi-k2-7-code-openrouter-trial-04-audit.json",
+          "best_average_delta": 0.0,
+          "has_improvement": false,
+          "has_regression": true,
+          "scorecard": "scorecards/kimi-k2-7-code-openrouter-trial-04-scorecard.json",
+          "top_score": 0.92,
+          "total_agents": 3,
+          "trial_id": "kimi-k2-7-code-openrouter-trial-04",
+          "valid_agents": 3
+        },
+        {
+          "audit": "audits/kimi-k2-7-code-openrouter-trial-05-audit.json",
+          "best_average_delta": -0.020000000000000018,
+          "has_improvement": false,
+          "has_regression": true,
+          "scorecard": "scorecards/kimi-k2-7-code-openrouter-trial-05-scorecard.json",
+          "top_score": 0.92,
+          "total_agents": 3,
+          "trial_id": "kimi-k2-7-code-openrouter-trial-05",
+          "valid_agents": 3
+        }
+      ]
+    }
+  ],
+  "openrouter_usage_delta_usd": 0.280637273,
+  "planner_live_calls_performed": 0,
+  "run_date": "2026-06-16",
+  "run_dir": ".dgm-live-runs/model-matrix-2026-06-16",
+  "run_id": "model-matrix-2026-06-16",
+  "scorecard_count": 10,
+  "secret_handling": {
+    "api_key_values_committed": false,
+    "audit_env_names": [
+      "ANTHROPIC_API_KEY",
+      "OPENROUTER_API_KEY"
+    ],
+    "audit_env_values": [
+      "hidden"
+    ]
+  },
+  "status": "executed",
+  "total_request_ceiling": 250,
+  "trial_count": 10,
+  "trials_per_model": 5
+}

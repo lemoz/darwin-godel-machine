@@ -1,0 +1,98 @@
+{
+  "archive_metadata": ".dgm-live-runs/model-matrix-2026-06-16/claude-sonnet-4-6-trial-01/archive/archive_metadata.json",
+  "best_average_delta": 0.88,
+  "generation_best_scores": [
+    {
+      "agent_id": "21085b94-dc6b-4517-a72e-8bc9e08eacf2",
+      "average_score": 0.0,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.0
+      },
+      "generation": 0
+    },
+    {
+      "agent_id": "7cbf5309-0886-4c2a-b5e2-c1264a8fc267",
+      "average_score": 0.88,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.88
+      },
+      "generation": 1
+    },
+    {
+      "agent_id": "c37b4d8a-ace0-4b71-8138-74088b605ab2",
+      "average_score": 0.88,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.88
+      },
+      "generation": 2
+    }
+  ],
+  "has_improvement": true,
+  "has_regression": false,
+  "improvements": [
+    {
+      "average_delta": 0.88,
+      "benchmark_deltas": {
+        "humaneval_calibrated": 0.88
+      },
+      "benchmark_improvements": {
+        "humaneval_calibrated": 0.88
+      },
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [],
+      "child_average_score": 0.88,
+      "child_generation": 1,
+      "child_id": "7cbf5309-0886-4c2a-b5e2-c1264a8fc267",
+      "is_improvement": true,
+      "parent_average_score": 0.0,
+      "parent_generation": 0,
+      "parent_id": "21085b94-dc6b-4517-a72e-8bc9e08eacf2"
+    }
+  ],
+  "min_delta": 0.0,
+  "parent_child_deltas": [
+    {
+      "average_delta": 0.88,
+      "benchmark_deltas": {
+        "humaneval_calibrated": 0.88
+      },
+      "benchmark_improvements": {
+        "humaneval_calibrated": 0.88
+      },
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [],
+      "child_average_score": 0.88,
+      "child_generation": 1,
+      "child_id": "7cbf5309-0886-4c2a-b5e2-c1264a8fc267",
+      "is_improvement": true,
+      "parent_average_score": 0.0,
+      "parent_generation": 0,
+      "parent_id": "21085b94-dc6b-4517-a72e-8bc9e08eacf2"
+    },
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "humaneval_calibrated": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "humaneval_calibrated"
+      ],
+      "child_average_score": 0.88,
+      "child_generation": 2,
+      "child_id": "c37b4d8a-ace0-4b71-8138-74088b605ab2",
+      "is_improvement": false,
+      "parent_average_score": 0.88,
+      "parent_generation": 1,
+      "parent_id": "7cbf5309-0886-4c2a-b5e2-c1264a8fc267"
+    }
+  ],
+  "top_agent_id": "7cbf5309-0886-4c2a-b5e2-c1264a8fc267",
+  "top_score": 0.88,
+  "total_agents": 3,
+  "total_benchmark_improvements": 1,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 1,
+  "valid_agents": 3
+}
