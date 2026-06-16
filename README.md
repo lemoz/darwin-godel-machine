@@ -353,6 +353,26 @@ output-token cap, and five trials per model, the dry-run estimate is
 250 model-call slots and `$28.1735` total. This script performs no live calls
 and does not require provider API keys.
 
+To inspect the exact per-trial execution plan without writing files:
+
+```bash
+python scripts/run_model_matrix.py --dry-run
+```
+
+To materialize per-trial configs and the non-secret manifest without live calls:
+
+```bash
+python scripts/run_model_matrix.py --write-configs
+```
+
+Live execution is deliberately a separate path. It requires explicit network
+access and provider env vars in the host environment; generated scorecards are
+written after each sandboxed trial archive is synced back:
+
+```bash
+python scripts/run_model_matrix.py --execute --allow-network
+```
+
 ## 🧪 Running Experiments
 
 ### Basic Evolution Run

@@ -98,6 +98,8 @@ def _model_cost(
         "request_ceiling_per_trial": request_ceiling,
         "assumed_input_tokens_per_call": assumed_input_tokens_per_call,
         "max_output_tokens_per_call": max_tokens,
+        "temperature": float(model.get("temperature", 0.1)),
+        "timeout": int(model.get("timeout", 60)),
         "input_token_ceiling_per_trial": input_token_ceiling,
         "output_token_ceiling_per_trial": output_token_ceiling,
         "estimated_input_cost_usd_per_trial": input_cost,
@@ -161,6 +163,10 @@ def estimate_model_matrix_cost(
     _require(
         any("scripts/estimate_model_matrix_cost.py" in command for command in preflight),
         "Model matrix preflight must include this estimator",
+    )
+    _require(
+        any("scripts/run_model_matrix.py --dry-run" in command for command in preflight),
+        "Model matrix preflight must include the dry-run executor",
     )
 
     scorecard = matrix.get("post_run_scorecard_template", {})

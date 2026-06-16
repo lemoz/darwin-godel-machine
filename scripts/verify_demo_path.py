@@ -37,6 +37,7 @@ from scripts.run_dgm_in_sandbox import (
 )
 from scripts.verify_live_score_movement_plan import verify_live_score_movement_plan
 from scripts.estimate_model_matrix_cost import estimate_model_matrix_cost
+from scripts.run_model_matrix import build_model_matrix_plan
 
 
 class VerificationError(RuntimeError):
@@ -528,6 +529,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
         project_root / "docs" / "demo" / "humaneval_style_improved.py",
         project_root / "docs" / "demo" / "humaneval_score_movement.json",
         project_root / "scripts" / "estimate_model_matrix_cost.py",
+        project_root / "scripts" / "run_model_matrix.py",
     ]
     checks.extend(_check_file(path, project_root) for path in required_files)
     checks.append(await _verify_humaneval_reference(project_root))
@@ -550,6 +552,28 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
             project_root / "config" / "live_model_matrix.yaml",
             project_root=project_root,
         )
+    )
+    matrix_execution_plan = build_model_matrix_plan(
+        project_root / "config" / "live_model_matrix.yaml",
+        project_root=project_root,
+    )
+    checks.append(
+        {
+            "name": matrix_execution_plan["name"],
+            "status": "ok",
+            "dry_run_default": matrix_execution_plan["dry_run_default"],
+            "planner_live_calls_performed": matrix_execution_plan[
+                "planner_live_calls_performed"
+            ],
+            "completed_trials": matrix_execution_plan["completed_trials"],
+            "trial_count": matrix_execution_plan["trial_count"],
+            "model_count": matrix_execution_plan["model_count"],
+            "total_request_ceiling": matrix_execution_plan["total_request_ceiling"],
+            "estimated_total_cost_usd": matrix_execution_plan[
+                "estimated_total_cost_usd"
+            ],
+            "manifest_path": matrix_execution_plan["manifest_path"],
+        }
     )
     return checks
 
