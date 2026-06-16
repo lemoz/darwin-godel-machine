@@ -1,0 +1,71 @@
+{
+  "archive_metadata": ".dgm-live-runs/model-matrix-2026-06-16/kimi-k2-7-code-openrouter-trial-02/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "173d465b-a3ee-45cc-b0fe-f1c90a6dbf16",
+      "average_score": 0.92,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.92
+      },
+      "generation": 0
+    },
+    {
+      "agent_id": "9c90fc16-b424-4fa2-aea7-81d8b38cada3",
+      "average_score": 0.92,
+      "benchmark_scores": {
+        "humaneval_calibrated": 0.92
+      },
+      "generation": 1
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": true,
+  "improvements": [],
+  "min_delta": 0.0,
+  "parent_child_deltas": [
+    {
+      "average_delta": -0.020000000000000018,
+      "benchmark_deltas": {
+        "humaneval_calibrated": -0.020000000000000018
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {
+        "humaneval_calibrated": -0.020000000000000018
+      },
+      "benchmark_unchanged": [],
+      "child_average_score": 0.9,
+      "child_generation": 1,
+      "child_id": "db5307b3-d169-4104-843c-835689e46c7b",
+      "is_improvement": false,
+      "parent_average_score": 0.92,
+      "parent_generation": 0,
+      "parent_id": "173d465b-a3ee-45cc-b0fe-f1c90a6dbf16"
+    },
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "humaneval_calibrated": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "humaneval_calibrated"
+      ],
+      "child_average_score": 0.92,
+      "child_generation": 1,
+      "child_id": "9c90fc16-b424-4fa2-aea7-81d8b38cada3",
+      "is_improvement": false,
+      "parent_average_score": 0.92,
+      "parent_generation": 0,
+      "parent_id": "173d465b-a3ee-45cc-b0fe-f1c90a6dbf16"
+    }
+  ],
+  "top_agent_id": "173d465b-a3ee-45cc-b0fe-f1c90a6dbf16",
+  "top_score": 0.92,
+  "total_agents": 3,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 1,
+  "total_benchmark_unchanged": 1,
+  "valid_agents": 3
+}

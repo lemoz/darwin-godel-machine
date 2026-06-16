@@ -1,0 +1,15 @@
+{
+  "allow_network": true,
+  "config": ".dgm-live-runs/model-matrix-2026-06-16/configs/claude-sonnet-4-6-trial-02.yaml",
+  "env_names": [
+    "ANTHROPIC_API_KEY"
+  ],
+  "env_values": "hidden",
+  "generations": 2,
+  "network_mode": "bridge",
+  "stage_parent": "~/.cache/dgm-sandbox",
+  "stage_project": true,
+  "sync_back": true,
+  "sync_mode": "sync-back",
+  "timeout": 300
+}
