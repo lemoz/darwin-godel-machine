@@ -22,6 +22,7 @@ from .fm_interface.api_handler import (
 )
 from .fm_interface.providers.gemini import GeminiHandler
 from .fm_interface.providers.anthropic import AnthropicHandler
+from .fm_interface.providers.openai_compatible import OpenAICompatibleHandler
 from .fm_interface.message_formatter import MessageFormatter, ConversationContext
 from .tools.base_tool import BaseTool, ToolRegistry, ToolResult, ToolExecutionStatus
 from .tools.bash_tool import BashTool
@@ -109,10 +110,19 @@ class Agent:
         Returns:
             ApiHandler: Configured handler instance
         """
-        if provider.lower() == "gemini":
+        provider_key = provider.lower().replace("-", "_")
+        if provider_key == "gemini":
             return GeminiHandler(fm_config)
-        elif provider.lower() == "anthropic":
+        elif provider_key == "anthropic":
             return AnthropicHandler(fm_config)
+        elif provider_key in {
+            "openai",
+            "openai_compatible",
+            "openrouter",
+            "kimi",
+            "moonshot",
+        }:
+            return OpenAICompatibleHandler(fm_config)
         else:
             raise ValueError(f"Unsupported FM provider: {provider}")
     

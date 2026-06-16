@@ -1,0 +1,47 @@
+# Dry-run model-matrix plan for the calibrated live DGM benchmark.
+#
+# This config prepares a multi-trial provider comparison, but it is not a live
+# run command and must not spend API budget by itself. The verifier estimates
+# the full matrix cost from the bounded live_score_movement run shape before any
+# provider keys or network access are used.
+
+base_live_run_config: config/live_score_movement.yaml
+
+model_matrix:
+  purpose: live_model_matrix_dry_run
+  approval_required: true
+  dry_run_only: true
+  benchmark: humaneval_calibrated
+  trials_per_model: 5
+  max_trials_without_reapproval: 5
+  max_estimated_cost_usd: 30
+  assumed_input_tokens_per_call: 50000
+  pricing_checked_at: 2026-06-16
+  required_preflight:
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_demo_path.py
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_model_matrix_cost.py --json
+  post_run_scorecard_template:
+    command: PATH="$PWD/.venv/bin:$PATH" python scripts/summarize_archive_scores.py --archive-metadata <archive_metadata.json> --output <scorecard.json> --require-improvement
+    require_improvement: true
+  models:
+    - id: claude-sonnet-4-6
+      provider: anthropic
+      model: claude-sonnet-4-6
+      api_key_env: ANTHROPIC_API_KEY
+      max_tokens: 2048
+      temperature: 0.1
+      timeout: 60
+      pricing_source: https://platform.claude.com/docs/en/about-claude/models/overview
+      input_price_per_mtok: 3
+      output_price_per_mtok: 15
+    - id: kimi-k2.7-code-openrouter
+      provider: openai_compatible
+      model: moonshotai/kimi-k2.7-code
+      api_key_env: OPENROUTER_API_KEY
+      base_url: https://openrouter.ai/api/v1
+      max_tokens: 2048
+      temperature: 0.1
+      timeout: 60
+      pricing_source: https://openrouter.ai/moonshotai/kimi-k2.7-code
+      input_price_per_mtok: 0.75
+      output_price_per_mtok: 3.50

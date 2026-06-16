@@ -21,6 +21,7 @@ async def test_no_network_demo_path_verifier_passes():
     assert "sandbox_runner_cli" in names
     assert "sandbox_discard_changes_contract" in names
     assert "live_score_movement_plan" in names
+    assert "live_model_matrix_plan" in names
     assert "live_score_movement_attempt_docs" in names
 
     score_check = next(check for check in checks if check["name"] == "score_movement_demo")
@@ -95,3 +96,17 @@ async def test_no_network_demo_path_verifier_passes():
     assert live_plan_check["request_ceiling"] == 25
     assert live_plan_check["estimated_total_cost_usd"] == pytest.approx(4.518)
     assert live_plan_check["max_estimated_cost_usd"] == 5
+
+    matrix_check = next(
+        check for check in checks if check["name"] == "live_model_matrix_plan"
+    )
+    assert matrix_check["benchmark"] == "humaneval_calibrated"
+    assert matrix_check["approval_required"] is True
+    assert matrix_check["dry_run_only"] is True
+    assert matrix_check["live_calls_performed"] == 0
+    assert matrix_check["trials_per_model"] == 5
+    assert matrix_check["model_count"] == 2
+    assert matrix_check["request_ceiling_per_trial"] == 25
+    assert matrix_check["total_request_ceiling"] == 250
+    assert matrix_check["estimated_total_cost_usd"] == pytest.approx(28.1735)
+    assert matrix_check["max_estimated_cost_usd"] == 30

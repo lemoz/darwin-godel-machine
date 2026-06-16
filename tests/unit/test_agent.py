@@ -12,6 +12,7 @@ from agent.agent import Agent, AgentConfig, Task
 from agent.fm_interface.api_handler import (
     ApiHandler, CompletionResponse, CompletionRequest, ToolCall
 )
+from agent.fm_interface.providers.openai_compatible import OpenAICompatibleHandler
 from agent.tools.bash_tool import BashTool
 from agent.tools.edit_tool import EditTool
 
@@ -100,6 +101,22 @@ class TestAgentInit:
     def test_fm_handler_is_api_handler(self, tmp_path):
         agent = Agent(_make_config(tmp_path))
         assert isinstance(agent.fm_handler, ApiHandler)
+
+    def test_openai_compatible_provider_supported(self, tmp_path):
+        cfg = AgentConfig(
+            agent_id="x",
+            fm_provider="openai_compatible",
+            fm_config={
+                "model": "moonshotai/kimi-k2.7-code",
+                "api_key": "test-key-dummy",
+                "base_url": "https://openrouter.ai/api/v1",
+                "max_tokens": 256,
+                "temperature": 0.0,
+            },
+            working_directory=str(tmp_path),
+        )
+        agent = Agent(cfg)
+        assert isinstance(agent.fm_handler, OpenAICompatibleHandler)
 
     def test_unsupported_provider_raises(self, tmp_path):
         cfg = AgentConfig(
