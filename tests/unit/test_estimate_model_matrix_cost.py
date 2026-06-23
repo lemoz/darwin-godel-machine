@@ -66,7 +66,7 @@ def test_model_matrix_rejects_live_enabled_config(tmp_path):
 def test_model_matrix_rejects_secret_fields(tmp_path):
     project_root = Path(__file__).resolve().parents[2]
     plan = deepcopy(_load_default_plan(project_root))
-    plan["model_matrix"]["models"][1]["api_key"] = "sk-leaked"
+    plan["model_matrix"]["models"][1]["api_key"] = "placeholder"
     config_path = _write_plan(tmp_path, plan)
 
     with pytest.raises(ModelMatrixPlanError, match="api_key_env"):
@@ -90,6 +90,20 @@ def test_model_matrix_rejects_over_budget(tmp_path):
     config_path = _write_plan(tmp_path, plan)
 
     with pytest.raises(ModelMatrixPlanError, match="budget"):
+        estimate_model_matrix_cost(config_path, project_root=project_root)
+
+
+def test_model_matrix_requires_eval_matrix_preflight(tmp_path):
+    project_root = Path(__file__).resolve().parents[2]
+    plan = deepcopy(_load_default_plan(project_root))
+    plan["model_matrix"]["required_preflight"] = [
+        command
+        for command in plan["model_matrix"]["required_preflight"]
+        if "scripts/plan_eval_matrix.py" not in command
+    ]
+    config_path = _write_plan(tmp_path, plan)
+
+    with pytest.raises(ModelMatrixPlanError, match="eval matrix planner"):
         estimate_model_matrix_cost(config_path, project_root=project_root)
 
 

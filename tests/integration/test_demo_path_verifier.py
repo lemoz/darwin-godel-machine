@@ -21,6 +21,7 @@ async def test_no_network_demo_path_verifier_passes():
     assert "sandbox_runner_cli" in names
     assert "sandbox_discard_changes_contract" in names
     assert "live_score_movement_plan" in names
+    assert "eval_model_matrix_plan" in names
     assert "live_model_matrix_plan" in names
     assert "live_model_matrix_execution_plan" in names
     assert "live_score_movement_attempt_docs" in names
@@ -97,6 +98,23 @@ async def test_no_network_demo_path_verifier_passes():
     assert live_plan_check["request_ceiling"] == 25
     assert live_plan_check["estimated_total_cost_usd"] == pytest.approx(4.518)
     assert live_plan_check["max_estimated_cost_usd"] == 5
+
+    eval_matrix_check = next(
+        check for check in checks if check["name"] == "eval_model_matrix_plan"
+    )
+    assert eval_matrix_check["live_calls_performed"] == 0
+    assert eval_matrix_check["benchmark_count"] == 3
+    assert eval_matrix_check["benchmark_families"] == [
+        "algorithmic_reasoning",
+        "calibrated_hidden_cases",
+        "hidden_case_headroom",
+    ]
+    assert eval_matrix_check["total_eval_cases"] == 87
+    assert eval_matrix_check["average_delta"] == pytest.approx(
+        (0.5 + (7 / 17) + 0.4) / 3
+    )
+    assert eval_matrix_check["ready_for_live_matrix"] is True
+    assert eval_matrix_check["decision"] == "prepare_live_matrix_plan"
 
     matrix_check = next(
         check for check in checks if check["name"] == "live_model_matrix_plan"

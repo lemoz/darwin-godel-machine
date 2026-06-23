@@ -1,0 +1,38 @@
+# No-spend eval matrix gate for deciding whether a larger live model matrix is
+# worth running. This config uses committed baseline/candidate fixtures only.
+
+purpose: no_spend_eval_model_differentiation
+approval_required: true
+live_calls_performed: 0
+benchmarks_dir: config/benchmarks
+
+gate:
+  min_benchmark_families: 3
+  min_total_eval_cases: 75
+  min_average_delta: 0.35
+  min_delta_per_benchmark: 0.25
+  min_baseline_score: 0.4
+  max_baseline_score: 0.75
+  min_candidate_score: 1.0
+
+benchmarks:
+  - id: humaneval_style
+    family: algorithmic_reasoning
+    baseline_solution: docs/demo/humaneval_style_baseline.py
+    candidate_solution: docs/demo/humaneval_style_improved.py
+    min_eval_cases: 20
+    min_delta: 0.4
+
+  - id: humaneval_headroom
+    family: hidden_case_headroom
+    baseline_solution: docs/demo/humaneval_headroom_baseline.py
+    candidate_solution: docs/demo/humaneval_headroom_improved.py
+    min_eval_cases: 17
+    min_delta: 0.35
+
+  - id: humaneval_calibrated
+    family: calibrated_hidden_cases
+    baseline_solution: docs/demo/humaneval_calibrated_baseline.py
+    candidate_solution: docs/demo/humaneval_calibrated_improved.py
+    min_eval_cases: 50
+    min_delta: 0.3
