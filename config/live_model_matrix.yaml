@@ -22,6 +22,7 @@ model_matrix:
     audit_dir: .dgm-sandbox-runs/model-matrix
   required_preflight:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_demo_path.py
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/plan_eval_matrix.py --json
     - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_model_matrix_cost.py --json
     - PATH="$PWD/.venv/bin:$PATH" python scripts/run_model_matrix.py --dry-run --json
   post_run_scorecard_template:

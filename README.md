@@ -53,10 +53,11 @@ python scripts/verify_demo_path.py
 ```
 
 This checks benchmark loading, the HumanEval-style reference solution, the
-score-movement demo, the committed live-run proof, and the archive-lineage demo
-without API keys or model calls. It also checks that the full-process sandbox
-runner exposes the explicit network, secret pass-through, discard-changes, and
-optional audit-artifact flags used for safer local runs.
+score-movement demo, the no-spend eval-matrix gate, the committed live-run
+proof, and the archive-lineage demo without API keys or model calls. It also
+checks that the full-process sandbox runner exposes the explicit network,
+secret pass-through, discard-changes, and optional audit-artifact flags used for
+safer local runs.
 
 4. **Configure API keys:**
 ```bash

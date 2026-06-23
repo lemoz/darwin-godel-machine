@@ -36,6 +36,7 @@ from scripts.run_dgm_in_sandbox import (
     write_run_audit,
 )
 from scripts.verify_live_score_movement_plan import verify_live_score_movement_plan
+from scripts.plan_eval_matrix import plan_eval_matrix
 from scripts.estimate_model_matrix_cost import estimate_model_matrix_cost
 from scripts.run_model_matrix import build_model_matrix_plan
 
@@ -514,6 +515,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
         project_root / "README.md",
         project_root / "requirements.txt",
         project_root / "config" / "dgm_config.yaml",
+        project_root / "config" / "eval_model_matrix.yaml",
         project_root / "config" / "live_model_matrix.yaml",
         project_root / "config" / "live_score_movement.yaml",
         project_root / "config" / "benchmarks" / "humaneval_calibrated.yaml",
@@ -528,6 +530,7 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
         project_root / "docs" / "demo" / "humaneval_style_baseline.py",
         project_root / "docs" / "demo" / "humaneval_style_improved.py",
         project_root / "docs" / "demo" / "humaneval_score_movement.json",
+        project_root / "scripts" / "plan_eval_matrix.py",
         project_root / "scripts" / "estimate_model_matrix_cost.py",
         project_root / "scripts" / "run_model_matrix.py",
     ]
@@ -544,6 +547,12 @@ async def verify_demo_path(project_root: Path = PROJECT_ROOT) -> list[dict[str, 
     checks.append(
         verify_live_score_movement_plan(
             project_root / "config" / "live_score_movement.yaml",
+            project_root=project_root,
+        )
+    )
+    checks.append(
+        await plan_eval_matrix(
+            project_root / "config" / "eval_model_matrix.yaml",
             project_root=project_root,
         )
     )

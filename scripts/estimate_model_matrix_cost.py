@@ -161,6 +161,10 @@ def estimate_model_matrix_cost(
         "Model matrix preflight must include verify_demo_path.py",
     )
     _require(
+        any("scripts/plan_eval_matrix.py" in command for command in preflight),
+        "Model matrix preflight must include the no-spend eval matrix planner",
+    )
+    _require(
         any("scripts/estimate_model_matrix_cost.py" in command for command in preflight),
         "Model matrix preflight must include this estimator",
     )
