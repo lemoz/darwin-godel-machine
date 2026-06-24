@@ -242,6 +242,51 @@ class TestAgentSolveTask:
         assert result["success"] is True
         assert mock_gc.await_count == 2
 
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
+    async def test_solve_task_returns_tool_written_solution_at_max_steps(self, mock_gc):
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 2
+        agent = Agent(cfg)
+        solution = "print('ok')\n"
+        mock_gc.side_effect = [
+            CompletionResponse(
+                content="I will write the solution.",
+                tool_calls=[
+                    ToolCall(
+                        tool_name="edit",
+                        parameters={
+                            "action": "write",
+                            "file_path": "solution.py",
+                            "content": solution,
+                        },
+                        call_id="toolu_write",
+                    )
+                ],
+                finish_reason="tool_use",
+            ),
+            CompletionResponse(
+                content="I will keep checking.",
+                tool_calls=[
+                    ToolCall(
+                        tool_name="bash",
+                        parameters={"command": "python solution.py"},
+                        call_id="toolu_run",
+                    )
+                ],
+                finish_reason="tool_use",
+            ),
+        ]
+
+        task = Task(task_id="tool_solution", description="Write solution.py")
+        result = await agent.solve_task(task)
+
+        assert result["success"] is True
+        assert result["solution"] == solution
+        assert mock_gc.await_count == 2
+
 
 # ---------------------------------------------------------------------------
 # Task dataclass

@@ -314,7 +314,7 @@ class Agent:
                 logger.info(f"Task complete after Step {step + 1}")
                 # Extract Python code from the response
                 solution = self._extract_code_solution(response.content)
-                return solution
+                return solution or self._read_workspace_solution()
             
             # If no tools and not complete, agent might be stuck
             if not response.tool_calls:
@@ -332,7 +332,22 @@ class Agent:
                     break
         
         logger.warning(f"Reached max steps ({max_steps}) without task completion")
-        return solution
+        return solution or self._read_workspace_solution()
+
+    def _read_workspace_solution(self) -> str:
+        """Return solution.py from the working directory when tool use produced one."""
+        solution_path = self.working_directory / "solution.py"
+        try:
+            if solution_path.is_file():
+                solution = solution_path.read_text(encoding="utf-8")
+                if solution.strip():
+                    logger.info(
+                        "Using tool-written solution.py after task did not return inline code"
+                    )
+                    return solution
+        except OSError as exc:
+            logger.warning("Could not read tool-written solution.py: %s", exc)
+        return ""
     
     async def _execute_tool_calls(self, tool_calls: List[ToolCall]) -> None:
         """

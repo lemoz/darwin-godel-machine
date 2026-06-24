@@ -6,6 +6,7 @@ providers that expose the OpenAI Chat Completions API, such as OpenRouter or
 Moonshot/Kimi.
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -101,7 +102,16 @@ class OpenAICompatibleHandler(ApiHandler):
                 f"(timeout: {self.timeout}s, model: {self.model}, base_url: {self.base_url})"
             )
             start_time = time.time()
-            response = await self.client.chat.completions.create(**api_params)
+            try:
+                response = await asyncio.wait_for(
+                    self.client.chat.completions.create(**api_params),
+                    timeout=float(self.timeout),
+                )
+            except asyncio.TimeoutError as exc:
+                raise ApiError(
+                    f"OpenAI-compatible request timed out after {self.timeout}s",
+                    provider="openai_compatible",
+                ) from exc
             elapsed_time = time.time() - start_time
             logger.info(
                 "OpenAI-compatible API request completed successfully "
@@ -109,6 +119,8 @@ class OpenAICompatibleHandler(ApiHandler):
             )
             return self.parse_response(response)
 
+        except ApiError:
+            raise
         except OpenAIAuthError as exc:
             raise AuthenticationError(
                 f"OpenAI-compatible authentication failed: {str(exc)}",

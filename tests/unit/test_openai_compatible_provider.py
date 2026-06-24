@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+import asyncio
 import pytest
 
 from agent.fm_interface.api_handler import (
@@ -199,6 +200,20 @@ async def test_get_completion_preserves_zero_temperature_and_extra_body():
     assert kwargs["temperature"] == 0.0
     assert kwargs["max_tokens"] == 12
     assert kwargs["extra_body"] == {"reasoning": {"enabled": True}}
+
+
+async def test_get_completion_enforces_outer_timeout():
+    h = _handler(timeout=0.01)
+
+    async def slow_create(**kwargs):
+        await asyncio.sleep(1)
+
+    with patch.object(h.client.chat.completions, "create", side_effect=slow_create):
+        request = CompletionRequest(
+            messages=[Message(role=MessageRole.USER, content="hi")],
+        )
+        with pytest.raises(ApiError, match="timed out after"):
+            await h.get_completion(request)
 
 
 def test_validate_config_rejects_bad_base_url():

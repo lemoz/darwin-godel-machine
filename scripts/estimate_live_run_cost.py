@@ -37,6 +37,14 @@ def _require_positive(name: str, value: float) -> None:
         raise CostEstimateError(f"{name} must be greater than zero")
 
 
+def _require_price(name: str, value: float, *, allow_zero_pricing: bool) -> None:
+    if allow_zero_pricing:
+        if value < 0:
+            raise CostEstimateError(f"{name} must be zero or greater")
+    else:
+        _require_positive(name, value)
+
+
 def estimate_live_run_cost(
     *,
     config_path: Path,
@@ -44,6 +52,7 @@ def estimate_live_run_cost(
     output_price_per_mtok: float,
     assumed_input_tokens_per_call: int,
     max_budget: float | None = None,
+    allow_zero_pricing: bool = False,
 ) -> dict[str, Any]:
     """Estimate the bounded cost ceiling for a planned live DGM run.
 
@@ -52,8 +61,16 @@ def estimate_live_run_cost(
     calls. A full run initializes the base agent once, then each generation runs
     one self-modification task plus one child evaluation pass.
     """
-    _require_positive("input_price_per_mtok", input_price_per_mtok)
-    _require_positive("output_price_per_mtok", output_price_per_mtok)
+    _require_price(
+        "input_price_per_mtok",
+        input_price_per_mtok,
+        allow_zero_pricing=allow_zero_pricing,
+    )
+    _require_price(
+        "output_price_per_mtok",
+        output_price_per_mtok,
+        allow_zero_pricing=allow_zero_pricing,
+    )
     _require_positive("assumed_input_tokens_per_call", assumed_input_tokens_per_call)
 
     config = _load_yaml(config_path)
@@ -111,6 +128,7 @@ def estimate_live_run_cost(
         "estimated_total_cost_usd": total_cost,
         "max_budget_usd": max_budget,
         "within_budget": max_budget is None or total_cost <= max_budget,
+        "allow_zero_pricing": allow_zero_pricing,
     }
 
 
@@ -145,6 +163,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Optional USD ceiling; exits non-zero if the estimate exceeds it.",
     )
     parser.add_argument(
+        "--allow-zero-pricing",
+        action="store_true",
+        help="Allow explicit zero-dollar pricing for provider-advertised free endpoints.",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Print machine-readable JSON.",
@@ -160,6 +183,7 @@ def _main(args: argparse.Namespace) -> int:
             output_price_per_mtok=args.output_price_per_mtok,
             assumed_input_tokens_per_call=args.assumed_input_tokens_per_call,
             max_budget=args.max_budget,
+            allow_zero_pricing=args.allow_zero_pricing,
         )
     except CostEstimateError as exc:
         if args.json:

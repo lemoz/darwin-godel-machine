@@ -34,11 +34,17 @@ logger = logging.getLogger(__name__)
 
 # Regex for valid Python identifiers (used to prevent code injection).
 _VALID_IDENTIFIER_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+_STDIN_TEST_TYPES = {"stdin", "stdio", "standard_input"}
 
 
 def _is_valid_identifier(name: str) -> bool:
     """Return True if *name* is a safe Python identifier."""
     return bool(_VALID_IDENTIFIER_RE.match(name))
+
+
+def _is_stdin_test_case(test_case: Dict[str, Any]) -> bool:
+    """Return True for contest-style programs that read stdin and write stdout."""
+    return str(test_case.get("testtype", "")).lower() in _STDIN_TEST_TYPES
 
 
 @dataclass
@@ -190,10 +196,19 @@ class BenchmarkRunner:
             )
             test_cases_text = f"\n\n{prompt_label}:\n"
             for i, test_case in enumerate(prompt_cases, 1):
-                func_name = test_case.get('function_name', 'function')
-                test_cases_text += f"{i}. Function: {func_name}\n"
+                if _is_stdin_test_case(test_case):
+                    test_cases_text += f"{i}. Program reads stdin and writes stdout\n"
+                else:
+                    func_name = test_case.get('function_name', 'function')
+                    test_cases_text += f"{i}. Function: {func_name}\n"
                 for j, (inp, exp) in enumerate(zip(test_case['inputs'], test_case['expected_outputs'])):
-                    test_cases_text += f"   {j+1}. Input: {inp} -> Expected: {exp}\n"
+                    if _is_stdin_test_case(test_case):
+                        test_cases_text += (
+                            f"   {j+1}. Stdin:\n{inp}\n"
+                            f"      Expected stdout:\n{exp}\n"
+                        )
+                    else:
+                        test_cases_text += f"   {j+1}. Input: {inp} -> Expected: {exp}\n"
 
             enhanced_description = (
                 f"{benchmark.task_prompt}{test_cases_text}"
@@ -400,6 +415,127 @@ print(json.dumps({{
 }}))
 """
 
+    @staticmethod
+    def _build_stdin_test_script(
+        solution_file: str,
+        raw_input: str,
+        raw_expected: str,
+        test_index: int,
+        timeout: int,
+    ) -> str:
+        """
+        Build a self-contained Python test script for one stdin/stdout case.
+
+        This mirrors LiveCodeBench's standard-input comparison closely enough
+        for DGM benchmark YAMLs: output is compared line-by-line after trimming
+        outer whitespace, and numeric whitespace-separated lines are compared as
+        Decimals when exact string comparison fails.
+        """
+        return f"""
+import json, subprocess, sys
+from decimal import Decimal
+
+_solution_file = {repr(solution_file)}
+_raw_input = {repr(raw_input)}
+_raw_expected = {repr(raw_expected)}
+_timeout = {repr(int(timeout))}
+_test_index = {repr(test_index)}
+
+
+def _truncate(value, length=600):
+    value = str(value)
+    if len(value) <= length:
+        return value
+    return value[: length // 2] + "...(truncated)..." + value[-length // 2 :]
+
+
+def _stripped_lines(value):
+    value = str(value).strip()
+    return [line.strip() for line in value.split("\\n")]
+
+
+def _decimal_tokens(line):
+    try:
+        return [Decimal(part) for part in line.split()]
+    except Exception:
+        return None
+
+
+def _compare_stdout(actual, expected):
+    actual_lines = _stripped_lines(actual)
+    expected_lines = _stripped_lines(expected)
+    if len(actual_lines) != len(expected_lines):
+        return (
+            False,
+            f"Wrong answer: mismatched output length "
+            f"{{len(actual_lines)}} != {{len(expected_lines)}}",
+        )
+
+    for line_index, (actual_line, expected_line) in enumerate(
+        zip(actual_lines, expected_lines)
+    ):
+        if actual_line == expected_line:
+            continue
+
+        actual_numbers = _decimal_tokens(actual_line)
+        expected_numbers = _decimal_tokens(expected_line)
+        if (
+            actual_numbers is not None
+            and expected_numbers is not None
+            and actual_numbers == expected_numbers
+        ):
+            continue
+
+        return (
+            False,
+            f"Wrong answer at line {{line_index}}: "
+            f"{{_truncate(actual_line)!r}} != {{_truncate(expected_line)!r}}",
+        )
+
+    return True, None
+
+
+try:
+    _proc = subprocess.run(
+        [sys.executable, _solution_file],
+        input=_raw_input,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=_timeout,
+    )
+except subprocess.TimeoutExpired:
+    print(json.dumps({{
+        "success": False,
+        "actual_output": None,
+        "expected_output": _raw_expected.strip(),
+        "error": f"Timeout after {{_timeout}}s",
+        "exit_code": None,
+    }}))
+    sys.exit(0)
+
+_stdout = _proc.stdout
+_stderr = _proc.stderr
+if _proc.returncode != 0:
+    print(json.dumps({{
+        "success": False,
+        "actual_output": _truncate(_stdout.strip()),
+        "expected_output": _raw_expected.strip(),
+        "error": "RuntimeError: " + _truncate(_stderr.strip() or f"exit code {{_proc.returncode}}"),
+        "exit_code": _proc.returncode,
+    }}))
+    sys.exit(0)
+
+_success, _error = _compare_stdout(_stdout, _raw_expected)
+print(json.dumps({{
+    "success": _success,
+    "actual_output": _truncate(_stdout.strip()),
+    "expected_output": _raw_expected.strip(),
+    "error": _error,
+    "exit_code": _proc.returncode,
+}}))
+"""
+
     async def _run_test_case(
         self,
         solution: str,
@@ -407,9 +543,11 @@ print(json.dumps({{
         benchmark: BenchmarkTask
     ) -> Dict[str, Any]:
         """Run a single test case with multiple inputs/outputs."""
-        # --- Security: validate function_name before embedding in code ---
+        is_stdin_case = _is_stdin_test_case(test_case)
         function_name = test_case.get('function_name', 'solve')
-        if not _is_valid_identifier(function_name):
+
+        # --- Security: validate function_name before embedding in code ---
+        if not is_stdin_case and not _is_valid_identifier(function_name):
             error_msg = (
                 f"Invalid function_name {function_name!r}: must match "
                 r"^[a-zA-Z_][a-zA-Z0-9_]*$"
@@ -455,13 +593,24 @@ print(json.dumps({{
                 raw_expected = str(expected_val)
                 sandbox_solution_file = str(Path(sandbox_working_dir) / solution_path.name)
 
-                test_code = self._build_test_script(
-                    sandbox_solution_file if use_sandbox else solution_file,
-                    function_name,
-                    raw_input,
-                    raw_expected,
-                    i
-                )
+                if is_stdin_case:
+                    test_code = self._build_stdin_test_script(
+                        sandbox_solution_file if use_sandbox else solution_file,
+                        raw_input,
+                        raw_expected,
+                        i,
+                        benchmark.timeout,
+                    )
+                    subprocess_timeout = benchmark.timeout + 2
+                else:
+                    test_code = self._build_test_script(
+                        sandbox_solution_file if use_sandbox else solution_file,
+                        function_name,
+                        raw_input,
+                        raw_expected,
+                        i
+                    )
+                    subprocess_timeout = benchmark.timeout
                 test_script_path = workspace_path / f"test_case_{i}.py"
                 test_script_path.write_text(test_code)
 
@@ -469,7 +618,7 @@ print(json.dumps({{
                     sandbox_result = await self.sandbox_manager.execute_in_sandbox(
                         command=f"{shlex.quote('python')} {shlex.quote(test_script_path.name)}",
                         workspace_path=str(workspace_path),
-                        timeout=benchmark.timeout,
+                        timeout=subprocess_timeout,
                     )
                     output_text = sandbox_result.output.strip()
                     stderr_text = (sandbox_result.error or "").strip()
@@ -489,7 +638,7 @@ print(json.dumps({{
                     try:
                         stdout, stderr = await asyncio.wait_for(
                             proc.communicate(),
-                            timeout=benchmark.timeout
+                            timeout=subprocess_timeout
                         )
                     except asyncio.TimeoutError:
                         # Kill the subprocess cleanly on timeout.
