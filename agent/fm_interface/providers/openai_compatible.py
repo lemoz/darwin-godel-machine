@@ -108,6 +108,14 @@ class OpenAICompatibleHandler(ApiHandler):
                     timeout=float(self.timeout),
                 )
             except asyncio.TimeoutError as exc:
+                elapsed_time = time.time() - start_time
+                logger.warning(
+                    "OpenAI-compatible API request timed out after %.2fs "
+                    "(configured timeout: %ss, model: %s)",
+                    elapsed_time,
+                    self.timeout,
+                    self.model,
+                )
                 raise ApiError(
                     f"OpenAI-compatible request timed out after {self.timeout}s",
                     provider="openai_compatible",

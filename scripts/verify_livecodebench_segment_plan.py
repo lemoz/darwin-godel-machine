@@ -154,10 +154,11 @@ def verify_livecodebench_segment_plan(
     _require_command(preflight, "scripts/prepare_livecodebench_segment.py", "LiveCodeBench segment preparation")
     _require_command(preflight, "scripts/verify_livecodebench_segment_plan.py", "this plan verifier")
     _require_command(preflight, "scripts/verify_sandbox_docker.py --require", "required Docker sandbox check")
-    _require_command(preflight, "--max-budget 30", "paid Kimi cost estimate")
+    _require_command(preflight, "--max-budget", "paid Kimi cost estimate")
 
     recommended_run = "\n".join(str(item) for item in live_run.get("recommended_run", []))
-    _require("--config config/livecodebench_openrouter_segment.yaml" in recommended_run, "Run command must use this config")
+    config_label = _project_relative(config_path, project_root)
+    _require(f"--config {config_label}" in recommended_run, "Run command must use this config")
     _require("--generations 3" in recommended_run, "Run command must use three generations")
     _require("--allow-network" in recommended_run, "Run command must require --allow-network")
     _require("--env OPENROUTER_API_KEY" in recommended_run, "Run command must pass only OPENROUTER_API_KEY")

@@ -1,0 +1,110 @@
+# Larger LiveCodeBench-lite segment generator.
+#
+# This config expands the 24-problem proof segment to a 72-problem release_v6
+# AtCoder slice: 24 easy, 24 medium, and 24 hard problems. The generator writes
+# benchmark YAMLs under .dgm-live-runs/ so the external dataset is not committed.
+
+purpose: livecodebench_segment
+approval_required: true
+live_calls_performed: 0
+
+source:
+  dataset: livecodebench/code_generation_lite
+  dataset_url: https://huggingface.co/datasets/livecodebench/code_generation_lite
+  source_file: test6.jsonl
+  version_label: release_v6
+  decoder_reference: https://github.com/livecodebench/livecodebench/blob/main/lcb_runner/benchmarks/code_generation.py
+  download_timeout: 120
+
+selection:
+  segment_id: release_v6_atcoder_balanced_72
+  output_dir: .dgm-live-runs/livecodebench-scale72/benchmarks
+  manifest_path: .dgm-live-runs/livecodebench-scale72/manifest.json
+  per_problem_timeout_seconds: 10
+  question_ids:
+    # 24 easy
+    - abc387_b
+    - abc387_a
+    - abc388_b
+    - abc388_a
+    - abc389_b
+    - abc389_a
+    - abc390_a
+    - abc390_b
+    - abc391_a
+    - abc391_b
+    - abc392_a
+    - abc392_b
+    - abc393_a
+    - abc393_b
+    - abc394_b
+    - abc394_a
+    - abc395_b
+    - abc395_a
+    - abc396_b
+    - abc396_a
+    - abc397_a
+    - abc398_a
+    - abc399_a
+    - abc399_b
+    # 24 medium
+    - abc387_c
+    - abc388_d
+    - abc388_c
+    - abc389_d
+    - abc390_d
+    - abc390_c
+    - abc391_d
+    - abc392_d
+    - abc392_c
+    - abc394_c
+    - abc394_d
+    - abc395_c
+    - abc396_c
+    - abc396_d
+    - abc397_c
+    - abc397_b
+    - abc398_b
+    - abc398_c
+    - abc399_d
+    - abc399_c
+    - abc400_c
+    - abc400_d
+    - arc191_a
+    - arc192_a
+    # 24 hard
+    - abc387_f
+    - abc388_g
+    - abc388_f
+    - abc388_e
+    - abc389_g
+    - abc389_f
+    - abc389_e
+    - abc390_e
+    - abc390_g
+    - abc390_f
+    - abc391_f
+    - abc391_e
+    - abc391_g
+    - abc392_g
+    - abc392_f
+    - abc393_f
+    - abc393_e
+    - abc393_d
+    - abc394_f
+    - abc394_g
+    - abc394_e
+    - abc395_f
+    - abc395_e
+    - abc396_g
+
+gates:
+  min_problem_count: 72
+  required_difficulties:
+    - easy
+    - medium
+    - hard
+  min_total_tests: 2800
+  min_private_tests: 2800
+  require_stdin_only: true
+  prompt_policy: public_examples_only

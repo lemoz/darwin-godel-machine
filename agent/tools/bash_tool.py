@@ -297,10 +297,12 @@ class BashTool(BaseTool):
             if cmd_name in self.blocked_commands:
                 return {"safe": False, "reason": f"Command '{cmd_name}' is blocked for safety"}
             
-            # Check for dangerous patterns
+            syntax_command = self._strip_quoted_heredoc_bodies(command)
+
+            # Check for dangerous shell syntax outside quoted heredoc bodies.
             dangerous_patterns = ['>', '>>', '|', '&&', '||', ';', '$(', '`']
             for pattern in dangerous_patterns:
-                if pattern in command and not self._is_safe_usage(command, pattern):
+                if pattern in syntax_command and not self._is_safe_usage(syntax_command, pattern):
                     return {"safe": False, "reason": f"Pattern '{pattern}' requires careful review"}
             
             # Check for network commands
@@ -312,6 +314,24 @@ class BashTool(BaseTool):
             
         except Exception as e:
             return {"safe": False, "reason": f"Failed to parse command: {str(e)}"}
+
+    @staticmethod
+    def _strip_quoted_heredoc_bodies(command: str) -> str:
+        """Remove quoted heredoc bodies before scanning for shell metacharacters."""
+        heredoc_re = re.compile(r"<<\s*(['\"])([A-Za-z_][A-Za-z0-9_]*)\1[^\n]*\n")
+        stripped = command
+        for match in reversed(list(heredoc_re.finditer(command))):
+            delimiter = match.group(2)
+            terminator = re.search(
+                rf"(?m)^[ \t]*{re.escape(delimiter)}[ \t]*$",
+                command[match.end():],
+            )
+            if terminator is None:
+                continue
+            body_start = match.end()
+            body_end = match.end() + terminator.start()
+            stripped = stripped[:body_start] + "\n" + stripped[body_end:]
+        return stripped
     
     def _is_safe_usage(self, command: str, pattern: str) -> bool:
         """
@@ -357,6 +377,9 @@ class BashTool(BaseTool):
             return contained
 
         if pattern == "|":
+            if self._is_safe_stdin_pipe(command):
+                return True
+
             # Allow basic pipes to common safe commands.
             safe_pipe_targets = ["grep", "sort", "uniq", "head", "tail", "wc"]
             parts = command.split("|")
@@ -366,6 +389,27 @@ class BashTool(BaseTool):
                     return True
 
         return False
+
+    @staticmethod
+    def _is_safe_stdin_pipe(command: str) -> bool:
+        """Allow simple sample input producers piped into solution.py."""
+        parts = command.split("|")
+        if len(parts) != 2:
+            return False
+        try:
+            left = shlex.split(parts[0].strip())
+            right = shlex.split(parts[1].strip())
+        except ValueError:
+            return False
+        if not left or not right:
+            return False
+        if Path(left[0]).name not in {"echo", "printf"}:
+            return False
+        if Path(right[0]).name not in {"python", "python3"}:
+            return False
+        if len(right) < 2:
+            return False
+        return Path(right[1]).name == "solution.py"
     
     async def _execute_command(
         self,

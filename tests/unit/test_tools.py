@@ -117,6 +117,34 @@ class TestBashTool:
             "Expected path escape to be blocked"
         )
 
+    async def test_quoted_heredoc_body_can_contain_semicolon(self, tmp_path):
+        tool = BashTool(working_directory=str(tmp_path), timeout=5)
+        result = await tool.execute({
+            "command": "python3 - << 'PY'\nprint('a;b')\nPY",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "a;b" in result.output
+
+    async def test_simple_stdin_pipe_to_solution_is_allowed(self, tmp_path):
+        (tmp_path / "solution.py").write_text("import sys\nprint(sys.stdin.read().strip())\n")
+        tool = BashTool(working_directory=str(tmp_path), timeout=5)
+        result = await tool.execute({
+            "command": "printf 'sample input' | python3 solution.py",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "sample input" in result.output
+
+    async def test_pipe_to_non_solution_stays_blocked(self, tmp_path):
+        tool = BashTool(working_directory=str(tmp_path), timeout=5)
+        result = await tool.execute({
+            "command": "printf 'sample input' | python3 other.py",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "Pattern '|'" in (result.error or "")
+
     async def test_blocked_commands_rejected(self):
         for cmd in ["sudo ls", "kill 1", "rm -rf /"]:
             result = await self.tool.execute({"command": cmd})

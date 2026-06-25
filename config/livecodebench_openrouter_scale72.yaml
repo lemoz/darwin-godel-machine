@@ -1,0 +1,176 @@
+# Cost-gated, sharded 72-problem LiveCodeBench segment run through OpenRouter.
+#
+# This scales the 24-problem proof to a 72-problem release_v6 AtCoder slice.
+# The run is planned as three difficulty-balanced 24-problem shards so it can
+# resume safely after interruptions and aggregate scorecards without rerunning
+# completed shards.
+
+fm_providers:
+  primary: openai_compatible
+  openai_compatible:
+    model: moonshotai/kimi-k2.7-code
+    api_key: ${OPENROUTER_API_KEY}
+    base_url: https://openrouter.ai/api/v1
+    max_tokens: 4096
+    temperature: 0.1
+    timeout: 90
+
+archive:
+  path: .dgm-live-runs/livecodebench-openrouter-scale72/archive
+
+parent_selection:
+  lambda: 10
+  alpha_0: 0.5
+
+evaluation:
+  benchmarks_dir: .dgm-live-runs/livecodebench-scale72/benchmarks
+  results_dir: .dgm-live-runs/livecodebench-openrouter-scale72/results
+  timeout_seconds: 30
+  use_sandbox: false
+
+sandbox:
+  image_name: dgm-sandbox
+  memory_limit: 2g
+  cpu_limit: "1"
+  timeout: 7200
+  network_mode: none
+  working_dir: /home/dgm_agent/workspace
+  auto_build_image: true
+
+agents:
+  workspace_dir: .dgm-live-runs/livecodebench-openrouter-scale72/workspace
+  initial_agent_path: agent/agent.py
+  max_steps: 5
+
+benchmarks:
+  timeout_default: 30
+  max_attempts: 3
+  enabled:
+    - livecodebench_abc387_b
+    - livecodebench_abc387_a
+    - livecodebench_abc388_b
+    - livecodebench_abc388_a
+    - livecodebench_abc389_b
+    - livecodebench_abc389_a
+    - livecodebench_abc390_a
+    - livecodebench_abc390_b
+    - livecodebench_abc391_a
+    - livecodebench_abc391_b
+    - livecodebench_abc392_a
+    - livecodebench_abc392_b
+    - livecodebench_abc393_a
+    - livecodebench_abc393_b
+    - livecodebench_abc394_b
+    - livecodebench_abc394_a
+    - livecodebench_abc395_b
+    - livecodebench_abc395_a
+    - livecodebench_abc396_b
+    - livecodebench_abc396_a
+    - livecodebench_abc397_a
+    - livecodebench_abc398_a
+    - livecodebench_abc399_a
+    - livecodebench_abc399_b
+    - livecodebench_abc387_c
+    - livecodebench_abc388_d
+    - livecodebench_abc388_c
+    - livecodebench_abc389_d
+    - livecodebench_abc390_d
+    - livecodebench_abc390_c
+    - livecodebench_abc391_d
+    - livecodebench_abc392_d
+    - livecodebench_abc392_c
+    - livecodebench_abc394_c
+    - livecodebench_abc394_d
+    - livecodebench_abc395_c
+    - livecodebench_abc396_c
+    - livecodebench_abc396_d
+    - livecodebench_abc397_c
+    - livecodebench_abc397_b
+    - livecodebench_abc398_b
+    - livecodebench_abc398_c
+    - livecodebench_abc399_d
+    - livecodebench_abc399_c
+    - livecodebench_abc400_c
+    - livecodebench_abc400_d
+    - livecodebench_arc191_a
+    - livecodebench_arc192_a
+    - livecodebench_abc387_f
+    - livecodebench_abc388_g
+    - livecodebench_abc388_f
+    - livecodebench_abc388_e
+    - livecodebench_abc389_g
+    - livecodebench_abc389_f
+    - livecodebench_abc389_e
+    - livecodebench_abc390_e
+    - livecodebench_abc390_g
+    - livecodebench_abc390_f
+    - livecodebench_abc391_f
+    - livecodebench_abc391_e
+    - livecodebench_abc391_g
+    - livecodebench_abc392_g
+    - livecodebench_abc392_f
+    - livecodebench_abc393_f
+    - livecodebench_abc393_e
+    - livecodebench_abc393_d
+    - livecodebench_abc394_f
+    - livecodebench_abc394_g
+    - livecodebench_abc394_e
+    - livecodebench_abc395_f
+    - livecodebench_abc395_e
+    - livecodebench_abc396_g
+
+logging:
+  level: INFO
+
+generation_delay_seconds: 0
+stop_on_error: true
+
+live_run:
+  purpose: livecodebench_openrouter_segment
+  approval_required: true
+  recommended_generations: 3
+  segment:
+    config: config/livecodebench_segment_scale72.yaml
+    manifest_path: .dgm-live-runs/livecodebench-scale72/manifest.json
+    segment_id: release_v6_atcoder_balanced_72
+    benchmark_count: 72
+    expected_total_tests_min: 2800
+    expected_private_tests_min: 2800
+    source: https://huggingface.co/datasets/livecodebench/code_generation_lite
+    upstream: https://github.com/livecodebench/livecodebench
+    prompt_examples_are_public_only: true
+    scored_tests_include_private: true
+  sharding:
+    strategy: difficulty_balanced_contiguous
+    run_dir: .dgm-live-runs/livecodebench-openrouter-scale72
+    audit_dir: .dgm-sandbox-runs/livecodebench-openrouter-scale72
+    shard_count: 3
+    shard_size: 24
+    difficulty_order:
+      - easy
+      - medium
+      - hard
+    aggregate_scorecard: .dgm-live-runs/livecodebench-openrouter-scale72/aggregate_scorecard.json
+  cost_gate:
+    check_current_provider_pricing_before_run: true
+    pricing_checked_at: 2026-06-24
+    pricing_source: https://openrouter.ai/api/v1/models
+    input_price_per_mtok: 0.74
+    output_price_per_mtok: 3.50
+    assumed_input_tokens_per_call: 50000
+    max_estimated_cost_usd: 90
+    max_generations_without_reapproval: 3
+    max_agent_steps: 5
+    max_output_tokens_per_call: 4096
+    max_enabled_benchmarks: 72
+  required_preflight:
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/prepare_livecodebench_segment.py --config config/livecodebench_segment_scale72.yaml
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_livecodebench_segment_plan.py --config config/livecodebench_openrouter_scale72.yaml --require-generated
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --require
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_scale72.yaml --input-price-per-mtok 0.74 --output-price-per-mtok 3.50 --assumed-input-tokens-per-call 50000 --max-budget 90
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/run_livecodebench_shards.py --config config/livecodebench_openrouter_scale72.yaml --plan-only
+  recommended_run:
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/run_livecodebench_shards.py --config config/livecodebench_openrouter_scale72.yaml --execute --resume --generations 3 --allow-network --env OPENROUTER_API_KEY --timeout 7200
+  post_run_scorecard:
+    command: PATH="$PWD/.venv/bin:$PATH" python scripts/run_livecodebench_shards.py --config config/livecodebench_openrouter_scale72.yaml --aggregate-only
+    require_improvement: false

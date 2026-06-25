@@ -150,7 +150,7 @@ def _write_live_config(tmp_path: Path, segment_config_path: Path) -> Path:
                 "python scripts/estimate_live_run_cost.py --max-budget 30",
             ],
             "recommended_run": [
-                "python scripts/run_dgm_in_sandbox.py --config config/livecodebench_openrouter_segment.yaml --generations 3 --allow-network --env OPENROUTER_API_KEY --timeout 7200",
+                "python scripts/run_dgm_in_sandbox.py --config live.yaml --generations 3 --allow-network --env OPENROUTER_API_KEY --timeout 7200",
             ],
         },
     }
@@ -168,6 +168,20 @@ def test_default_livecodebench_segment_plan_is_bounded():
     assert report["recommended_generations"] == 3
     assert report["request_ceiling"] == 495
     assert report["estimated_total_cost_usd"] == pytest.approx(25.41132)
+
+
+def test_scale72_livecodebench_segment_plan_is_bounded():
+    project_root = Path(__file__).resolve().parents[2]
+
+    report = verify_livecodebench_segment_plan(
+        project_root / "config" / "livecodebench_openrouter_scale72.yaml",
+        project_root=project_root,
+    )
+
+    assert report["benchmark_count"] == 72
+    assert report["recommended_generations"] == 3
+    assert report["request_ceiling"] == 1455
+    assert report["estimated_total_cost_usd"] == pytest.approx(74.69388)
 
 
 def test_livecodebench_segment_plan_requires_generated_manifest(tmp_path):

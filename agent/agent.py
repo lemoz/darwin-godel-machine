@@ -314,7 +314,7 @@ class Agent:
                 logger.info(f"Task complete after Step {step + 1}")
                 # Extract Python code from the response
                 solution = self._extract_code_solution(response.content)
-                return solution or self._read_workspace_solution()
+                return solution or self._read_workspace_solution(task)
             
             # If no tools and not complete, agent might be stuck
             if not response.tool_calls:
@@ -332,9 +332,9 @@ class Agent:
                     break
         
         logger.warning(f"Reached max steps ({max_steps}) without task completion")
-        return solution or self._read_workspace_solution()
+        return solution or self._read_workspace_solution(task)
 
-    def _read_workspace_solution(self) -> str:
+    def _read_workspace_solution(self, task: Optional[Task] = None) -> str:
         """Return solution.py from the working directory when tool use produced one."""
         solution_path = self.working_directory / "solution.py"
         try:
@@ -345,8 +345,33 @@ class Agent:
                         "Using tool-written solution.py after task did not return inline code"
                     )
                     return solution
+            if task and (task.metadata or {}).get("benchmark"):
+                for candidate_name in ("solve.py", "main.py"):
+                    candidate = self.working_directory / candidate_name
+                    if candidate.is_file():
+                        solution = candidate.read_text(encoding="utf-8")
+                        if solution.strip():
+                            logger.info(
+                                "Using tool-written %s after solution.py was not found",
+                                candidate_name,
+                            )
+                            return solution
+
+                py_candidates = [
+                    path
+                    for path in self.working_directory.glob("*.py")
+                    if path.name not in {"__init__.py", "agent.py"}
+                ]
+                if len(py_candidates) == 1:
+                    solution = py_candidates[0].read_text(encoding="utf-8")
+                    if solution.strip():
+                        logger.info(
+                            "Using sole benchmark workspace Python file %s",
+                            py_candidates[0].name,
+                        )
+                        return solution
         except OSError as exc:
-            logger.warning("Could not read tool-written solution.py: %s", exc)
+            logger.warning("Could not read tool-written benchmark solution: %s", exc)
         return ""
     
     async def _execute_tool_calls(self, tool_calls: List[ToolCall]) -> None:
@@ -435,12 +460,26 @@ Your approach should be:
 4. Test your implementation carefully
 5. Refine as needed
 
+BENCHMARK SOLUTION FILE:
+========================
+- When solving benchmark programming tasks, write the final program to
+  `solution.py` in the current working directory.
+- Do not write contest solutions to `solve.py`, `main.py`, or an absolute
+  `/tmp/...` path unless you also copy the final code into `solution.py`.
+- The evaluator can recover `solution.py` even if you hit the step limit, so
+  create or update that file early.
+
 TESTING GUIDELINES:
 ==================
 - Focus on the examples provided in the task description
 - DO NOT invent additional test cases with your own expected outputs
 - If you want to test edge cases, clearly state you're exploring, don't assume the outputs
 - Your primary goal is to satisfy the given examples and requirements
+- For stdin/stdout programs, prefer testing with a quoted heredoc, for example:
+  `python3 solution.py << 'EOF'`
+  then the sample input, then `EOF` on its own line.
+- Avoid shell pipelines and semicolon-packed one-liners when testing; the bash
+  tool intentionally blocks broad shell composition for safety.
 
 IMPORTANT: Task Completion Process
 ==================================
@@ -450,7 +489,7 @@ You will have MULTIPLE opportunities to interact during task solving:
 - Only declare the task complete AFTER you've verified your solution works
 
 CRITICAL COMPLETION REQUIREMENT:
-⚠️ WITHOUT PROPER COMPLETION SIGNALING, YOUR SOLUTION WILL NOT BE EVALUATED! ⚠️
+⚠️ WITHOUT PROPER COMPLETION SIGNALING, YOUR INLINE SOLUTION MAY NOT BE EVALUATED! ⚠️
 
 When you have VERIFIED your solution works correctly, your response MUST:
 1. Include the solution code in a markdown code block
@@ -481,7 +520,7 @@ REMEMBER:
 - You'll see tool results before declaring completion
 - Only say "Task complete" AFTER verifying your solution works
 - The completion phrase must be at the END of your response
-- Your code can be perfect, but without the completion signal, it scores 0
+- Your code can be perfect, but without `solution.py` or the completion signal, it may score 0
 
 Always be precise, methodical, and thorough in your work."""
         
