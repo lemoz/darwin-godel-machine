@@ -174,6 +174,44 @@ def test_parse_response_keeps_invalid_tool_arguments_as_raw_text():
     assert parsed.tool_calls[0].parameters == {"arguments": "not-json"}
 
 
+def test_parse_response_unwraps_single_arguments_tool_wrapper():
+    h = _handler()
+    response = {
+        "model": "test/model",
+        "choices": [
+            {
+                "finish_reason": "tool_calls",
+                "message": {
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "id": "call_wrapped",
+                            "function": {
+                                "name": "edit",
+                                "arguments": (
+                                    '{"arguments": " {'
+                                    '\\"action\\": \\"write\\", '
+                                    '\\"file_path\\": \\"agent.py\\", '
+                                    '\\"content\\": \\"x\\"'
+                                    '}"}'
+                                ),
+                            },
+                        }
+                    ],
+                },
+            }
+        ],
+    }
+
+    parsed = h.parse_response(response)
+
+    assert parsed.tool_calls[0].parameters == {
+        "action": "write",
+        "file_path": "agent.py",
+        "content": "x",
+    }
+
+
 async def test_get_completion_preserves_zero_temperature_and_extra_body():
     h = _handler(extra_body={"reasoning": {"enabled": True}})
     fake_response = {

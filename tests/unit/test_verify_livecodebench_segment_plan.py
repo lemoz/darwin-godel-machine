@@ -104,6 +104,12 @@ def _write_live_config(tmp_path: Path, segment_config_path: Path) -> Path:
             },
         },
         "archive": {"path": "runs/archive"},
+        "parent_selection": {
+            "lambda": 10,
+            "alpha_0": 0.5,
+            "require_non_regression": True,
+            "regression_tolerance": 0.0,
+        },
         "evaluation": {
             "benchmarks_dir": "generated/benchmarks",
             "results_dir": "runs/results",
@@ -197,6 +203,7 @@ def test_livecodebench_segment_plan_requires_generated_manifest(tmp_path):
     assert report["generated_manifest"]["benchmark_count"] == 2
     assert report["generated_manifest"]["total_test_count"] == 4
     assert report["estimated_total_cost_usd"] == pytest.approx(2.82348)
+    assert report["require_non_regression"] is True
 
 
 def test_livecodebench_segment_plan_rejects_mismatched_enabled(tmp_path):
@@ -207,6 +214,17 @@ def test_livecodebench_segment_plan_rejects_mismatched_enabled(tmp_path):
     live_config_path.write_text(yaml.safe_dump(plan), encoding="utf-8")
 
     with pytest.raises(LiveCodeBenchPlanError, match="Enabled benchmarks"):
+        verify_livecodebench_segment_plan(live_config_path, project_root=tmp_path)
+
+
+def test_livecodebench_segment_plan_requires_non_regression_selection(tmp_path):
+    segment_config_path = _write_fixture_segment(tmp_path)
+    live_config_path = _write_live_config(tmp_path, segment_config_path)
+    plan = yaml.safe_load(live_config_path.read_text(encoding="utf-8"))
+    plan["parent_selection"]["require_non_regression"] = False
+    live_config_path.write_text(yaml.safe_dump(plan), encoding="utf-8")
+
+    with pytest.raises(LiveCodeBenchPlanError, match="require non-regression"):
         verify_livecodebench_segment_plan(live_config_path, project_root=tmp_path)
 
 

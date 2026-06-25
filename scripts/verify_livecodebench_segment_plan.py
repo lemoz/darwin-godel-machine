@@ -103,6 +103,21 @@ def verify_livecodebench_segment_plan(
     generations = int(live_run.get("recommended_generations", 0))
     _require(generations == 3, "Recommended generations must be 3")
 
+    parent_selection = config.get("parent_selection", {})
+    _require(isinstance(parent_selection, dict), "parent_selection must be a mapping")
+    _require(
+        parent_selection.get("require_non_regression") is True,
+        "LiveCodeBench parent selection must require non-regression",
+    )
+    _require(
+        "regression_tolerance" in parent_selection,
+        "LiveCodeBench regression_tolerance must be set",
+    )
+    _require(
+        float(parent_selection.get("regression_tolerance", 0.0)) == 0.0,
+        "LiveCodeBench regression_tolerance must be 0.0",
+    )
+
     segment = live_run.get("segment", {})
     _require(isinstance(segment, dict), "live_run.segment must be a mapping")
     segment_config_path = _project_path(segment.get("config", ""), project_root, must_exist=True)
@@ -201,6 +216,8 @@ def verify_livecodebench_segment_plan(
         "benchmark_count": len(enabled),
         "recommended_generations": generations,
         "max_agent_steps": int(agents["max_steps"]),
+        "require_non_regression": parent_selection["require_non_regression"],
+        "regression_tolerance": float(parent_selection["regression_tolerance"]),
         "request_ceiling": estimate["request_ceiling"],
         "estimated_total_cost_usd": estimate["estimated_total_cost_usd"],
         "max_budget_usd": float(cost_gate["max_estimated_cost_usd"]),

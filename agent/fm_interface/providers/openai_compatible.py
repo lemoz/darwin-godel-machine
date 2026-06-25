@@ -323,7 +323,7 @@ class OpenAICompatibleHandler(ApiHandler):
         if raw_arguments is None:
             return {}
         if isinstance(raw_arguments, dict):
-            return raw_arguments
+            return OpenAICompatibleHandler._normalize_tool_arguments(raw_arguments)
         if not isinstance(raw_arguments, str):
             return {"arguments": raw_arguments}
         try:
@@ -331,5 +331,28 @@ class OpenAICompatibleHandler(ApiHandler):
         except json.JSONDecodeError:
             return {"arguments": raw_arguments}
         if isinstance(parsed, dict):
-            return parsed
+            return OpenAICompatibleHandler._normalize_tool_arguments(parsed)
         return {"arguments": parsed}
+
+    @staticmethod
+    def _normalize_tool_arguments(parsed: Dict[str, Any]) -> Dict[str, Any]:
+        """Unwrap provider responses that nest tool JSON under one wrapper key."""
+        if len(parsed) != 1:
+            return parsed
+
+        wrapper_key = next(iter(parsed))
+        if wrapper_key not in {"arguments", "input", "parameters"}:
+            return parsed
+
+        wrapped = parsed[wrapper_key]
+        if isinstance(wrapped, dict):
+            return wrapped
+        if not isinstance(wrapped, str):
+            return parsed
+
+        try:
+            inner = json.loads(wrapped.strip() or "{}")
+        except json.JSONDecodeError:
+            return parsed
+
+        return inner if isinstance(inner, dict) else parsed

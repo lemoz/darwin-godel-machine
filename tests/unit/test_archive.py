@@ -376,3 +376,36 @@ class TestParentSelector:
         for _ in range(50):
             chosen = selector.select_parents(archive, n_parents=1)
             assert chosen[0].agent_id == valid.agent_id
+
+    def test_non_regression_gate_excludes_child_with_benchmark_regression(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        parent_file = _make_agent_file(tmp_path, "parent.py")
+        regressed_file = _make_agent_file(tmp_path, "regressed.py")
+        clean_file = _make_agent_file(tmp_path, "clean.py")
+        parent = archive.add_agent(
+            str(parent_file),
+            benchmark_scores={"a": 1.0, "b": 0.0},
+            is_valid=True,
+        )
+        archive.add_agent(
+            str(regressed_file),
+            parent_id=parent.agent_id,
+            benchmark_scores={"a": 0.0, "b": 1.0},
+            is_valid=True,
+        )
+        clean_child = archive.add_agent(
+            str(clean_file),
+            parent_id=parent.agent_id,
+            benchmark_scores={"a": 1.0, "b": 1.0},
+            is_valid=True,
+        )
+
+        selector = ParentSelector(require_non_regression=True)
+        selected_ids = {
+            agent.agent_id
+            for agent in selector.select_parents(archive, n_parents=10)
+        }
+
+        assert parent.agent_id in selected_ids
+        assert clean_child.agent_id in selected_ids
+        assert len(selected_ids) == 2

@@ -130,6 +130,47 @@ class TestDGMControllerInit:
         assert isinstance(task, Task)
         assert "0.700" in task.description or "0.7" in task.description
 
+    def test_parent_selection_non_regression_config_is_wired(self, tmp_path):
+        from dgm_controller import DGMController
+
+        cfg = _minimal_config(tmp_path)
+        cfg["parent_selection"]["require_non_regression"] = True
+        cfg["parent_selection"]["regression_tolerance"] = 0.01
+
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        assert ctrl.parent_selector.require_non_regression is True
+        assert ctrl.parent_selector.regression_tolerance == pytest.approx(0.01)
+
+    def test_build_score_delta_metadata_marks_regressions(self, tmp_path):
+        from archive.agent_archive import ArchivedAgent
+        from dgm_controller import DGMController
+
+        cfg = _minimal_config(tmp_path)
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+        parent = ArchivedAgent(
+            agent_id="parent_001",
+            parent_id=None,
+            generation=0,
+            source_path=str(tmp_path),
+            created_at="2025-01-01T00:00:00",
+            benchmark_scores={"a": 1.0, "b": 0.0},
+            average_score=0.5,
+            is_valid=True,
+            metadata={},
+        )
+
+        metadata = ctrl._build_score_delta_metadata(
+            parent,
+            {"a": 0.0, "b": 1.0},
+        )
+
+        assert metadata["average_delta"] == pytest.approx(0.0)
+        assert metadata["benchmark_improvements"] == {"b": 1.0}
+        assert metadata["benchmark_regressions"] == {"a": -1.0}
+        assert metadata["has_benchmark_regression"] is True
+        assert metadata["selection_non_regression_eligible"] is False
+
     def test_env_var_expansion(self, tmp_path, monkeypatch):
         """${VAR} in config values should be expanded from environment."""
         from dgm_controller import DGMController

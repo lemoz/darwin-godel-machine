@@ -21,6 +21,8 @@ archive:
 parent_selection:
   lambda: 10
   alpha_0: 0.5
+  require_non_regression: true
+  regression_tolerance: 0.0
 
 evaluation:
   benchmarks_dir: .dgm-live-runs/livecodebench-scale72/benchmarks
