@@ -1,0 +1,175 @@
+{
+  "approval_required": true,
+  "benchmark_count": 12,
+  "benchmark_names": [
+    "livecodebench_abc387_b",
+    "livecodebench_abc388_b",
+    "livecodebench_abc389_a",
+    "livecodebench_abc390_b",
+    "livecodebench_abc387_c",
+    "livecodebench_abc388_d",
+    "livecodebench_abc388_c",
+    "livecodebench_abc389_d",
+    "livecodebench_abc390_d",
+    "livecodebench_abc388_e",
+    "livecodebench_abc389_e",
+    "livecodebench_abc390_e"
+  ],
+  "config": "config/livecodebench_segment_loop12.yaml",
+  "difficulty_counts": {
+    "easy": 4,
+    "hard": 3,
+    "medium": 5
+  },
+  "live_calls_performed": 0,
+  "manifest_path": ".dgm-live-runs/livecodebench-loop12/manifest.json",
+  "name": "livecodebench_segment",
+  "output_dir": ".dgm-live-runs/livecodebench-loop12/benchmarks",
+  "per_problem_timeout_seconds": 10,
+  "private_test_count": 480,
+  "problems": [
+    {
+      "benchmark": "livecodebench_abc387_b",
+      "contest_date": "2025-01-04T00:00:00",
+      "difficulty": "easy",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc387_b",
+      "question_title": "9x9 Sum",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc388_b",
+      "contest_date": "2025-01-11T00:00:00",
+      "difficulty": "easy",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc388_b",
+      "question_title": "Heavy Snake",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc389_a",
+      "contest_date": "2025-01-18T00:00:00",
+      "difficulty": "easy",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc389_a",
+      "question_title": "9x9",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc390_b",
+      "contest_date": "2025-01-25T00:00:00",
+      "difficulty": "easy",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc390_b",
+      "question_title": "Geometric Sequence",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc387_c",
+      "contest_date": "2025-01-04T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc387_c",
+      "question_title": "Snake Numbers",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc388_d",
+      "contest_date": "2025-01-11T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc388_d",
+      "question_title": "Coming of Age Celebration",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc388_c",
+      "contest_date": "2025-01-11T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc388_c",
+      "question_title": "Various Kagamimochi",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc389_d",
+      "contest_date": "2025-01-18T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc389_d",
+      "question_title": "Squares in Circle",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc390_d",
+      "contest_date": "2025-01-25T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc390_d",
+      "question_title": "Stone XOR",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc388_e",
+      "contest_date": "2025-01-11T00:00:00",
+      "difficulty": "hard",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc388_e",
+      "question_title": "Simultaneous Kagamimochi",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc389_e",
+      "contest_date": "2025-01-18T00:00:00",
+      "difficulty": "hard",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc389_e",
+      "question_title": "Square Price",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc390_e",
+      "contest_date": "2025-01-25T00:00:00",
+      "difficulty": "hard",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc390_e",
+      "question_title": "Vitamin Balance",
+      "total_test_count": 42
+    }
+  ],
+  "public_test_count": 32,
+  "segment_id": "release_v6_atcoder_loop12",
+  "source": {
+    "dataset": "livecodebench/code_generation_lite",
+    "source_file": "test6.jsonl",
+    "url": "https://huggingface.co/datasets/livecodebench/code_generation_lite/resolve/main/test6.jsonl",
+    "version_label": "release_v6"
+  },
+  "status": "ok",
+  "test_policy": "public examples are prompt-visible; public plus private tests are scored",
+  "total_test_count": 512
+}
