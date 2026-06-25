@@ -20,6 +20,30 @@ import time
 from .base_tool import BaseTool, ToolResult, ToolExecutionStatus, ToolParameter
 
 
+_BASH_PROCESS_MEMORY_LIMIT_MB = 384
+
+
+def _apply_bash_process_resource_limits() -> None:
+    """Keep agent-run shell commands from exhausting the sandbox container."""
+    try:
+        import resource
+    except ImportError:
+        return
+
+    limit_bytes = _BASH_PROCESS_MEMORY_LIMIT_MB * 1024 * 1024
+    for limit_name in ("RLIMIT_AS", "RLIMIT_DATA"):
+        limit_kind = getattr(resource, limit_name, None)
+        if limit_kind is None:
+            continue
+        try:
+            _soft, hard = resource.getrlimit(limit_kind)
+            if hard in (-1, resource.RLIM_INFINITY):
+                hard = limit_bytes
+            resource.setrlimit(limit_kind, (min(limit_bytes, hard), hard))
+        except (OSError, ValueError):
+            continue
+
+
 class BashTool(BaseTool):
     """
     Tool for executing bash commands with safety restrictions.
@@ -433,14 +457,17 @@ class BashTool(BaseTool):
             ToolResult: Execution result
         """
         try:
-            process = await asyncio.create_subprocess_shell(
-                command,
-                stdout=subprocess.PIPE if capture_output else None,
-                stderr=subprocess.PIPE if capture_output else None,
-                cwd=self.working_directory,
-                env=self._sanitized_environment(),
-                start_new_session=True,  # puts the shell in its own process group
-            )
+            subprocess_kwargs = {
+                "stdout": subprocess.PIPE if capture_output else None,
+                "stderr": subprocess.PIPE if capture_output else None,
+                "cwd": self.working_directory,
+                "env": self._sanitized_environment(),
+                "start_new_session": True,  # puts the shell in its own process group
+            }
+            if os.name == "posix":
+                subprocess_kwargs["preexec_fn"] = _apply_bash_process_resource_limits
+
+            process = await asyncio.create_subprocess_shell(command, **subprocess_kwargs)
 
             try:
                 stdout, stderr = await asyncio.wait_for(

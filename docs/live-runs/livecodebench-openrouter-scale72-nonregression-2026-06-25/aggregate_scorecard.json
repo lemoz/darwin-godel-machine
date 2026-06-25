@@ -1,0 +1,27 @@
+{
+  "caveat": "This aggregates independent shard-local DGM runs; weighted_best_shard_score is a shard portfolio score, not one agent evaluated across all shards.",
+  "completed_shards": 1,
+  "name": "livecodebench_scale72_aggregate_scorecard",
+  "plan_config": "config/livecodebench_openrouter_scale72_nonregression.yaml",
+  "shard_count": 3,
+  "shards": [
+    {
+      "base_score": 0.5416666666666666,
+      "benchmark_count": 24,
+      "best_average_delta": -0.04166666666666663,
+      "has_improvement": false,
+      "has_regression": true,
+      "id": "shard-01",
+      "scorecard": ".dgm-live-runs/livecodebench-openrouter-scale72-nonregression/shards/shard-01/scorecard.json",
+      "top_agent_id": "b899a99f-377a-47b5-86c5-d89eda3e3e8b",
+      "top_score": 0.5416666666666666
+    }
+  ],
+  "shards_with_improvement": 0,
+  "shards_with_regression": 1,
+  "status": "partial",
+  "total_benchmark_count": 24,
+  "weighted_base_score": 0.5416666666666666,
+  "weighted_best_delta": 0.0,
+  "weighted_best_shard_score": 0.5416666666666666
+}

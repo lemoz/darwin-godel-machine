@@ -5,6 +5,7 @@ Executes agents on benchmark tasks and collects results.
 """
 
 import asyncio
+import gc
 import json
 import os
 import re
@@ -14,7 +15,7 @@ import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Set
 import logging
 import yaml
 
@@ -35,6 +36,31 @@ logger = logging.getLogger(__name__)
 # Regex for valid Python identifiers (used to prevent code injection).
 _VALID_IDENTIFIER_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 _STDIN_TEST_TYPES = {"stdin", "stdio", "standard_input"}
+_TEST_PROCESS_MEMORY_LIMIT_MB = 192
+_STDIN_OUTPUT_CAPTURE_LIMIT_BYTES = 16 * 1024 * 1024
+_STDIN_STDERR_CAPTURE_LIMIT_BYTES = 256 * 1024
+_SUBSET_DP_RESOURCE_GUARD_MIN_N = 12
+
+
+def _apply_test_process_resource_limits() -> None:
+    """Constrain direct test processes so bad solutions cannot kill a shard."""
+    try:
+        import resource
+    except ImportError:
+        return
+
+    limit_bytes = _TEST_PROCESS_MEMORY_LIMIT_MB * 1024 * 1024
+    for limit_name in ("RLIMIT_AS", "RLIMIT_DATA"):
+        limit_kind = getattr(resource, limit_name, None)
+        if limit_kind is None:
+            continue
+        try:
+            _soft, hard = resource.getrlimit(limit_kind)
+            if hard in (-1, resource.RLIM_INFINITY):
+                hard = limit_bytes
+            resource.setrlimit(limit_kind, (min(limit_bytes, hard), hard))
+        except (OSError, ValueError):
+            continue
 
 
 def _is_valid_identifier(name: str) -> bool:
@@ -45,6 +71,55 @@ def _is_valid_identifier(name: str) -> bool:
 def _is_stdin_test_case(test_case: Dict[str, Any]) -> bool:
     """Return True for contest-style programs that read stdin and write stdout."""
     return str(test_case.get("testtype", "")).lower() in _STDIN_TEST_TYPES
+
+
+def _max_first_stdin_integer(test_case: Dict[str, Any]) -> Optional[int]:
+    """Return the maximum first integer across stdin examples when parseable."""
+    values: List[int] = []
+    for raw_input in test_case.get("inputs", []):
+        parts = str(raw_input).split()
+        if not parts:
+            continue
+        try:
+            values.append(int(parts[0]))
+        except ValueError:
+            continue
+    return max(values) if values else None
+
+
+def _static_resource_guard_error(
+    solution: str,
+    test_case: Dict[str, Any],
+    benchmark: "BenchmarkTask",
+) -> Optional[str]:
+    """Reject solutions with obvious memory-explosive patterns before execution."""
+    if not _is_stdin_test_case(test_case):
+        return None
+
+    max_n = _max_first_stdin_integer(test_case)
+    if max_n is None or max_n < _SUBSET_DP_RESOURCE_GUARD_MIN_N:
+        return None
+
+    compact_solution = re.sub(r"\s+", "", solution.lower())
+    subset_size_pattern = (
+        re.search(r"\b\w+=1<<\w+", compact_solution) is not None
+        or re.search(r"\b\w+=2\*\*\w+", compact_solution) is not None
+    )
+    set_per_mask_pattern = (
+        "set()for" in compact_solution
+        and "range(" in compact_solution
+        and ("dp=[" in compact_solution or "dp=list(" in compact_solution)
+    )
+    submask_iteration_pattern = "(sub-1)&mask" in compact_solution
+
+    if subset_size_pattern and set_per_mask_pattern and submask_iteration_pattern:
+        return (
+            "Resource guard rejected solution before execution: "
+            "subset-DP set-per-mask pattern on stdin benchmark with "
+            f"max first input value {max_n}"
+        )
+
+    return None
 
 
 @dataclass
@@ -99,7 +174,8 @@ class BenchmarkRunner:
         self,
         benchmarks_dir: str = "./config/benchmarks",
         sandbox_manager: Optional[Any] = None,
-        use_sandbox: bool = False
+        use_sandbox: bool = False,
+        enabled_benchmarks: Optional[List[str]] = None,
     ):
         """
         Initialize the benchmark runner.
@@ -108,10 +184,14 @@ class BenchmarkRunner:
             benchmarks_dir: Directory containing benchmark configurations
             sandbox_manager: Optional sandbox manager for secure execution
             use_sandbox: Whether to use sandboxing for agent execution
+            enabled_benchmarks: Optional benchmark names to load. When set,
+                benchmark configs outside this set are left on disk to keep
+                large sharded benchmark runs from retaining unused test data.
         """
         self.benchmarks_dir = Path(benchmarks_dir)
         self.sandbox_manager = sandbox_manager
         self.use_sandbox = use_sandbox
+        self.enabled_benchmarks = set(enabled_benchmarks) if enabled_benchmarks else None
         self.benchmarks: Dict[str, BenchmarkTask] = {}
         self._load_benchmarks()
 
@@ -151,9 +231,14 @@ class BenchmarkRunner:
             logger.warning(f"Benchmarks directory not found: {self.benchmarks_dir}")
             return
 
+        requested: Optional[Set[str]] = self.enabled_benchmarks
         for config_file in self.benchmarks_dir.glob("*.yaml"):
+            if requested is not None and config_file.stem not in requested:
+                continue
             try:
                 benchmark = BenchmarkTask.from_config(str(config_file))
+                if requested is not None and benchmark.name not in requested:
+                    continue
                 self.benchmarks[benchmark.name] = benchmark
                 logger.info(f"Loaded benchmark: {benchmark.name}")
             except Exception as e:
@@ -265,19 +350,26 @@ class BenchmarkRunner:
     ) -> Dict[str, Any]:
         """Run agent directly without sandboxing."""
         agent_result = await agent.solve_task(task)
+        solution = agent_result.get('solution', '')
+        output = agent_result.get('output', '')
+        agent_result.pop('conversation_history', None)
+        if hasattr(agent, "conversation_history"):
+            agent.conversation_history = []
+        gc.collect()
 
         test_results = []
         for test_case in benchmark.test_cases:
             test_result = await self._run_test_case(
-                agent_result.get('solution', ''),
+                solution,
                 test_case,
                 benchmark
             )
             test_results.append(test_result)
+            gc.collect()
 
         return {
             'test_results': test_results,
-            'output': agent_result.get('output', '')
+            'output': output
         }
 
     async def _run_in_sandbox(
@@ -422,6 +514,8 @@ print(json.dumps({{
         raw_expected: str,
         test_index: int,
         timeout: int,
+        input_file: Optional[str] = None,
+        expected_file: Optional[str] = None,
     ) -> str:
         """
         Build a self-contained Python test script for one stdin/stdout case.
@@ -431,15 +525,131 @@ print(json.dumps({{
         outer whitespace, and numeric whitespace-separated lines are compared as
         Decimals when exact string comparison fails.
         """
+        if input_file is not None and expected_file is not None:
+            input_setup = (
+                f"_input_file = Path({repr(input_file)})\n"
+                f"_expected_file = Path({repr(expected_file)})\n"
+                "_raw_input = None\n"
+                "_raw_expected = None\n"
+            )
+        else:
+            input_setup = (
+                "_input_file = None\n"
+                "_expected_file = None\n"
+                f"_raw_input = {repr(raw_input)}\n"
+                f"_raw_expected = {repr(raw_expected)}\n"
+            )
+
         return f"""
-import json, subprocess, sys
+import json, os, subprocess, sys, tempfile, time
 from decimal import Decimal
+from pathlib import Path
 
 _solution_file = {repr(solution_file)}
-_raw_input = {repr(raw_input)}
-_raw_expected = {repr(raw_expected)}
+{input_setup}
 _timeout = {repr(int(timeout))}
 _test_index = {repr(test_index)}
+_memory_limit_mb = {repr(_TEST_PROCESS_MEMORY_LIMIT_MB)}
+_output_limit_bytes = {repr(_STDIN_OUTPUT_CAPTURE_LIMIT_BYTES)}
+_stderr_limit_bytes = {repr(_STDIN_STDERR_CAPTURE_LIMIT_BYTES)}
+_cleanup_paths = []
+
+
+def _write_text_temp(prefix, value):
+    fd, name = tempfile.mkstemp(prefix=prefix, suffix=".txt")
+    with os.fdopen(fd, "w", encoding="utf-8", errors="replace") as handle:
+        handle.write(str(value))
+    path = Path(name)
+    _cleanup_paths.append(path)
+    return path
+
+
+if _input_file is None:
+    _input_file = _write_text_temp("dgm_stdin_", _raw_input)
+if _expected_file is None:
+    _expected_file = _write_text_temp("dgm_expected_", _raw_expected)
+
+
+def _new_temp_path(prefix):
+    fd, name = tempfile.mkstemp(prefix=prefix, suffix=".txt")
+    os.close(fd)
+    path = Path(name)
+    _cleanup_paths.append(path)
+    return path
+
+
+def _cleanup():
+    for path in _cleanup_paths:
+        try:
+            Path(path).unlink()
+        except OSError:
+            pass
+
+
+def _emit(payload):
+    print(json.dumps(payload))
+    _cleanup()
+    sys.exit(0)
+
+
+def _limit_child_process_resources():
+    try:
+        import resource
+    except ImportError:
+        return
+    limit_bytes = _memory_limit_mb * 1024 * 1024
+    for limit_name in ("RLIMIT_AS", "RLIMIT_DATA"):
+        limit_kind = getattr(resource, limit_name, None)
+        if limit_kind is None:
+            continue
+        try:
+            _soft, hard = resource.getrlimit(limit_kind)
+            if hard in (-1, resource.RLIM_INFINITY):
+                hard = limit_bytes
+            resource.setrlimit(limit_kind, (min(limit_bytes, hard), hard))
+        except (OSError, ValueError):
+            continue
+
+
+def _limit_child_process_by_pid(pid):
+    try:
+        import resource
+    except ImportError:
+        return
+    prlimit = getattr(resource, "prlimit", None)
+    if prlimit is None:
+        return
+    limit_bytes = _memory_limit_mb * 1024 * 1024
+    for limit_name in ("RLIMIT_AS", "RLIMIT_DATA"):
+        limit_kind = getattr(resource, limit_name, None)
+        if limit_kind is None:
+            continue
+        try:
+            _soft, hard = prlimit(pid, limit_kind)
+            if hard in (-1, resource.RLIM_INFINITY):
+                hard = limit_bytes
+            prlimit(pid, limit_kind, (min(limit_bytes, hard), hard))
+        except (OSError, ValueError, PermissionError):
+            continue
+
+
+def _read_child_memory_bytes(pid):
+    status_path = Path("/proc") / str(pid) / "status"
+    try:
+        text = status_path.read_text(errors="replace")
+    except OSError:
+        return None
+
+    values = {{}}
+    for line in text.splitlines():
+        if line.startswith(("VmRSS:", "VmSize:")):
+            parts = line.split()
+            if len(parts) >= 2:
+                try:
+                    values[parts[0].rstrip(":")] = int(parts[1]) * 1024
+                except ValueError:
+                    pass
+    return values or None
 
 
 def _truncate(value, length=600):
@@ -447,6 +657,20 @@ def _truncate(value, length=600):
     if len(value) <= length:
         return value
     return value[: length // 2] + "...(truncated)..." + value[-length // 2 :]
+
+
+def _read_text_limited(path, limit_bytes):
+    path = Path(path)
+    with path.open("rb") as handle:
+        data = handle.read(limit_bytes + 1)
+    text = data[:limit_bytes].decode("utf-8", errors="replace")
+    if len(data) > limit_bytes or path.stat().st_size > limit_bytes:
+        return text + "...(truncated)..."
+    return text
+
+
+def _expected_preview():
+    return _truncate(_read_text_limited(_expected_file, _output_limit_bytes).strip())
 
 
 def _stripped_lines(value):
@@ -495,45 +719,108 @@ def _compare_stdout(actual, expected):
     return True, None
 
 
-try:
-    _proc = subprocess.run(
-        [sys.executable, _solution_file],
-        input=_raw_input,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=_timeout,
-    )
-except subprocess.TimeoutExpired:
-    print(json.dumps({{
-        "success": False,
-        "actual_output": None,
-        "expected_output": _raw_expected.strip(),
-        "error": f"Timeout after {{_timeout}}s",
-        "exit_code": None,
-    }}))
-    sys.exit(0)
+_stdout_path = _new_temp_path("dgm_stdout_")
+_stderr_path = _new_temp_path("dgm_stderr_")
+_run_error = None
 
-_stdout = _proc.stdout
-_stderr = _proc.stderr
+with Path(_input_file).open("rb") as _stdin_handle, _stdout_path.open("wb") as _stdout_handle, _stderr_path.open("wb") as _stderr_handle:
+    _proc = subprocess.Popen(
+        [sys.executable, _solution_file],
+        stdin=_stdin_handle,
+        stdout=_stdout_handle,
+        stderr=_stderr_handle,
+        preexec_fn=_limit_child_process_resources,
+    )
+    _limit_child_process_by_pid(_proc.pid)
+    _deadline = time.monotonic() + _timeout
+    _memory_limit_bytes = _memory_limit_mb * 1024 * 1024
+    while _proc.poll() is None:
+        try:
+            _stdout_size = _stdout_path.stat().st_size
+        except OSError:
+            _stdout_size = 0
+        try:
+            _stderr_size = _stderr_path.stat().st_size
+        except OSError:
+            _stderr_size = 0
+
+        if _stdout_size > _output_limit_bytes:
+            _run_error = f"Output too large: {{_stdout_size}} bytes > {{_output_limit_bytes}}"
+            _proc.kill()
+            break
+        if _stderr_size > _stderr_limit_bytes:
+            _run_error = f"Stderr too large: {{_stderr_size}} bytes > {{_stderr_limit_bytes}}"
+            _proc.kill()
+            break
+        _child_memory = _read_child_memory_bytes(_proc.pid)
+        if _child_memory is not None:
+            _child_vmsize = _child_memory.get("VmSize", 0)
+            _child_rss = _child_memory.get("VmRSS", 0)
+            if _child_vmsize > _memory_limit_bytes or _child_rss > _memory_limit_bytes:
+                _run_error = (
+                    "Memory limit exceeded: "
+                    f"VmSize={{_child_vmsize}} bytes, "
+                    f"VmRSS={{_child_rss}} bytes, "
+                    f"limit={{_memory_limit_bytes}} bytes"
+                )
+                _proc.kill()
+                break
+        if time.monotonic() > _deadline:
+            _run_error = f"Timeout after {{_timeout}}s"
+            _proc.kill()
+            break
+        time.sleep(0.05)
+    _proc.wait()
+
+if _run_error is not None:
+    _emit({{
+        "success": False,
+        "actual_output": _truncate(_read_text_limited(_stdout_path, _output_limit_bytes).strip()),
+        "expected_output": _expected_preview(),
+        "error": _run_error,
+        "exit_code": _proc.returncode,
+    }})
+
+_stdout_size = _stdout_path.stat().st_size
+_stderr_size = _stderr_path.stat().st_size
+if _stdout_size > _output_limit_bytes:
+    _emit({{
+        "success": False,
+        "actual_output": _truncate(_read_text_limited(_stdout_path, _output_limit_bytes).strip()),
+        "expected_output": _expected_preview(),
+        "error": f"Output too large: {{_stdout_size}} bytes > {{_output_limit_bytes}}",
+        "exit_code": _proc.returncode,
+    }})
+if _stderr_size > _stderr_limit_bytes:
+    _emit({{
+        "success": False,
+        "actual_output": _truncate(_read_text_limited(_stdout_path, _output_limit_bytes).strip()),
+        "expected_output": _expected_preview(),
+        "error": f"Stderr too large: {{_stderr_size}} bytes > {{_stderr_limit_bytes}}",
+        "exit_code": _proc.returncode,
+    }})
+
+_stdout = _read_text_limited(_stdout_path, _output_limit_bytes)
+_stderr = _read_text_limited(_stderr_path, _stderr_limit_bytes)
+_raw_expected = _read_text_limited(_expected_file, _output_limit_bytes)
+
 if _proc.returncode != 0:
-    print(json.dumps({{
+    _emit({{
         "success": False,
         "actual_output": _truncate(_stdout.strip()),
-        "expected_output": _raw_expected.strip(),
+        "expected_output": _expected_preview(),
         "error": "RuntimeError: " + _truncate(_stderr.strip() or f"exit code {{_proc.returncode}}"),
         "exit_code": _proc.returncode,
-    }}))
-    sys.exit(0)
+    }})
 
 _success, _error = _compare_stdout(_stdout, _raw_expected)
-print(json.dumps({{
+_emit({{
     "success": _success,
     "actual_output": _truncate(_stdout.strip()),
-    "expected_output": _raw_expected.strip(),
+    "expected_output": _expected_preview(),
     "error": _error,
     "exit_code": _proc.returncode,
-}}))
+}})
 """
 
     async def _run_test_case(
@@ -561,6 +848,23 @@ print(json.dumps({{
                 'total': 0
             }
 
+        guard_error = _static_resource_guard_error(solution, test_case, benchmark)
+        if guard_error is not None:
+            logger.warning("%s in benchmark %s", guard_error, benchmark.name)
+            return {
+                'success': False,
+                'individual_results': [{
+                    'success': False,
+                    'actual_output': None,
+                    'expected_output': None,
+                    'error': guard_error,
+                    'input': '<skipped by resource guard>',
+                }],
+                'passed': 0,
+                'total': 1,
+                'short_circuited': True,
+            }
+
         solution_file: Optional[str] = None
         temp_dir: Optional[tempfile.TemporaryDirectory] = None
         try:
@@ -582,6 +886,18 @@ print(json.dumps({{
 
             results: List[Dict[str, Any]] = []
             overall_success = True
+
+            def _result_payload(short_circuited: bool = False) -> Dict[str, Any]:
+                payload = {
+                    'success': overall_success,
+                    'individual_results': results,
+                    'passed': sum(1 for r in results if r.get('success', False)),
+                    'total': len(results)
+                }
+                if short_circuited:
+                    payload['short_circuited'] = True
+                return payload
+
             sandbox_working_dir = getattr(
                 getattr(self.sandbox_manager, "config", None),
                 "working_dir",
@@ -594,12 +910,22 @@ print(json.dumps({{
                 sandbox_solution_file = str(Path(sandbox_working_dir) / solution_path.name)
 
                 if is_stdin_case:
+                    input_path = workspace_path / f"stdin_{i}.txt"
+                    expected_path = workspace_path / f"expected_{i}.txt"
+                    input_path.write_text(raw_input)
+                    expected_path.write_text(raw_expected)
+                    sandbox_input_file = str(Path(sandbox_working_dir) / input_path.name)
+                    sandbox_expected_file = str(Path(sandbox_working_dir) / expected_path.name)
                     test_code = self._build_stdin_test_script(
                         sandbox_solution_file if use_sandbox else solution_file,
                         raw_input,
                         raw_expected,
                         i,
                         benchmark.timeout,
+                        input_file=sandbox_input_file if use_sandbox else str(input_path),
+                        expected_file=(
+                            sandbox_expected_file if use_sandbox else str(expected_path)
+                        ),
                     )
                     subprocess_timeout = benchmark.timeout + 2
                 else:
@@ -632,7 +958,8 @@ print(json.dumps({{
                         sys.executable,
                         str(test_script_path),
                         stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
+                        stderr=asyncio.subprocess.PIPE,
+                        preexec_fn=_apply_test_process_resource_limits,
                     )
 
                     try:
@@ -656,6 +983,8 @@ print(json.dumps({{
                         }
                         results.append(timeout_result)
                         overall_success = False
+                        if benchmark.scoring_method == 'pass_fail':
+                            return _result_payload(short_circuited=True)
                         continue
 
                     output_text = stdout.decode().strip()
@@ -698,13 +1027,10 @@ print(json.dumps({{
                 results.append(test_result)
                 if not test_result.get('success', False):
                     overall_success = False
+                    if benchmark.scoring_method == 'pass_fail':
+                        return _result_payload(short_circuited=True)
 
-            return {
-                'success': overall_success,
-                'individual_results': results,
-                'passed': sum(1 for r in results if r.get('success', False)),
-                'total': len(results)
-            }
+            return _result_payload()
 
         except Exception as e:
             return {

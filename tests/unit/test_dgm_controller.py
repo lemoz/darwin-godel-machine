@@ -84,6 +84,25 @@ class TestDGMControllerInit:
         ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
         assert Path(cfg["evaluation"]["results_dir"]).exists()
 
+    def test_init_loads_only_enabled_benchmarks(self, tmp_path):
+        from dgm_controller import DGMController
+        cfg = _minimal_config(tmp_path)
+        extra = Path(cfg["evaluation"]["benchmarks_dir"]) / "unused.yaml"
+        extra.write_text(yaml.dump({
+            "name": "unused",
+            "description": "unused",
+            "task_prompt": "unused",
+            "test_cases": [
+                {"function_name": "f", "inputs": ["1"], "expected_outputs": ["1"]}
+            ],
+            "timeout": 5,
+            "scoring_method": "pass_fail",
+        }))
+
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        assert set(ctrl.benchmark_runner.benchmarks) == {"dummy"}
+
     def test_should_stop_false_initially(self, tmp_path):
         from dgm_controller import DGMController
         cfg = _minimal_config(tmp_path)
@@ -381,6 +400,9 @@ class TestDGMControllerInit:
                 self.config = config
                 self.agent_id = config.agent_id
 
+            async def close(self):
+                captured["closed"] = True
+
         ctrl.agent_loader.load_from_path = lambda _path: LoadedAgent
 
         async def fake_run_benchmark(agent, benchmark_name, verbose=False):
@@ -407,3 +429,4 @@ class TestDGMControllerInit:
         assert captured["agent"].config is captured["config"]
         assert captured["benchmark_name"] == "dummy"
         assert captured["verbose"] is False
+        assert captured["closed"] is True

@@ -5,6 +5,8 @@ All async tests use pytest-asyncio (asyncio_mode = auto in pytest.ini).
 """
 
 import json
+import asyncio
+import os
 import pytest
 import shutil
 import tempfile
@@ -161,6 +163,24 @@ class TestBashTool:
         assert result.status == ToolExecutionStatus.SUCCESS
         assert "sk-test-secret" not in result.output
         assert "visible" in result.output
+
+    async def test_local_command_uses_resource_limits(self, tmp_path, monkeypatch):
+        captured = {}
+        original_create = asyncio.create_subprocess_shell
+
+        async def wrapped_create(*args, **kwargs):
+            captured["preexec_fn"] = kwargs.get("preexec_fn")
+            return await original_create(*args, **kwargs)
+
+        monkeypatch.setattr(asyncio, "create_subprocess_shell", wrapped_create)
+
+        tool = BashTool(working_directory=str(tmp_path), timeout=5)
+        result = await tool.execute({"command": "echo limited"})
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        if os.name == "posix":
+            assert captured["preexec_fn"] is not None
+            assert captured["preexec_fn"].__name__ == "_apply_bash_process_resource_limits"
 
     async def test_uses_sandbox_manager_when_enabled(self, tmp_path):
         class FakeSandboxManager:

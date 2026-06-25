@@ -54,6 +54,7 @@ class AgentConfig:
     memory_limit: Optional[int] = None
     sandbox_manager: Optional[Any] = None
     use_sandbox: bool = False
+    retain_conversation_history: bool = True
 
 
 class Agent:
@@ -145,6 +146,18 @@ class Agent:
             timeout=self.config.tool_timeout,
         )
         self.tool_registry.register_tool(edit_tool)
+
+    async def close(self) -> None:
+        """Release provider resources held by one-shot agent instances."""
+        client = getattr(self.fm_handler, "client", None)
+        for method_name in ("close", "aclose"):
+            close = getattr(client, method_name, None)
+            if close is None:
+                continue
+            result = close()
+            if asyncio.iscoroutine(result):
+                await result
+            return
     
     async def solve_task(self, task: Task) -> Dict[str, Any]:
         """
@@ -187,23 +200,33 @@ class Agent:
             solution = await self._solve_with_steps(task)
             logger.info(f"Completed task solving with {len(self.conversation_history)} total messages")
             
+            conversation_history = (
+                [msg.content for msg in self.conversation_history]
+                if self.config.retain_conversation_history
+                else []
+            )
             return {
                 "success": True,
                 "solution": solution,
                 "task_id": task.task_id,
                 "agent_id": self.agent_id,
                 "steps": len(self.conversation_history),
-                "conversation_history": [msg.content for msg in self.conversation_history]
+                "conversation_history": conversation_history,
             }
             
         except Exception as e:
+            conversation_history = (
+                [msg.content for msg in self.conversation_history]
+                if self.config.retain_conversation_history
+                else []
+            )
             return {
                 "success": False,
                 "error": str(e),
                 "task_id": task.task_id,
                 "agent_id": self.agent_id,
                 "steps": len(self.conversation_history),
-                "conversation_history": [msg.content for msg in self.conversation_history]
+                "conversation_history": conversation_history,
             }
     
     async def _solve_with_steps(self, task: Task) -> str:
@@ -357,19 +380,6 @@ class Agent:
                             )
                             return solution
 
-                py_candidates = [
-                    path
-                    for path in self.working_directory.glob("*.py")
-                    if path.name not in {"__init__.py", "agent.py"}
-                ]
-                if len(py_candidates) == 1:
-                    solution = py_candidates[0].read_text(encoding="utf-8")
-                    if solution.strip():
-                        logger.info(
-                            "Using sole benchmark workspace Python file %s",
-                            py_candidates[0].name,
-                        )
-                        return solution
         except OSError as exc:
             logger.warning("Could not read tool-written benchmark solution: %s", exc)
         return ""

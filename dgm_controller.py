@@ -6,6 +6,7 @@ Main controller that orchestrates the DGM loop of self-improvement.
 
 import ast
 import asyncio
+import gc
 import logging
 import json
 import os
@@ -115,7 +116,8 @@ class DGMController:
         self.benchmark_runner = BenchmarkRunner(
             benchmarks_dir=evaluation_config.get('benchmarks_dir', 'config/benchmarks'),
             sandbox_manager=sandbox_manager,
-            use_sandbox=use_sandbox
+            use_sandbox=use_sandbox,
+            enabled_benchmarks=self.config.get('benchmarks', {}).get('enabled'),
         )
 
         self.validator = AgentValidator(
@@ -140,6 +142,18 @@ class DGMController:
         Path(self.config['archive']['path']).mkdir(parents=True, exist_ok=True)
         Path(self.config['evaluation']['results_dir']).mkdir(parents=True, exist_ok=True)
         Path(self.config['agents']['workspace_dir']).mkdir(parents=True, exist_ok=True)
+
+    async def _close_agent(self, agent: Any) -> None:
+        """Close provider clients for one-shot agents created by this controller."""
+        close = getattr(agent, "close", None)
+        if close is None:
+            return
+        try:
+            result = close()
+            if asyncio.iscoroutine(result):
+                await result
+        except Exception as exc:
+            logger.debug("Agent cleanup failed: %s", exc)
 
     def _expand_env_vars(self, obj):
         """
@@ -548,7 +562,10 @@ performance."""
             agent = Agent(agent_config)
 
             # Perform self-modification
-            result = await agent.solve_task(modification_task)
+            try:
+                result = await agent.solve_task(modification_task)
+            finally:
+                await self._close_agent(agent)
 
             if result.get('success', False):
                 # (a) If result['solution'] is a non-empty, parseable Python string,
@@ -641,6 +658,7 @@ performance."""
                         max_iterations=self.config['agents'].get('max_steps', 20),
                         sandbox_manager=self.sandbox_manager,
                         use_sandbox=self.use_sandbox,
+                        retain_conversation_history=False,
                     )
 
                     # Load the agent class from the file path using load_from_path,
@@ -658,12 +676,17 @@ performance."""
                     # Create agent instance
                     agent = AgentClass(agent_config)
 
-                    # Run benchmark — result.score is the pre-computed pass fraction
-                    result = await self.benchmark_runner.run_benchmark(
-                        agent=agent,
-                        benchmark_name=benchmark_name,
-                        verbose=False
-                    )
+                    try:
+                        # Run benchmark — result.score is the pre-computed pass fraction
+                        result = await self.benchmark_runner.run_benchmark(
+                            agent=agent,
+                            benchmark_name=benchmark_name,
+                            verbose=False
+                        )
+                    finally:
+                        await self._close_agent(agent)
+                        del agent
+                        gc.collect()
 
                 scores[benchmark_name] = result.score
                 logger.info(f"{benchmark_name} score: {result.score:.3f}")
@@ -671,6 +694,8 @@ performance."""
             except Exception as e:
                 logger.error(f"Error evaluating benchmark {benchmark_name}: {e}")
                 scores[benchmark_name] = 0.0
+            finally:
+                gc.collect()
 
         return scores
 
