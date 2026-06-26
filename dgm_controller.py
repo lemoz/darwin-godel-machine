@@ -6,6 +6,7 @@ Main controller that orchestrates the DGM loop of self-improvement.
 
 import ast
 import asyncio
+import gc
 import logging
 import json
 import os
@@ -76,7 +77,9 @@ class DGMController:
         ps_cfg = self.config.get('parent_selection', {})
         self.parent_selector = ParentSelector(
             lam=ps_cfg.get('lambda', 10.0),
-            alpha_0=ps_cfg.get('alpha_0', 0.5)
+            alpha_0=ps_cfg.get('alpha_0', 0.5),
+            require_non_regression=ps_cfg.get('require_non_regression', False),
+            regression_tolerance=ps_cfg.get('regression_tolerance', 0.0),
         )
 
         evaluation_config = self.config.get('evaluation', {})
@@ -113,7 +116,8 @@ class DGMController:
         self.benchmark_runner = BenchmarkRunner(
             benchmarks_dir=evaluation_config.get('benchmarks_dir', 'config/benchmarks'),
             sandbox_manager=sandbox_manager,
-            use_sandbox=use_sandbox
+            use_sandbox=use_sandbox,
+            enabled_benchmarks=self.config.get('benchmarks', {}).get('enabled'),
         )
 
         self.validator = AgentValidator(
@@ -138,6 +142,18 @@ class DGMController:
         Path(self.config['archive']['path']).mkdir(parents=True, exist_ok=True)
         Path(self.config['evaluation']['results_dir']).mkdir(parents=True, exist_ok=True)
         Path(self.config['agents']['workspace_dir']).mkdir(parents=True, exist_ok=True)
+
+    async def _close_agent(self, agent: Any) -> None:
+        """Close provider clients for one-shot agents created by this controller."""
+        close = getattr(agent, "close", None)
+        if close is None:
+            return
+        try:
+            result = close()
+            if asyncio.iscoroutine(result):
+                await result
+        except Exception as exc:
+            logger.debug("Agent cleanup failed: %s", exc)
 
     def _expand_env_vars(self, obj):
         """
@@ -321,12 +337,14 @@ class Agent:
         # 6. Calculate performance metrics (guard against empty dict)
         total_score = sum(benchmark_scores.values()) / len(benchmark_scores) if benchmark_scores else 0.0
         logger.info(f"Modified agent total score: {total_score:.3f}")
+        score_delta_metadata = self._build_score_delta_metadata(parent, benchmark_scores)
 
         # 7. Archive ALL agents that passed validation (paper-faithful — no score gate)
         archived_agent = self.archive.add_agent(
             agent_path=modified_agent_path,
             parent_id=parent.agent_id,
-            benchmark_scores=benchmark_scores
+            benchmark_scores=benchmark_scores,
+            metadata={"score_delta": score_delta_metadata},
         )
 
         logger.info(f"Added agent {archived_agent.agent_id} to archive")
@@ -336,6 +354,47 @@ class Agent:
         if total_score > parent.average_score:
             self.successful_improvements += 1
             logger.info("Agent shows improvement over parent!")
+
+    def _build_score_delta_metadata(
+        self,
+        parent_agent,
+        child_scores: Dict[str, float],
+    ) -> Dict[str, Any]:
+        """Summarize child-vs-parent score movement for selection audits."""
+        parent_scores = parent_agent.benchmark_scores or {}
+        child_average = (
+            sum(child_scores.values()) / len(child_scores)
+            if child_scores
+            else 0.0
+        )
+        benchmark_deltas = {}
+        benchmark_improvements = {}
+        benchmark_regressions = {}
+
+        for benchmark in sorted(set(parent_scores) | set(child_scores)):
+            parent_score = parent_scores.get(benchmark, 0.0)
+            child_score = child_scores.get(benchmark, 0.0)
+            delta = child_score - parent_score
+            benchmark_deltas[benchmark] = delta
+            if delta > 0:
+                benchmark_improvements[benchmark] = delta
+            elif delta < 0:
+                benchmark_regressions[benchmark] = delta
+
+        average_delta = child_average - parent_agent.average_score
+        return {
+            "parent_average_score": parent_agent.average_score,
+            "child_average_score": child_average,
+            "average_delta": average_delta,
+            "benchmark_deltas": benchmark_deltas,
+            "benchmark_improvements": benchmark_improvements,
+            "benchmark_regressions": benchmark_regressions,
+            "has_average_regression": average_delta < 0,
+            "has_benchmark_regression": bool(benchmark_regressions),
+            "selection_non_regression_eligible": (
+                average_delta >= 0 and not benchmark_regressions
+            ),
+        }
 
     async def _initialize_base_agent(self):
         """Initialize the archive with the base agent."""
@@ -503,7 +562,10 @@ performance."""
             agent = Agent(agent_config)
 
             # Perform self-modification
-            result = await agent.solve_task(modification_task)
+            try:
+                result = await agent.solve_task(modification_task)
+            finally:
+                await self._close_agent(agent)
 
             if result.get('success', False):
                 # (a) If result['solution'] is a non-empty, parseable Python string,
@@ -596,6 +658,7 @@ performance."""
                         max_iterations=self.config['agents'].get('max_steps', 20),
                         sandbox_manager=self.sandbox_manager,
                         use_sandbox=self.use_sandbox,
+                        retain_conversation_history=False,
                     )
 
                     # Load the agent class from the file path using load_from_path,
@@ -613,12 +676,17 @@ performance."""
                     # Create agent instance
                     agent = AgentClass(agent_config)
 
-                    # Run benchmark — result.score is the pre-computed pass fraction
-                    result = await self.benchmark_runner.run_benchmark(
-                        agent=agent,
-                        benchmark_name=benchmark_name,
-                        verbose=False
-                    )
+                    try:
+                        # Run benchmark — result.score is the pre-computed pass fraction
+                        result = await self.benchmark_runner.run_benchmark(
+                            agent=agent,
+                            benchmark_name=benchmark_name,
+                            verbose=False
+                        )
+                    finally:
+                        await self._close_agent(agent)
+                        del agent
+                        gc.collect()
 
                 scores[benchmark_name] = result.score
                 logger.info(f"{benchmark_name} score: {result.score:.3f}")
@@ -626,6 +694,8 @@ performance."""
             except Exception as e:
                 logger.error(f"Error evaluating benchmark {benchmark_name}: {e}")
                 scores[benchmark_name] = 0.0
+            finally:
+                gc.collect()
 
         return scores
 

@@ -54,6 +54,7 @@ class AgentConfig:
     memory_limit: Optional[int] = None
     sandbox_manager: Optional[Any] = None
     use_sandbox: bool = False
+    retain_conversation_history: bool = True
 
 
 class Agent:
@@ -145,6 +146,18 @@ class Agent:
             timeout=self.config.tool_timeout,
         )
         self.tool_registry.register_tool(edit_tool)
+
+    async def close(self) -> None:
+        """Release provider resources held by one-shot agent instances."""
+        client = getattr(self.fm_handler, "client", None)
+        for method_name in ("close", "aclose"):
+            close = getattr(client, method_name, None)
+            if close is None:
+                continue
+            result = close()
+            if asyncio.iscoroutine(result):
+                await result
+            return
     
     async def solve_task(self, task: Task) -> Dict[str, Any]:
         """
@@ -187,23 +200,33 @@ class Agent:
             solution = await self._solve_with_steps(task)
             logger.info(f"Completed task solving with {len(self.conversation_history)} total messages")
             
+            conversation_history = (
+                [msg.content for msg in self.conversation_history]
+                if self.config.retain_conversation_history
+                else []
+            )
             return {
                 "success": True,
                 "solution": solution,
                 "task_id": task.task_id,
                 "agent_id": self.agent_id,
                 "steps": len(self.conversation_history),
-                "conversation_history": [msg.content for msg in self.conversation_history]
+                "conversation_history": conversation_history,
             }
             
         except Exception as e:
+            conversation_history = (
+                [msg.content for msg in self.conversation_history]
+                if self.config.retain_conversation_history
+                else []
+            )
             return {
                 "success": False,
                 "error": str(e),
                 "task_id": task.task_id,
                 "agent_id": self.agent_id,
                 "steps": len(self.conversation_history),
-                "conversation_history": [msg.content for msg in self.conversation_history]
+                "conversation_history": conversation_history,
             }
     
     async def _solve_with_steps(self, task: Task) -> str:
@@ -314,7 +337,7 @@ class Agent:
                 logger.info(f"Task complete after Step {step + 1}")
                 # Extract Python code from the response
                 solution = self._extract_code_solution(response.content)
-                return solution
+                return solution or self._read_workspace_solution(task)
             
             # If no tools and not complete, agent might be stuck
             if not response.tool_calls:
@@ -332,7 +355,34 @@ class Agent:
                     break
         
         logger.warning(f"Reached max steps ({max_steps}) without task completion")
-        return solution
+        return solution or self._read_workspace_solution(task)
+
+    def _read_workspace_solution(self, task: Optional[Task] = None) -> str:
+        """Return solution.py from the working directory when tool use produced one."""
+        solution_path = self.working_directory / "solution.py"
+        try:
+            if solution_path.is_file():
+                solution = solution_path.read_text(encoding="utf-8")
+                if solution.strip():
+                    logger.info(
+                        "Using tool-written solution.py after task did not return inline code"
+                    )
+                    return solution
+            if task and (task.metadata or {}).get("benchmark"):
+                for candidate_name in ("solve.py", "main.py"):
+                    candidate = self.working_directory / candidate_name
+                    if candidate.is_file():
+                        solution = candidate.read_text(encoding="utf-8")
+                        if solution.strip():
+                            logger.info(
+                                "Using tool-written %s after solution.py was not found",
+                                candidate_name,
+                            )
+                            return solution
+
+        except OSError as exc:
+            logger.warning("Could not read tool-written benchmark solution: %s", exc)
+        return ""
     
     async def _execute_tool_calls(self, tool_calls: List[ToolCall]) -> None:
         """
@@ -420,12 +470,26 @@ Your approach should be:
 4. Test your implementation carefully
 5. Refine as needed
 
+BENCHMARK SOLUTION FILE:
+========================
+- When solving benchmark programming tasks, write the final program to
+  `solution.py` in the current working directory.
+- Do not write contest solutions to `solve.py`, `main.py`, or an absolute
+  `/tmp/...` path unless you also copy the final code into `solution.py`.
+- The evaluator can recover `solution.py` even if you hit the step limit, so
+  create or update that file early.
+
 TESTING GUIDELINES:
 ==================
 - Focus on the examples provided in the task description
 - DO NOT invent additional test cases with your own expected outputs
 - If you want to test edge cases, clearly state you're exploring, don't assume the outputs
 - Your primary goal is to satisfy the given examples and requirements
+- For stdin/stdout programs, prefer testing with a quoted heredoc, for example:
+  `python3 solution.py << 'EOF'`
+  then the sample input, then `EOF` on its own line.
+- Avoid shell pipelines and semicolon-packed one-liners when testing; the bash
+  tool intentionally blocks broad shell composition for safety.
 
 IMPORTANT: Task Completion Process
 ==================================
@@ -435,7 +499,7 @@ You will have MULTIPLE opportunities to interact during task solving:
 - Only declare the task complete AFTER you've verified your solution works
 
 CRITICAL COMPLETION REQUIREMENT:
-⚠️ WITHOUT PROPER COMPLETION SIGNALING, YOUR SOLUTION WILL NOT BE EVALUATED! ⚠️
+⚠️ WITHOUT PROPER COMPLETION SIGNALING, YOUR INLINE SOLUTION MAY NOT BE EVALUATED! ⚠️
 
 When you have VERIFIED your solution works correctly, your response MUST:
 1. Include the solution code in a markdown code block
@@ -466,7 +530,7 @@ REMEMBER:
 - You'll see tool results before declaring completion
 - Only say "Task complete" AFTER verifying your solution works
 - The completion phrase must be at the END of your response
-- Your code can be perfect, but without the completion signal, it scores 0
+- Your code can be perfect, but without `solution.py` or the completion signal, it may score 0
 
 Always be precise, methodical, and thorough in your work."""
         

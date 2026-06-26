@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "total_generations": 1,
+    "runtime_hours": 0.82887012,
+    "total_agents_created": 1,
+    "successful_improvements": 0,
+    "improvement_rate": 0.0,
+    "final_archive_size": 2
+  },
+  "top_agents": [
+    {
+      "agent_id": "b899a99f-377a-47b5-86c5-d89eda3e3e8b",
+      "score": 0.5416666666666666,
+      "generation": 0,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_a": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_a": 1.0,
+        "livecodebench_abc389_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_c": 1.0,
+        "livecodebench_abc391_d": 0.0,
+        "livecodebench_abc392_d": 0.0,
+        "livecodebench_abc387_f": 0.0,
+        "livecodebench_abc388_g": 0.0,
+        "livecodebench_abc388_f": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_g": 0.0,
+        "livecodebench_abc389_f": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 1.0
+      }
+    },
+    {
+      "agent_id": "34e0ad9e-64e9-4fc2-a087-400741446cae",
+      "score": 0.5,
+      "generation": 1,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_a": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_a": 1.0,
+        "livecodebench_abc389_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_c": 1.0,
+        "livecodebench_abc391_d": 0.0,
+        "livecodebench_abc392_d": 0.0,
+        "livecodebench_abc387_f": 0.0,
+        "livecodebench_abc388_g": 0.0,
+        "livecodebench_abc388_f": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_g": 0.0,
+        "livecodebench_abc389_f": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    }
+  ],
+  "performance_trajectory": []
+}

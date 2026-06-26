@@ -118,6 +118,20 @@ class TestAgentInit:
         agent = Agent(cfg)
         assert isinstance(agent.fm_handler, OpenAICompatibleHandler)
 
+    async def test_close_releases_provider_client(self, tmp_path):
+        agent = Agent(_make_config(tmp_path))
+        closed = {}
+
+        class FakeClient:
+            async def close(self):
+                closed["value"] = True
+
+        agent.fm_handler.client = FakeClient()
+
+        await agent.close()
+
+        assert closed["value"] is True
+
     def test_unsupported_provider_raises(self, tmp_path):
         cfg = AgentConfig(
             agent_id="x",
@@ -241,6 +255,141 @@ class TestAgentSolveTask:
 
         assert result["success"] is True
         assert mock_gc.await_count == 2
+
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
+    async def test_solve_task_returns_tool_written_solution_at_max_steps(self, mock_gc):
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 2
+        agent = Agent(cfg)
+        solution = "print('ok')\n"
+        mock_gc.side_effect = [
+            CompletionResponse(
+                content="I will write the solution.",
+                tool_calls=[
+                    ToolCall(
+                        tool_name="edit",
+                        parameters={
+                            "action": "write",
+                            "file_path": "solution.py",
+                            "content": solution,
+                        },
+                        call_id="toolu_write",
+                    )
+                ],
+                finish_reason="tool_use",
+            ),
+            CompletionResponse(
+                content="I will keep checking.",
+                tool_calls=[
+                    ToolCall(
+                        tool_name="bash",
+                        parameters={"command": "python solution.py"},
+                        call_id="toolu_run",
+                    )
+                ],
+                finish_reason="tool_use",
+            ),
+        ]
+
+        task = Task(task_id="tool_solution", description="Write solution.py")
+        result = await agent.solve_task(task)
+
+        assert result["success"] is True
+        assert result["solution"] == solution
+        assert mock_gc.await_count == 2
+
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
+    async def test_solve_task_recovers_common_benchmark_solution_filename(self, mock_gc):
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 1
+        agent = Agent(cfg)
+        solution = "print('from solve')\n"
+        mock_gc.return_value = CompletionResponse(
+            content="I will write the solution.",
+            tool_calls=[
+                ToolCall(
+                    tool_name="edit",
+                    parameters={
+                        "action": "write",
+                        "file_path": "solve.py",
+                        "content": solution,
+                    },
+                    call_id="toolu_write",
+                )
+            ],
+            finish_reason="tool_use",
+        )
+
+        task = Task(
+            task_id="benchmark_tool_solution",
+            description="Write a program",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        result = await agent.solve_task(task)
+
+        assert result["success"] is True
+        assert result["solution"] == solution
+
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
+    async def test_solve_task_does_not_recover_arbitrary_benchmark_python_file(self, mock_gc):
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 1
+        agent = Agent(cfg)
+        mock_gc.return_value = CompletionResponse(
+            content="I will explore the search space.",
+            tool_calls=[
+                ToolCall(
+                    tool_name="edit",
+                    parameters={
+                        "action": "write",
+                        "file_path": "explore.py",
+                        "content": "print('scratch')\n",
+                    },
+                    call_id="toolu_write",
+                )
+            ],
+            finish_reason="tool_use",
+        )
+
+        task = Task(
+            task_id="benchmark_scratch_file",
+            description="Write a program",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        result = await agent.solve_task(task)
+
+        assert result["success"] is True
+        assert result["solution"] == ""
+
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
+    async def test_solve_task_does_not_recover_agent_file_for_self_modification(self, mock_gc):
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 1
+        agent = Agent(cfg)
+        (self.tmp / "agent.py").write_text("print('not a benchmark answer')\n")
+        mock_gc.return_value = CompletionResponse(
+            content="I edited myself.",
+            tool_calls=[],
+            finish_reason="stop",
+        )
+
+        task = Task(task_id="self_modify", description="Modify agent.py")
+        result = await agent.solve_task(task)
+
+        assert result["success"] is True
+        assert result["solution"] == ""
 
 
 # ---------------------------------------------------------------------------

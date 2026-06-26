@@ -47,6 +47,23 @@ def test_estimate_live_run_cost_rejects_zero_price():
         )
 
 
+def test_estimate_live_run_cost_allows_explicit_zero_pricing():
+    project_root = Path(__file__).resolve().parents[2]
+
+    estimate = estimate_live_run_cost(
+        config_path=project_root / "config" / "live_score_movement.yaml",
+        input_price_per_mtok=0,
+        output_price_per_mtok=0,
+        assumed_input_tokens_per_call=50_000,
+        max_budget=0,
+        allow_zero_pricing=True,
+    )
+
+    assert estimate["estimated_total_cost_usd"] == 0
+    assert estimate["within_budget"] is True
+    assert estimate["allow_zero_pricing"] is True
+
+
 def test_estimate_live_run_cost_cli_fails_over_budget(capsys):
     args = _build_parser().parse_args([
         "--input-price-per-mtok",
@@ -84,3 +101,25 @@ def test_estimate_live_run_cost_cli_json(capsys):
     assert exit_code == 0
     assert '"status": "ok"' in captured.out
     assert '"request_ceiling": 25' in captured.out
+
+
+def test_estimate_live_run_cost_cli_allows_zero_pricing(capsys):
+    args = _build_parser().parse_args([
+        "--input-price-per-mtok",
+        "0",
+        "--output-price-per-mtok",
+        "0",
+        "--assumed-input-tokens-per-call",
+        "50000",
+        "--allow-zero-pricing",
+        "--max-budget",
+        "0",
+        "--json",
+    ])
+
+    exit_code = _main(args)
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert '"estimated_total_cost_usd": 0.0' in captured.out
+    assert '"allow_zero_pricing": true' in captured.out

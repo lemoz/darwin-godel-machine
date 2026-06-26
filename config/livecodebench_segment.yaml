@@ -1,0 +1,63 @@
+# LiveCodeBench-lite segment generator.
+#
+# This config selects a bounded, balanced release_v6 segment. The generator
+# streams the upstream JSONL, decodes public plus private tests, and writes DGM
+# benchmark YAML files under .dgm-live-runs/ so the large external dataset is not
+# committed to the repository.
+
+purpose: livecodebench_segment
+approval_required: true
+live_calls_performed: 0
+
+source:
+  dataset: livecodebench/code_generation_lite
+  dataset_url: https://huggingface.co/datasets/livecodebench/code_generation_lite
+  source_file: test6.jsonl
+  version_label: release_v6
+  decoder_reference: https://github.com/livecodebench/livecodebench/blob/main/lcb_runner/benchmarks/code_generation.py
+  download_timeout: 120
+
+selection:
+  segment_id: release_v6_atcoder_balanced_24
+  output_dir: .dgm-live-runs/livecodebench-segment/benchmarks
+  manifest_path: .dgm-live-runs/livecodebench-segment/manifest.json
+  per_problem_timeout_seconds: 10
+  question_ids:
+    # 8 easy
+    - abc387_b
+    - abc387_a
+    - abc388_b
+    - abc388_a
+    - abc389_b
+    - abc389_a
+    - abc390_a
+    - abc390_b
+    # 8 medium
+    - abc387_c
+    - abc388_d
+    - abc388_c
+    - abc389_d
+    - abc390_d
+    - abc390_c
+    - abc391_d
+    - abc392_d
+    # 8 hard
+    - abc387_f
+    - abc388_g
+    - abc388_f
+    - abc388_e
+    - abc389_g
+    - abc389_f
+    - abc389_e
+    - abc390_e
+
+gates:
+  min_problem_count: 24
+  required_difficulties:
+    - easy
+    - medium
+    - hard
+  min_total_tests: 1000
+  min_private_tests: 900
+  require_stdin_only: true
+  prompt_policy: public_examples_only

@@ -5,6 +5,8 @@ All async tests use pytest-asyncio (asyncio_mode = auto in pytest.ini).
 """
 
 import json
+import asyncio
+import os
 import pytest
 import shutil
 import tempfile
@@ -117,6 +119,34 @@ class TestBashTool:
             "Expected path escape to be blocked"
         )
 
+    async def test_quoted_heredoc_body_can_contain_semicolon(self, tmp_path):
+        tool = BashTool(working_directory=str(tmp_path), timeout=5)
+        result = await tool.execute({
+            "command": "python3 - << 'PY'\nprint('a;b')\nPY",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "a;b" in result.output
+
+    async def test_simple_stdin_pipe_to_solution_is_allowed(self, tmp_path):
+        (tmp_path / "solution.py").write_text("import sys\nprint(sys.stdin.read().strip())\n")
+        tool = BashTool(working_directory=str(tmp_path), timeout=5)
+        result = await tool.execute({
+            "command": "printf 'sample input' | python3 solution.py",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert "sample input" in result.output
+
+    async def test_pipe_to_non_solution_stays_blocked(self, tmp_path):
+        tool = BashTool(working_directory=str(tmp_path), timeout=5)
+        result = await tool.execute({
+            "command": "printf 'sample input' | python3 other.py",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "Pattern '|'" in (result.error or "")
+
     async def test_blocked_commands_rejected(self):
         for cmd in ["sudo ls", "kill 1", "rm -rf /"]:
             result = await self.tool.execute({"command": cmd})
@@ -133,6 +163,24 @@ class TestBashTool:
         assert result.status == ToolExecutionStatus.SUCCESS
         assert "sk-test-secret" not in result.output
         assert "visible" in result.output
+
+    async def test_local_command_uses_resource_limits(self, tmp_path, monkeypatch):
+        captured = {}
+        original_create = asyncio.create_subprocess_shell
+
+        async def wrapped_create(*args, **kwargs):
+            captured["preexec_fn"] = kwargs.get("preexec_fn")
+            return await original_create(*args, **kwargs)
+
+        monkeypatch.setattr(asyncio, "create_subprocess_shell", wrapped_create)
+
+        tool = BashTool(working_directory=str(tmp_path), timeout=5)
+        result = await tool.execute({"command": "echo limited"})
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        if os.name == "posix":
+            assert captured["preexec_fn"] is not None
+            assert captured["preexec_fn"].__name__ == "_apply_bash_process_resource_limits"
 
     async def test_uses_sandbox_manager_when_enabled(self, tmp_path):
         class FakeSandboxManager:

@@ -1,0 +1,203 @@
+{
+  "summary": {
+    "total_generations": 10,
+    "runtime_hours": 1.6630188841666667,
+    "total_agents_created": 10,
+    "successful_improvements": 2,
+    "improvement_rate": 0.2,
+    "final_archive_size": 11
+  },
+  "top_agents": [
+    {
+      "agent_id": "b02fbd88-bdc1-4a74-9d47-01d46a312342",
+      "score": 0.5833333333333334,
+      "generation": 1,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 1.0
+      }
+    },
+    {
+      "agent_id": "06d6be2d-f224-4712-9446-e3856b12b3eb",
+      "score": 0.5833333333333334,
+      "generation": 2,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc390_d": 1.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    },
+    {
+      "agent_id": "c781c0b6-da6b-47f6-99d8-dde099553c0f",
+      "score": 0.5,
+      "generation": 1,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 1.0
+      }
+    },
+    {
+      "agent_id": "49eaebed-3f98-4e05-977b-34c154cf0692",
+      "score": 0.5,
+      "generation": 2,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 1.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    },
+    {
+      "agent_id": "8c630aad-2587-4751-bd3f-6bba7733f17d",
+      "score": 0.4166666666666667,
+      "generation": 0,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    },
+    {
+      "agent_id": "efc9b7ab-d447-428f-a5ba-b0f47f83d028",
+      "score": 0.4166666666666667,
+      "generation": 2,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 1.0
+      }
+    },
+    {
+      "agent_id": "46997da2-81db-491b-a4c1-c6bd6afa28cf",
+      "score": 0.4166666666666667,
+      "generation": 2,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    },
+    {
+      "agent_id": "97e71a49-7edd-42ad-9ce6-b4eecb53d8e6",
+      "score": 0.4166666666666667,
+      "generation": 2,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    },
+    {
+      "agent_id": "fdef9055-ef1f-49f3-aa58-6c0168fd9c73",
+      "score": 0.4166666666666667,
+      "generation": 2,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    },
+    {
+      "agent_id": "b7c86a5a-fd70-4377-b55b-52de2c75ef5a",
+      "score": 0.4166666666666667,
+      "generation": 2,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    }
+  ],
+  "performance_trajectory": []
+}

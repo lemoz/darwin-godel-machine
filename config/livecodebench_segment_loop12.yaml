@@ -1,0 +1,51 @@
+# LiveCodeBench loop-12 segment generator.
+#
+# This selects a smaller real LiveCodeBench-derived slice for repeated DGM
+# self-modification loops. It keeps enough easy tasks to detect basic agent
+# breakage, enough medium tasks to expose improvement headroom, and a few hard
+# tasks that previously showed useful regression signal.
+
+purpose: livecodebench_segment
+approval_required: true
+live_calls_performed: 0
+
+source:
+  dataset: livecodebench/code_generation_lite
+  dataset_url: https://huggingface.co/datasets/livecodebench/code_generation_lite
+  source_file: test6.jsonl
+  version_label: release_v6
+  decoder_reference: https://github.com/livecodebench/livecodebench/blob/main/lcb_runner/benchmarks/code_generation.py
+  download_timeout: 120
+
+selection:
+  segment_id: release_v6_atcoder_loop12
+  output_dir: .dgm-live-runs/livecodebench-loop12/benchmarks
+  manifest_path: .dgm-live-runs/livecodebench-loop12/manifest.json
+  per_problem_timeout_seconds: 10
+  question_ids:
+    # 4 easy
+    - abc387_b
+    - abc388_b
+    - abc389_a
+    - abc390_b
+    # 5 medium
+    - abc387_c
+    - abc388_d
+    - abc388_c
+    - abc389_d
+    - abc390_d
+    # 3 hard
+    - abc388_e
+    - abc389_e
+    - abc390_e
+
+gates:
+  min_problem_count: 12
+  required_difficulties:
+    - easy
+    - medium
+    - hard
+  min_total_tests: 400
+  min_private_tests: 350
+  require_stdin_only: true
+  prompt_policy: public_examples_only

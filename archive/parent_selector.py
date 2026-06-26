@@ -23,11 +23,22 @@ class ParentSelector:
     Constructor args:
         lam: lambda parameter for the sigmoid (default 10)
         alpha_0: midpoint of the sigmoid (default 0.5)
+        require_non_regression: when true, exclude children that regress
+            relative to their parent on average score or any benchmark score.
+        regression_tolerance: small tolerance for floating-point score deltas.
     """
 
-    def __init__(self, lam: float = 10.0, alpha_0: float = 0.5):
+    def __init__(
+        self,
+        lam: float = 10.0,
+        alpha_0: float = 0.5,
+        require_non_regression: bool = False,
+        regression_tolerance: float = 0.0,
+    ):
         self.lam = lam
         self.alpha_0 = alpha_0
+        self.require_non_regression = require_non_regression
+        self.regression_tolerance = regression_tolerance
 
     # ------------------------------------------------------------------
     # Public API
@@ -50,7 +61,11 @@ class ParentSelector:
             List of selected ArchivedAgent objects (may be shorter than n_parents
             if the archive has fewer valid agents).
         """
-        eligible = [a for a in archive.agents.values() if a.is_valid]
+        eligible = [
+            a
+            for a in archive.agents.values()
+            if a.is_valid and self._passes_regression_filter(a, archive)
+        ]
         if not eligible:
             return []
 
@@ -111,3 +126,29 @@ class ParentSelector:
             pool = [(a, p) for i, (a, p) in enumerate(pool) if i != chosen_idx]
 
         return selected
+
+    def _passes_regression_filter(
+        self,
+        agent: ArchivedAgent,
+        archive: AgentArchive,
+    ) -> bool:
+        """Return whether an agent can be selected under the regression gate."""
+        if not self.require_non_regression:
+            return True
+        if not agent.parent_id:
+            return True
+
+        parent = archive.get_agent(agent.parent_id)
+        if parent is None:
+            return True
+
+        tolerance = self.regression_tolerance
+        if agent.average_score < parent.average_score - tolerance:
+            return False
+
+        for benchmark, parent_score in parent.benchmark_scores.items():
+            child_score = agent.benchmark_scores.get(benchmark, 0.0)
+            if child_score < parent_score - tolerance:
+                return False
+
+        return True

@@ -6,6 +6,7 @@ providers that expose the OpenAI Chat Completions API, such as OpenRouter or
 Moonshot/Kimi.
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -101,7 +102,24 @@ class OpenAICompatibleHandler(ApiHandler):
                 f"(timeout: {self.timeout}s, model: {self.model}, base_url: {self.base_url})"
             )
             start_time = time.time()
-            response = await self.client.chat.completions.create(**api_params)
+            try:
+                response = await asyncio.wait_for(
+                    self.client.chat.completions.create(**api_params),
+                    timeout=float(self.timeout),
+                )
+            except asyncio.TimeoutError as exc:
+                elapsed_time = time.time() - start_time
+                logger.warning(
+                    "OpenAI-compatible API request timed out after %.2fs "
+                    "(configured timeout: %ss, model: %s)",
+                    elapsed_time,
+                    self.timeout,
+                    self.model,
+                )
+                raise ApiError(
+                    f"OpenAI-compatible request timed out after {self.timeout}s",
+                    provider="openai_compatible",
+                ) from exc
             elapsed_time = time.time() - start_time
             logger.info(
                 "OpenAI-compatible API request completed successfully "
@@ -109,6 +127,8 @@ class OpenAICompatibleHandler(ApiHandler):
             )
             return self.parse_response(response)
 
+        except ApiError:
+            raise
         except OpenAIAuthError as exc:
             raise AuthenticationError(
                 f"OpenAI-compatible authentication failed: {str(exc)}",
@@ -303,7 +323,7 @@ class OpenAICompatibleHandler(ApiHandler):
         if raw_arguments is None:
             return {}
         if isinstance(raw_arguments, dict):
-            return raw_arguments
+            return OpenAICompatibleHandler._normalize_tool_arguments(raw_arguments)
         if not isinstance(raw_arguments, str):
             return {"arguments": raw_arguments}
         try:
@@ -311,5 +331,28 @@ class OpenAICompatibleHandler(ApiHandler):
         except json.JSONDecodeError:
             return {"arguments": raw_arguments}
         if isinstance(parsed, dict):
-            return parsed
+            return OpenAICompatibleHandler._normalize_tool_arguments(parsed)
         return {"arguments": parsed}
+
+    @staticmethod
+    def _normalize_tool_arguments(parsed: Dict[str, Any]) -> Dict[str, Any]:
+        """Unwrap provider responses that nest tool JSON under one wrapper key."""
+        if len(parsed) != 1:
+            return parsed
+
+        wrapper_key = next(iter(parsed))
+        if wrapper_key not in {"arguments", "input", "parameters"}:
+            return parsed
+
+        wrapped = parsed[wrapper_key]
+        if isinstance(wrapped, dict):
+            return wrapped
+        if not isinstance(wrapped, str):
+            return parsed
+
+        try:
+            inner = json.loads(wrapped.strip() or "{}")
+        except json.JSONDecodeError:
+            return parsed
+
+        return inner if isinstance(inner, dict) else parsed

@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+import asyncio
 import pytest
 
 from agent.fm_interface.api_handler import (
@@ -173,6 +174,44 @@ def test_parse_response_keeps_invalid_tool_arguments_as_raw_text():
     assert parsed.tool_calls[0].parameters == {"arguments": "not-json"}
 
 
+def test_parse_response_unwraps_single_arguments_tool_wrapper():
+    h = _handler()
+    response = {
+        "model": "test/model",
+        "choices": [
+            {
+                "finish_reason": "tool_calls",
+                "message": {
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "id": "call_wrapped",
+                            "function": {
+                                "name": "edit",
+                                "arguments": (
+                                    '{"arguments": " {'
+                                    '\\"action\\": \\"write\\", '
+                                    '\\"file_path\\": \\"agent.py\\", '
+                                    '\\"content\\": \\"x\\"'
+                                    '}"}'
+                                ),
+                            },
+                        }
+                    ],
+                },
+            }
+        ],
+    }
+
+    parsed = h.parse_response(response)
+
+    assert parsed.tool_calls[0].parameters == {
+        "action": "write",
+        "file_path": "agent.py",
+        "content": "x",
+    }
+
+
 async def test_get_completion_preserves_zero_temperature_and_extra_body():
     h = _handler(extra_body={"reasoning": {"enabled": True}})
     fake_response = {
@@ -199,6 +238,20 @@ async def test_get_completion_preserves_zero_temperature_and_extra_body():
     assert kwargs["temperature"] == 0.0
     assert kwargs["max_tokens"] == 12
     assert kwargs["extra_body"] == {"reasoning": {"enabled": True}}
+
+
+async def test_get_completion_enforces_outer_timeout():
+    h = _handler(timeout=0.01)
+
+    async def slow_create(**kwargs):
+        await asyncio.sleep(1)
+
+    with patch.object(h.client.chat.completions, "create", side_effect=slow_create):
+        request = CompletionRequest(
+            messages=[Message(role=MessageRole.USER, content="hi")],
+        )
+        with pytest.raises(ApiError, match="timed out after"):
+            await h.get_completion(request)
 
 
 def test_validate_config_rejects_bad_base_url():

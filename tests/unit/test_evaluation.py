@@ -12,6 +12,7 @@ import yaml
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import evaluation.benchmark_runner as benchmark_runner_module
 from evaluation.benchmark_runner import BenchmarkRunner, BenchmarkTask, BenchmarkResult
 from evaluation.scorer import (
     BenchmarkScorer, BinaryScorer, PartialCreditScorer,
@@ -46,6 +47,27 @@ def _make_task(tmp_path: Path, name: str = "add_task") -> BenchmarkTask:
     return BenchmarkTask.from_config(str(p))
 
 
+def _make_stdin_task(tmp_path: Path, name: str = "stdin_sum_task") -> BenchmarkTask:
+    """Write a stdin/stdout benchmark config and return a BenchmarkTask."""
+    config = {
+        "name": name,
+        "description": "Sum numbers from stdin",
+        "task_prompt": "Read integers from stdin and print their sum.",
+        "test_cases": [
+            {
+                "testtype": "stdin",
+                "inputs": ["3\n1 2 3\n", "2\n4 5\n"],
+                "expected_outputs": ["6\n", "9\n"],
+            }
+        ],
+        "timeout": 10,
+        "scoring_method": "partial",
+    }
+    p = tmp_path / f"{name}.yaml"
+    p.write_text(yaml.dump(config))
+    return BenchmarkTask.from_config(str(p))
+
+
 def _make_runner(tmp_path: Path, task: BenchmarkTask) -> BenchmarkRunner:
     """Build a BenchmarkRunner whose benchmarks dir contains only task."""
     bdir = tmp_path / "benchmarks"
@@ -60,6 +82,35 @@ def _make_runner(tmp_path: Path, task: BenchmarkTask) -> BenchmarkRunner:
     }
     (bdir / f"{task.name}.yaml").write_text(yaml.dump(cfg))
     return BenchmarkRunner(benchmarks_dir=str(bdir), use_sandbox=False)
+
+
+def test_runner_loads_only_enabled_benchmarks(tmp_path):
+    bdir = tmp_path / "benchmarks"
+    bdir.mkdir()
+    for name in ("keep_task", "skip_task"):
+        config = {
+            "name": name,
+            "description": name,
+            "task_prompt": name,
+            "test_cases": [
+                {
+                    "function_name": "f",
+                    "inputs": ["1"],
+                    "expected_outputs": ["1"],
+                }
+            ],
+            "timeout": 10,
+            "scoring_method": "pass_fail",
+        }
+        (bdir / f"{name}.yaml").write_text(yaml.dump(config))
+
+    runner = BenchmarkRunner(
+        benchmarks_dir=str(bdir),
+        use_sandbox=False,
+        enabled_benchmarks=["keep_task"],
+    )
+
+    assert set(runner.benchmarks) == {"keep_task"}
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +157,73 @@ class TestBuildTestScript:
         data = json.loads(result.stdout.strip().split("\n")[-1])
         assert data["success"] is True
 
+    def test_stdin_solution_script_produces_success_json(self, tmp_path):
+        import subprocess, json
+        solution_file = str(tmp_path / "stdin_correct.py")
+        Path(solution_file).write_text(
+            "import sys\n"
+            "def main():\n"
+            "    data = list(map(int, sys.stdin.read().split()))\n"
+            "    print(sum(data[1:]))\n"
+            "if __name__ == '__main__':\n"
+            "    main()\n"
+        )
+        script = BenchmarkRunner._build_stdin_test_script(
+            solution_file, "3\n1 2 3\n", "6\n", 0, 10
+        )
+        result = subprocess.run(
+            ["python3", "-c", script],
+            capture_output=True, text=True, timeout=10
+        )
+        data = json.loads(result.stdout.strip().split("\n")[-1])
+        assert data["success"] is True
+
+    def test_stdin_solution_script_limits_child_process_memory(self, tmp_path):
+        solution_file = str(tmp_path / "stdin_correct.py")
+        Path(solution_file).write_text("print('ok')\n")
+
+        script = BenchmarkRunner._build_stdin_test_script(
+            solution_file,
+            "ignored\n",
+            "ok\n",
+            0,
+            10,
+        )
+
+        assert "_limit_child_process_resources" in script
+        assert "preexec_fn=_limit_child_process_resources" in script
+        assert "_limit_child_process_by_pid" in script
+        assert "_read_child_memory_bytes" in script
+
+    def test_stdin_solution_script_rejects_oversized_stdout(self, tmp_path, monkeypatch):
+        import subprocess, json
+
+        monkeypatch.setattr(
+            benchmark_runner_module,
+            "_STDIN_OUTPUT_CAPTURE_LIMIT_BYTES",
+            128,
+        )
+        solution_file = str(tmp_path / "stdin_too_loud.py")
+        Path(solution_file).write_text("print('x' * 1024)\n")
+
+        script = BenchmarkRunner._build_stdin_test_script(
+            solution_file,
+            "ignored\n",
+            "ok\n",
+            0,
+            10,
+        )
+        result = subprocess.run(
+            ["python3", "-c", script],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        data = json.loads(result.stdout.strip().split("\n")[-1])
+        assert data["success"] is False
+        assert "Output too large" in data["error"]
+
 
 # ---------------------------------------------------------------------------
 # BenchmarkRunner._run_test_case async tests
@@ -142,6 +260,140 @@ class TestRunTestCase:
         assert result["success"] is False
         assert "Invalid function_name" in result.get("error", "")
 
+    async def test_stdin_solution_all_pass(self, tmp_path):
+        task = _make_stdin_task(tmp_path)
+        runner = _make_runner(tmp_path, task)
+        solution = (
+            "import sys\n"
+            "def main():\n"
+            "    data = list(map(int, sys.stdin.read().split()))\n"
+            "    print(sum(data[1:]))\n"
+            "if __name__ == '__main__':\n"
+            "    main()\n"
+        )
+        result = await runner._run_test_case(solution, task.test_cases[0], task)
+        assert result["success"] is True
+        assert result["passed"] == result["total"] == 2
+
+    async def test_stdin_wrong_solution_fails(self, tmp_path):
+        task = _make_stdin_task(tmp_path)
+        runner = _make_runner(tmp_path, task)
+        solution = (
+            "import sys\n"
+            "data = list(map(int, sys.stdin.read().split()))\n"
+            "print(sum(data))\n"
+        )
+        result = await runner._run_test_case(solution, task.test_cases[0], task)
+        assert result["success"] is False
+        assert result["passed"] == 0
+        assert result["total"] == 2
+        assert any(
+            "Wrong answer" in (item.get("error") or "")
+            for item in result["individual_results"]
+        )
+
+    async def test_pass_fail_stdin_short_circuits_after_first_failure(self, tmp_path):
+        task = BenchmarkTask(
+            name="stdin_pass_fail",
+            description="Print exact output",
+            task_prompt="Read stdin and print the expected output.",
+            test_cases=[{
+                "testtype": "stdin",
+                "inputs": ["first\n", "second\n"],
+                "expected_outputs": ["expected\n", "expected\n"],
+            }],
+            timeout=10,
+            validation_code="",
+            scoring_method="pass_fail",
+        )
+        runner = _make_runner(tmp_path, task)
+
+        result = await runner._run_test_case(
+            "print('wrong')\n",
+            task.test_cases[0],
+            task,
+        )
+
+        assert result["success"] is False
+        assert result["passed"] == 0
+        assert result["total"] == 1
+        assert result["short_circuited"] is True
+
+    async def test_stdin_subset_dp_resource_guard_short_circuits(self, tmp_path):
+        task = BenchmarkTask(
+            name="stdin_subset_dp_guard",
+            description="Avoid memory-heavy subset DP",
+            task_prompt="Solve from stdin.",
+            test_cases=[{
+                "testtype": "stdin",
+                "inputs": ["12\n" + " ".join(str(i) for i in range(12)) + "\n"],
+                "expected_outputs": ["1\n"],
+            }],
+            timeout=10,
+            validation_code="",
+            scoring_method="pass_fail",
+        )
+        runner = _make_runner(tmp_path, task)
+        solution = """
+def solve():
+    N = 12
+    M = 1 << N
+    dp = [set() for _ in range(M)]
+    for mask in range(1, M):
+        sub = mask
+        while sub:
+            if sub & 1:
+                dp[mask].update(x for x in dp[mask ^ sub])
+            sub = (sub - 1) & mask
+    print(len(dp[-1]))
+
+solve()
+"""
+
+        result = await runner._run_test_case(solution, task.test_cases[0], task)
+
+        assert result["success"] is False
+        assert result["passed"] == 0
+        assert result["total"] == 1
+        assert result["short_circuited"] is True
+        assert "Resource guard rejected solution" in result["individual_results"][0]["error"]
+
+    async def test_stdin_decimal_output_matching(self, tmp_path):
+        task = BenchmarkTask(
+            name="stdin_decimal",
+            description="Print decimals",
+            task_prompt="Print numeric values.",
+            test_cases=[{
+                "testtype": "stdin",
+                "inputs": ["ignored\n"],
+                "expected_outputs": ["1.00 2\n"],
+            }],
+            timeout=10,
+            validation_code="",
+            scoring_method="partial",
+        )
+        runner = _make_runner(tmp_path, task)
+        solution = "print('1.0 2.00')\n"
+        result = await runner._run_test_case(solution, task.test_cases[0], task)
+        assert result["success"] is True
+
+    async def test_stdin_ignores_invalid_function_name(self, tmp_path):
+        task = _make_stdin_task(tmp_path)
+        runner = _make_runner(tmp_path, task)
+        test_case = {
+            "testtype": "stdin",
+            "function_name": "not; a; function",
+            "inputs": ["1\n7\n"],
+            "expected_outputs": ["7\n"],
+        }
+        solution = (
+            "import sys\n"
+            "data = list(map(int, sys.stdin.read().split()))\n"
+            "print(data[-1])\n"
+        )
+        result = await runner._run_test_case(solution, test_case, task)
+        assert result["success"] is True
+
     async def test_timeout_kills_slow_solution(self, tmp_path):
         task = _make_task(tmp_path)
         # Override timeout to 1 second
@@ -170,6 +422,28 @@ class TestRunTestCase:
         assert any("Timeout" in (e or "") or "timeout" in (e or "") for e in errors), (
             f"Expected timeout error, got: {errors}"
         )
+
+    async def test_direct_subprocess_uses_resource_limits(self, tmp_path, monkeypatch):
+        task = _make_stdin_task(tmp_path)
+        runner = _make_runner(tmp_path, task)
+        captured = {}
+        original_create = asyncio.create_subprocess_exec
+
+        async def wrapped_create(*args, **kwargs):
+            captured["preexec_fn"] = kwargs.get("preexec_fn")
+            return await original_create(*args, **kwargs)
+
+        monkeypatch.setattr(asyncio, "create_subprocess_exec", wrapped_create)
+
+        result = await runner._run_test_case(
+            "import sys\nprint(sum(map(int, sys.stdin.read().split()[1:])))\n",
+            task.test_cases[0],
+            task,
+        )
+
+        assert result["success"] is True
+        assert captured["preexec_fn"] is not None
+        assert captured["preexec_fn"].__name__ == "_apply_test_process_resource_limits"
 
     async def test_uses_sandbox_manager_when_available(self, tmp_path):
         task = _make_task(tmp_path)
@@ -214,6 +488,50 @@ class TestRunTestCase:
         assert result["passed"] == result["total"] == 3
         assert len(fake_sandbox.calls) == 3
         assert all(call["command"].startswith("python test_case_") for call in fake_sandbox.calls)
+
+    async def test_stdin_uses_sandbox_manager_when_available(self, tmp_path):
+        task = _make_stdin_task(tmp_path)
+
+        class FakeConfig:
+            working_dir = "/home/dgm_agent/workspace"
+
+        class FakeSandboxManager:
+            config = FakeConfig()
+
+            def __init__(self):
+                self.calls = []
+
+            def is_docker_available(self):
+                return True
+
+            async def execute_in_sandbox(self, command, workspace_path, timeout, **kwargs):
+                self.calls.append({
+                    "command": command,
+                    "workspace_path": workspace_path,
+                    "timeout": timeout,
+                    "kwargs": kwargs,
+                })
+                return SandboxResult(
+                    success=True,
+                    output='{"success": true, "actual_output": "6", "expected_output": "6", "error": null, "exit_code": 0}\n',
+                    exit_code=0,
+                )
+
+        fake_sandbox = FakeSandboxManager()
+        runner = _make_runner(tmp_path, task)
+        runner.use_sandbox = True
+        runner.sandbox_manager = fake_sandbox
+
+        result = await runner._run_test_case(
+            "print(6)\n",
+            task.test_cases[0],
+            task,
+        )
+
+        assert result["success"] is True
+        assert result["passed"] == result["total"] == 2
+        assert len(fake_sandbox.calls) == 2
+        assert all(call["timeout"] == task.timeout + 2 for call in fake_sandbox.calls)
 
     async def test_sandbox_request_falls_back_when_unavailable(self, tmp_path):
         task = _make_task(tmp_path)
