@@ -7,6 +7,7 @@ from scripts.run_live_eval_on_cloud_vm import (
     CloudVmRunError,
     SecretSpec,
     _read_exit_code,
+    _remote_stream_script,
     build_cloud_vm_plan,
     build_startup_script,
     write_plan_files,
@@ -96,6 +97,18 @@ def test_build_cloud_vm_plan_contains_create_sync_and_teardown_commands(tmp_path
         "instances",
         "delete",
     ]
+
+
+def test_remote_stream_script_follows_log_until_exit_code():
+    script = _remote_stream_script(
+        startup_log="/var/tmp/run/artifacts/startup.log",
+        exit_code="/var/tmp/run/artifacts/exit_code",
+    )
+
+    assert "tail -n +1 -F \"$STARTUP_LOG\"" in script
+    assert "while [ ! -f \"$EXIT_CODE\" ]" in script
+    assert "cat \"$EXIT_CODE\"" in script
+    assert "tail -n 80" not in script
 
 
 def test_write_plan_files_redacts_inline_startup_script(tmp_path: Path):

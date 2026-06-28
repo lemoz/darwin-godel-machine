@@ -64,6 +64,32 @@ def _label_value(value: str) -> str:
     return normalized or "unknown"
 
 
+def _remote_stream_script(*, startup_log: str, exit_code: str) -> str:
+    """Build a finite remote log-follow script for the VM startup artifacts."""
+    return "\n".join(
+        [
+            "set -e",
+            f"STARTUP_LOG={shlex.quote(startup_log)}",
+            f"EXIT_CODE={shlex.quote(exit_code)}",
+            "while [ ! -f \"$STARTUP_LOG\" ] && [ ! -f \"$EXIT_CODE\" ]; do",
+            "  journalctl -u google-startup-scripts.service -n 80 --no-pager || true",
+            "  sleep 10",
+            "done",
+            "if [ -f \"$STARTUP_LOG\" ]; then",
+            "  tail -n +1 -F \"$STARTUP_LOG\" &",
+            "  TAIL_PID=$!",
+            "fi",
+            "while [ ! -f \"$EXIT_CODE\" ]; do",
+            "  sleep 10",
+            "done",
+            "if [ -n \"${TAIL_PID:-}\" ]; then",
+            "  kill \"$TAIL_PID\" >/dev/null 2>&1 || true",
+            "fi",
+            "cat \"$EXIT_CODE\"",
+        ]
+    )
+
+
 def validate_run_id(run_id: str) -> None:
     _require(
         RUN_ID_RE.match(run_id) is not None,
@@ -333,6 +359,10 @@ def build_cloud_vm_plan(
     ]
     startup_log = f"{remote_artifact_dir}/startup.log"
     exit_code = f"{remote_artifact_dir}/exit_code"
+    remote_stream_script = _remote_stream_script(
+        startup_log=startup_log,
+        exit_code=exit_code,
+    )
     stream_command = [
         "gcloud",
         "compute",
@@ -343,22 +373,7 @@ def build_cloud_vm_plan(
         "--zone",
         zone,
         "--command",
-        (
-            "sudo bash -lc "
-            + shlex.quote(
-                "while [ ! -f "
-                + shlex.quote(exit_code)
-                + " ]; do "
-                + "if [ -f "
-                + shlex.quote(startup_log)
-                + " ]; then tail -n 80 "
-                + shlex.quote(startup_log)
-                + "; else journalctl -u google-startup-scripts.service -n 80 --no-pager || true; fi; "
-                + "sleep 30; "
-                + "done; cat "
-                + shlex.quote(exit_code)
-            )
-        ),
+        "sudo bash -lc " + shlex.quote(remote_stream_script),
     ]
     sync_command = [
         "gcloud",
