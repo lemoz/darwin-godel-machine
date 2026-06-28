@@ -6,6 +6,7 @@ import pytest
 from scripts.run_live_eval_on_cloud_vm import (
     CloudVmRunError,
     SecretSpec,
+    _read_exit_code,
     build_cloud_vm_plan,
     build_startup_script,
     write_plan_files,
@@ -86,6 +87,7 @@ def test_build_cloud_vm_plan_contains_create_sync_and_teardown_commands(tmp_path
         "scp",
         "--recurse",
     ]
+    assert plan["commands"]["sync_artifacts"][4].endswith("/artifacts/.")
     assert plan["commands"]["teardown"][:4] == [
         "gcloud",
         "compute",
@@ -126,6 +128,15 @@ def test_write_plan_files_redacts_inline_startup_script(tmp_path: Path):
     assert startup.read_text(encoding="utf-8").startswith("#!/usr/bin/env bash")
     assert written["startup_script"] == "[written to startup_script_path]"
     assert written["secrets"]["env_values"] == "hidden"
+
+
+def test_read_exit_code_from_synced_artifact_dir(tmp_path: Path):
+    artifact_dir = tmp_path / "artifacts"
+    artifact_dir.mkdir()
+    (artifact_dir / "exit_code").write_text("2\n", encoding="utf-8")
+    plan = {"artifacts": {"local_dir": str(artifact_dir)}}
+
+    assert _read_exit_code(plan) == 2
 
 
 def test_cloud_vm_plan_rejects_non_ephemeral_short_disk(tmp_path: Path):

@@ -8,6 +8,7 @@ import json
 import re
 import shlex
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -340,7 +341,7 @@ def build_cloud_vm_plan(
         "compute",
         "scp",
         "--recurse",
-        f"{vm_name}:{remote_artifact_dir}",
+        f"{vm_name}:{remote_artifact_dir}/.",
         str(artifact_dir),
         "--project",
         project,
@@ -433,15 +434,48 @@ def write_plan_files(plan: dict[str, Any], output_path: Path) -> None:
     )
 
 
+def _run_with_retry(command: list[str], *, attempts: int = 20, delay_seconds: int = 15) -> None:
+    """Run a command that may fail while the VM is still accepting SSH setup."""
+    last_result: subprocess.CompletedProcess[str] | None = None
+    for attempt in range(1, attempts + 1):
+        last_result = subprocess.run(command, check=False)
+        if last_result.returncode == 0:
+            return
+        if attempt < attempts:
+            time.sleep(delay_seconds)
+    raise subprocess.CalledProcessError(
+        last_result.returncode if last_result else 1,
+        command,
+    )
+
+
+def _read_exit_code(plan: dict[str, Any]) -> int | None:
+    exit_code_path = Path(plan["artifacts"]["local_dir"]) / "exit_code"
+    if not exit_code_path.is_file():
+        return None
+    try:
+        return int(exit_code_path.read_text(encoding="utf-8").strip())
+    except ValueError as exc:
+        raise CloudVmRunError(f"Invalid VM exit-code artifact: {exit_code_path}") from exc
+
+
 def execute_plan(plan: dict[str, Any]) -> None:
     """Launch the VM and always attempt artifact sync and teardown."""
     commands = plan["commands"]
+    stream_error: subprocess.CalledProcessError | None = None
     try:
         subprocess.run(commands["create"], check=True)
-        subprocess.run(commands["stream_logs"], check=False)
+        _run_with_retry(commands["stream_logs"])
+    except subprocess.CalledProcessError as exc:
+        stream_error = exc
     finally:
         subprocess.run(commands["sync_artifacts"], check=False)
         subprocess.run(commands["teardown"], check=False)
+    if stream_error is not None:
+        raise stream_error
+    exit_code = _read_exit_code(plan)
+    if exit_code not in (None, 0):
+        raise CloudVmRunError(f"Cloud VM run exited with status {exit_code}")
 
 
 def _build_parser() -> argparse.ArgumentParser:
