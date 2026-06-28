@@ -144,6 +144,7 @@ exports/
 debug/
 test_workspace/
 .dgm-live-runs/
+.dgm-cloud-runs/
 agents/workspace/
 archive/agents/
 *.pid
