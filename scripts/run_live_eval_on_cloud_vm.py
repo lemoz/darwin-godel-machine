@@ -187,6 +187,30 @@ if [ -n "${{GCS_ARTIFACT_URI}}" ]; then
   SYNC_PID=$!
 fi
 
+PREFLIGHT_FILE="${{ARTIFACT_DIR}}/preflight_commands.txt"
+python - "${{CONFIG}}" > "${{PREFLIGHT_FILE}}" <<'PY'
+import sys
+import yaml
+from pathlib import Path
+
+config = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {{}}
+commands = config.get("live_run", {{}}).get("required_preflight", [])
+if not isinstance(commands, list):
+    raise SystemExit("live_run.required_preflight must be a list when present")
+for command in commands:
+    if not isinstance(command, str):
+        raise SystemExit("live_run.required_preflight entries must be strings")
+    print(command)
+PY
+
+if [ -s "${{PREFLIGHT_FILE}}" ]; then
+  while IFS= read -r preflight_command; do
+    echo "[dgm-vm] preflight: ${{preflight_command}}"
+    bash -lc "${{preflight_command}}"
+    sync_artifacts
+  done < "${{PREFLIGHT_FILE}}"
+fi
+
 set +e
 python run_dgm.py --config "${{CONFIG}}" --generations "${{GENERATIONS}}" 2>&1 | tee "${{CONTROLLER_LOG}}"
 RUN_STATUS=${{PIPESTATUS[0]}}

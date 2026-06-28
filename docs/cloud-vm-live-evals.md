@@ -25,10 +25,11 @@ The startup script runs:
 2. clone the repo and `git checkout` the requested commit
 3. create a Python virtualenv and install `requirements.txt`
 4. load secrets from Secret Manager and/or `/etc/dgm-live.env`
-5. run `python run_dgm.py --config ... --generations ...`
-6. write `controller.log`, `scorecard.json`, and `telemetry.json`
-7. continuously rsync artifacts to GCS when `--gcs-artifact-uri` is set
-8. write an `exit_code` artifact and exit with the DGM process status
+5. run any `live_run.required_preflight` commands from the config
+6. run `python run_dgm.py --config ... --generations ...`
+7. write `controller.log`, `scorecard.json`, and `telemetry.json`
+8. continuously rsync artifacts to GCS when `--gcs-artifact-uri` is set
+9. write an `exit_code` artifact and exit with the DGM process status
 
 ## Telemetry
 

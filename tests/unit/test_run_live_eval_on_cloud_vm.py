@@ -37,6 +37,8 @@ def test_build_startup_script_clones_exact_commit_and_hides_secret_values():
     assert "secret-value" not in script
     assert "summarize_live_run_telemetry.py" in script
     assert "summarize_archive_scores.py" in script
+    assert "preflight_commands.txt" in script
+    assert "required_preflight" in script
     assert "gcloud storage rsync --recursive" in script
     assert "gs://dgm-runs/loop12-proof" in script
     assert "EXIT_CODE_PATH" in script
