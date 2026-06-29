@@ -114,7 +114,7 @@ live_run:
   required_preflight:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/prepare_livecodebench_segment.py --config config/livecodebench_segment.yaml
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_livecodebench_segment_plan.py --config config/livecodebench_openrouter_segment.yaml --require-generated
-    - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --require
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --build-image --require
     - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_segment.yaml --input-price-per-mtok 0.74 --output-price-per-mtok 3.50 --assumed-input-tokens-per-call 50000 --max-budget 30
   recommended_run:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/run_dgm_in_sandbox.py --config config/livecodebench_openrouter_segment.yaml --generations 3 --allow-network --env OPENROUTER_API_KEY --timeout 7200 --audit-output .dgm-sandbox-runs/livecodebench-openrouter-segment-audit.json

@@ -168,7 +168,8 @@ def verify_livecodebench_segment_plan(
     _require(isinstance(preflight, list), "required_preflight must be a list")
     _require_command(preflight, "scripts/prepare_livecodebench_segment.py", "LiveCodeBench segment preparation")
     _require_command(preflight, "scripts/verify_livecodebench_segment_plan.py", "this plan verifier")
-    _require_command(preflight, "scripts/verify_sandbox_docker.py --require", "required Docker sandbox check")
+    _require_command(preflight, "scripts/verify_sandbox_docker.py", "required Docker sandbox check")
+    _require_command(preflight, "--require", "required Docker sandbox check")
     _require_command(preflight, "--max-budget", "paid Kimi cost estimate")
 
     recommended_run = "\n".join(str(item) for item in live_run.get("recommended_run", []))
