@@ -1,0 +1,151 @@
+{
+  "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "ff11cdf1-5e39-4962-8e0a-c530063a1209",
+      "average_score": 0.16666666666666666,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "generation": 0
+    },
+    {
+      "agent_id": "f7807e87-1702-461b-b8ae-f555ee8693e4",
+      "average_score": 0.16666666666666666,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "generation": 1
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "ff11cdf1-5e39-4962-8e0a-c530063a1209",
+      "average_score": 0.16666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-06-29T23:24:02.941306",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 2
+    },
+    {
+      "agent_id": "f7807e87-1702-461b-b8ae-f555ee8693e4",
+      "average_score": 0.16666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-06-29T23:32:29.918569",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "ff11cdf1-5e39-4962-8e0a-c530063a1209",
+      "solved_count": 2
+    },
+    {
+      "agent_id": "964b5a76-0faa-4040-a2b9-872efd293da3",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T23:32:43.154448",
+      "generation": 2,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "f7807e87-1702-461b-b8ae-f555ee8693e4",
+      "solved_count": 0
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [
+      "f7807e87-1702-461b-b8ae-f555ee8693e4"
+    ],
+    "changed_count": 1,
+    "noop_agents": [
+      "964b5a76-0faa-4040-a2b9-872efd293da3"
+    ],
+    "noop_count": 1,
+    "status_counts": {
+      "changed": 1,
+      "noop": 1
+    },
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_d",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc389_e",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ],
+      "child_average_score": 0.16666666666666666,
+      "child_generation": 1,
+      "child_id": "f7807e87-1702-461b-b8ae-f555ee8693e4",
+      "is_improvement": false,
+      "parent_average_score": 0.16666666666666666,
+      "parent_generation": 0,
+      "parent_id": "ff11cdf1-5e39-4962-8e0a-c530063a1209"
+    }
+  ],
+  "top_agent_id": "ff11cdf1-5e39-4962-8e0a-c530063a1209",
+  "top_score": 0.16666666666666666,
+  "total_agents": 3,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 12,
+  "valid_agents": 2
+}
