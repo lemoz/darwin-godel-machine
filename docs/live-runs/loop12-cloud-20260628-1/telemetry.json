@@ -1,0 +1,262 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T21:17:02.059572",
+        "generation": 0,
+        "is_valid": true,
+        "parent_id": null,
+        "solved_count": 6
+      },
+      {
+        "agent_id": "2c6e7c87-6b98-4edf-aebe-5d07808f0123",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T21:27:25.852620",
+        "generation": 1,
+        "is_valid": true,
+        "parent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "0c50909a-5cab-48ce-a040-52969f1b95ed",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T21:36:03.762634",
+        "generation": 1,
+        "is_valid": true,
+        "parent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "ffed3d19-e8b2-4728-b628-68a57b3a65b8",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T21:43:38.155937",
+        "generation": 1,
+        "is_valid": true,
+        "parent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6",
+        "solved_count": 5
+      },
+      {
+        "agent_id": "264c753f-ac09-4e81-88c8-26e37b196dcd",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T21:52:20.073016",
+        "generation": 1,
+        "is_valid": true,
+        "parent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6",
+        "solved_count": 5
+      },
+      {
+        "agent_id": "e4a42731-fff7-4b40-a722-dc0f6a686d86",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T21:59:16.583232",
+        "generation": 1,
+        "is_valid": true,
+        "parent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "ab2ae388-1373-4150-bc0b-7a2814846963",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T22:06:05.747170",
+        "generation": 2,
+        "is_valid": true,
+        "parent_id": "e4a42731-fff7-4b40-a722-dc0f6a686d86",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "2dd2751c-a164-4d57-855b-838dac7f9cfe",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T22:12:34.787902",
+        "generation": 2,
+        "is_valid": true,
+        "parent_id": "e4a42731-fff7-4b40-a722-dc0f6a686d86",
+        "solved_count": 6
+      },
+      {
+        "agent_id": "ed0e60dc-76b2-4f23-99db-4cb097332a8c",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T22:20:21.237004",
+        "generation": 2,
+        "is_valid": true,
+        "parent_id": "e4a42731-fff7-4b40-a722-dc0f6a686d86",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "72d09ae4-4758-4334-bada-89bab1d1667b",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T22:26:11.584476",
+        "generation": 2,
+        "is_valid": true,
+        "parent_id": "e4a42731-fff7-4b40-a722-dc0f6a686d86",
+        "solved_count": 5
+      },
+      {
+        "agent_id": "5e0eda66-4880-4b84-82cd-0adbb3f0f8e8",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-06-28T22:33:38.987965",
+        "generation": 2,
+        "is_valid": true,
+        "parent_id": "e4a42731-fff7-4b40-a722-dc0f6a686d86",
+        "solved_count": 6
+      }
+    ],
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 9,
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_d": 11,
+      "livecodebench_abc388_e": 8,
+      "livecodebench_abc389_d": 6,
+      "livecodebench_abc389_e": 11,
+      "livecodebench_abc390_d": 11,
+      "livecodebench_abc390_e": 7
+    }
+  },
+  "dgm_report": {
+    "final_archive_size": 2,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.82887012,
+    "successful_improvements": 0,
+    "total_agents_created": 1,
+    "total_generations": 1
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 64,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 10,
+    "resource_guard_rejections": 1,
+    "traceback_count": 2,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 9,
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_d": 11,
+      "livecodebench_abc388_e": 8,
+      "livecodebench_abc389_d": 6,
+      "livecodebench_abc389_e": 11,
+      "livecodebench_abc390_d": 11,
+      "livecodebench_abc390_e": 7
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 10.40138957816377,
+      "count": 403,
+      "max": 59.09
+    },
+    "configured_timeout_seconds": 60.0,
+    "empty_response_count": 64,
+    "finish_reasons": {},
+    "http_post_count": 413,
+    "model": "moonshotai/kimi-k2.7-code",
+    "model_from_log": "moonshotai/kimi-k2.7-code",
+    "name": "openrouter",
+    "timeout_count": 10
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-loop12-host/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/loop12-cloud-20260628-1/artifacts/controller.log",
+    "dgm_report": "docs/live-runs/livecodebench-openrouter-scale72-nonregression-2026-06-25/dgm_report_20260625_101503.json",
+    "end_time": "2026-06-28T22:33:38.992000",
+    "line_count": 11394,
+    "observed_runtime_seconds": 5238.091,
+    "scorecard": "/var/tmp/dgm-live-runs/loop12-cloud-20260628-1/artifacts/scorecard.json",
+    "start_time": "2026-06-28T21:06:20.901000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.5,
+    "best_average_delta": 0.08333333333333337,
+    "generation_best_scores": [
+      {
+        "agent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 6
+      },
+      {
+        "agent_id": "2c6e7c87-6b98-4edf-aebe-5d07808f0123",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 1,
+        "solved_count": 7
+      },
+      {
+        "agent_id": "ab2ae388-1373-4150-bc0b-7a2814846963",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 2,
+        "solved_count": 7
+      }
+    ],
+    "has_improvement": true,
+    "has_regression": true,
+    "improvement_count": 3,
+    "improvements": [
+      {
+        "average_delta": 0.08333333333333337,
+        "benchmark_improvements": [
+          "livecodebench_abc389_d",
+          "livecodebench_abc390_e"
+        ],
+        "benchmark_regressions": [
+          "livecodebench_abc388_e"
+        ],
+        "child_id": "2c6e7c87-6b98-4edf-aebe-5d07808f0123",
+        "parent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6"
+      },
+      {
+        "average_delta": 0.08333333333333337,
+        "benchmark_improvements": [
+          "livecodebench_abc389_d",
+          "livecodebench_abc390_e"
+        ],
+        "benchmark_regressions": [
+          "livecodebench_abc388_e"
+        ],
+        "child_id": "0c50909a-5cab-48ce-a040-52969f1b95ed",
+        "parent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6"
+      },
+      {
+        "average_delta": 0.08333333333333337,
+        "benchmark_improvements": [
+          "livecodebench_abc389_d"
+        ],
+        "benchmark_regressions": [],
+        "child_id": "e4a42731-fff7-4b40-a722-dc0f6a686d86",
+        "parent_id": "d1dfb20c-3059-4fe9-8473-3f17320c71a6"
+      }
+    ],
+    "top_agent_id": "2c6e7c87-6b98-4edf-aebe-5d07808f0123",
+    "top_score": 0.5833333333333334,
+    "total_agents": 11,
+    "total_benchmark_improvements": 9,
+    "total_benchmark_regressions": 12,
+    "total_benchmark_unchanged": 99,
+    "valid_agents": 11
+  },
+  "tokens": {
+    "completion_tokens": 192063,
+    "estimated_cost_usd": 1.362988,
+    "input_price_per_mtok": 0.74,
+    "output_price_per_mtok": 3.5,
+    "prompt_tokens": 933470,
+    "total_tokens": 1125533,
+    "usage_events": 403
+  }
+}
