@@ -338,6 +338,40 @@ class TestEditTool:
         assert "content parameter is required" in (result.error or "")
         assert not (self.tmp / "empty.txt").exists()
 
+    async def test_write_valid_python_allowed(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content": "import sys\nprint(sys.stdin.read().strip())\n",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "solution.py").read_text() == (
+            "import sys\nprint(sys.stdin.read().strip())\n"
+        )
+
+    async def test_write_python_syntax_error_rejected(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content": "def broken(:\n    pass\n",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "syntax error" in (result.error or "").lower()
+        assert not (self.tmp / "solution.py").exists()
+
+    async def test_write_python_list_fragment_rejected(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content": "[[0], [2]]",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "serialized/list fragment" in (result.error or "")
+        assert not (self.tmp / "solution.py").exists()
+
     async def test_append_missing_content_rejected(self):
         result = await self.tool.execute({
             "action": "append",
@@ -383,6 +417,43 @@ class TestEditTool:
 
         read = await self.tool.execute({"action": "read", "file_path": "f.txt"})
         assert read.output == "aaa bbb ccc"
+
+    async def test_modify_python_syntax_error_rejected_and_preserves_file(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": "def ok():\n    return 1\n",
+        })
+
+        result = await self.tool.execute({
+            "action": "modify",
+            "file_path": "agent.py",
+            "search_text": "return 1",
+            "replace_text": "return 'unterminated",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "syntax error" in (result.error or "").lower()
+        assert (self.tmp / "agent.py").read_text() == "def ok():\n    return 1\n"
+
+    async def test_modify_python_list_fragment_rejected_and_preserves_file(self):
+        original = "def ok():\n    return 1\n"
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": original,
+        })
+
+        result = await self.tool.execute({
+            "action": "modify",
+            "file_path": "agent.py",
+            "search_text": original,
+            "replace_text": "['partial source fragment']",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "serialized/list fragment" in (result.error or "")
+        assert (self.tmp / "agent.py").read_text() == original
 
     async def test_modify_zero_occurrences_rejected(self):
         await self.tool.execute({

@@ -4,6 +4,7 @@ Edit tool implementation for file manipulation.
 This tool allows the DGM agent to read, write, and modify files.
 """
 
+import ast
 import json
 import os
 import shlex
@@ -263,6 +264,13 @@ class EditTool(BaseTool):
                 if content_error is not None:
                     return content_error
                 content = parameters["content"]
+                python_error = self._validate_python_content(
+                    file_path_str,
+                    content,
+                    action=action,
+                )
+                if python_error is not None:
+                    return python_error
 
                 full_path.parent.mkdir(parents=True, exist_ok=True)
                 full_path.write_text(content, encoding="utf-8")
@@ -291,6 +299,17 @@ class EditTool(BaseTool):
                 if content_error is not None:
                     return content_error
                 content = parameters["content"]
+
+                existing_content = ""
+                if full_path.exists():
+                    existing_content = full_path.read_text(encoding="utf-8")
+                python_error = self._validate_python_content(
+                    file_path_str,
+                    existing_content + content,
+                    action=action,
+                )
+                if python_error is not None:
+                    return python_error
 
                 if not full_path.exists():
                     full_path.parent.mkdir(parents=True, exist_ok=True)
@@ -361,6 +380,14 @@ class EditTool(BaseTool):
 
                 # Exactly one occurrence — safe to replace.
                 new_content = current_content.replace(search_text, replace_text, 1)
+                python_error = self._validate_python_content(
+                    file_path_str,
+                    new_content,
+                    action=action,
+                )
+                if python_error is not None:
+                    return python_error
+
                 full_path.write_text(new_content, encoding="utf-8")
                 return ToolResult(
                     status=ToolExecutionStatus.SUCCESS,
@@ -422,6 +449,68 @@ class EditTool(BaseTool):
             )
 
         return None
+
+    @staticmethod
+    def _validate_python_content(
+        file_path: str,
+        content: str,
+        *,
+        action: str,
+    ) -> ToolResult | None:
+        """Reject malformed Python writes before they poison agent workspaces."""
+        if Path(file_path).suffix != ".py":
+            return None
+
+        stripped = content.strip()
+        if not stripped:
+            return None
+
+        try:
+            tree = ast.parse(content, filename=file_path)
+        except SyntaxError as exc:
+            return ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error=(
+                    f"Rejected {action} for Python file {file_path}: content has "
+                    f"a syntax error at line {exc.lineno}, column {exc.offset}: "
+                    f"{exc.msg}. Write complete, valid Python source."
+                ),
+            )
+
+        if EditTool._looks_like_serialized_python_fragment(stripped, tree):
+            return ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error=(
+                    f"Rejected {action} for Python file {file_path}: content looks "
+                    "like a serialized/list fragment, not raw Python source. "
+                    "Write the complete Python file text directly, starting with "
+                    "imports, definitions, assignments, or executable statements."
+                ),
+            )
+
+        return None
+
+    @staticmethod
+    def _looks_like_serialized_python_fragment(
+        stripped_content: str,
+        tree: ast.Module,
+    ) -> bool:
+        """Detect provider/tool-call fragments like ``['partial code']``."""
+        if not stripped_content.startswith("["):
+            return False
+        if not tree.body:
+            return False
+
+        first_statement = tree.body[0]
+        if not isinstance(first_statement, ast.Expr):
+            return False
+
+        if isinstance(first_statement.value, (ast.List, ast.Tuple, ast.Set, ast.Dict)):
+            return True
+
+        return False
 
     async def _execute_sandbox_edit(self, parameters: Dict[str, Any]) -> ToolResult:
         """Execute the edit operation inside the configured Docker sandbox."""
