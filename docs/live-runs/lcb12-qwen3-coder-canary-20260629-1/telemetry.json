@@ -1,0 +1,202 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "dc4d7fee-3cd1-4784-983b-5507023540f2",
+        "average_score": 0.16666666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-06-29T22:49:30.750475",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 2
+      },
+      {
+        "agent_id": "a862c0e2-f540-48aa-a8ea-25719d4fe7bc",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-06-29T22:49:42.925765",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "dc4d7fee-3cd1-4784-983b-5507023540f2",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "097cd68c-13c2-4b44-9f73-555eb3700e2e",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-06-29T22:50:28.521818",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": false,
+        "mutation_status": "changed",
+        "parent_id": "dc4d7fee-3cd1-4784-983b-5507023540f2",
+        "solved_count": 0
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {
+        "changed": 1,
+        "noop": 1
+      }
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_d": 1,
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_a": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_b": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 3,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.1583120338888889,
+    "successful_improvements": 0,
+    "total_agents_created": 0,
+    "total_generations": 2
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 0,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_d": 1,
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_a": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_b": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 6.553373493975904,
+      "count": 83,
+      "max": 60.29
+    },
+    "configured_timeout_seconds": 90.0,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 83,
+    "model": "qwen/qwen3-coder",
+    "model_from_log": "qwen/qwen3-coder",
+    "name": "openrouter",
+    "timeout_count": 0
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/lcb12-qwen3-coder-canary-20260629-1/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery/results/dgm_report_20260629_225028.json",
+    "end_time": "2026-06-29T22:50:28.524000",
+    "line_count": 3509,
+    "observed_runtime_seconds": 581.592,
+    "scorecard": "/var/tmp/dgm-live-runs/lcb12-qwen3-coder-canary-20260629-1/artifacts/scorecard.json",
+    "start_time": "2026-06-29T22:40:46.932000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.16666666666666666,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "dc4d7fee-3cd1-4784-983b-5507023540f2",
+        "average_score": 0.16666666666666666,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 2
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": false,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "dc4d7fee-3cd1-4784-983b-5507023540f2",
+        "average_score": 0.16666666666666666,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 2
+      },
+      {
+        "agent_id": "a862c0e2-f540-48aa-a8ea-25719d4fe7bc",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "dc4d7fee-3cd1-4784-983b-5507023540f2",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "097cd68c-13c2-4b44-9f73-555eb3700e2e",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": false,
+        "mutation_status": "changed",
+        "parent_id": "dc4d7fee-3cd1-4784-983b-5507023540f2",
+        "solved_count": 0
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [
+        "097cd68c-13c2-4b44-9f73-555eb3700e2e"
+      ],
+      "changed_count": 1,
+      "noop_agents": [
+        "a862c0e2-f540-48aa-a8ea-25719d4fe7bc"
+      ],
+      "noop_count": 1,
+      "status_counts": {
+        "changed": 1,
+        "noop": 1
+      },
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "dc4d7fee-3cd1-4784-983b-5507023540f2",
+    "top_score": 0.16666666666666666,
+    "total_agents": 3,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 0,
+    "valid_agents": 1
+  },
+  "tokens": {
+    "completion_tokens": 31523,
+    "estimated_cost_usd": 0.159939,
+    "input_price_per_mtok": 0.22,
+    "output_price_per_mtok": 1.8,
+    "prompt_tokens": 469078,
+    "total_tokens": 500601,
+    "usage_events": 83
+  }
+}
