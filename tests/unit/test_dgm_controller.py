@@ -109,6 +109,18 @@ class TestDGMControllerInit:
         ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
         assert ctrl._should_stop() is False
 
+    def test_should_stop_after_configured_consecutive_noops(self, tmp_path):
+        from dgm_controller import DGMController
+        cfg = _minimal_config(tmp_path)
+        cfg["self_modification"] = {"max_consecutive_noop_mutations": 3}
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        ctrl.consecutive_noop_mutations = 2
+        assert ctrl._should_stop() is False
+
+        ctrl.consecutive_noop_mutations = 3
+        assert ctrl._should_stop() is True
+
     def test_get_or_create_initial_agent(self, tmp_path):
         from dgm_controller import DGMController
         cfg = _minimal_config(tmp_path)
@@ -498,6 +510,7 @@ class TestDGMControllerInit:
         assert child.is_valid is False
         assert child.benchmark_scores == {}
         assert child.metadata["mutation"]["mutation_status"] == "noop"
+        assert ctrl.consecutive_noop_mutations == 1
 
     async def test_evaluate_agent_passes_sandbox_config_to_loaded_agent(
         self,

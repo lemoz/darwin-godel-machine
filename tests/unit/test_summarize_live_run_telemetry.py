@@ -165,6 +165,7 @@ def test_summarize_live_run_telemetry_merges_score_and_archive_artifacts(tmp_pat
                     "total_agents_created": 1,
                     "successful_improvements": 1,
                     "improvement_rate": 1.0,
+                    "consecutive_noop_mutations": 0,
                     "final_archive_size": 2,
                 }
             }
@@ -195,6 +196,7 @@ def test_summarize_live_run_telemetry_merges_score_and_archive_artifacts(tmp_pat
     assert telemetry["archive"]["mutation_summary"]["status_counts"] == {"changed": 1}
     assert telemetry["archive"]["zero_score_counts_by_benchmark"] == {"b": 1}
     assert telemetry["dgm_report"]["total_generations"] == 1
+    assert telemetry["dgm_report"]["consecutive_noop_mutations"] == 0
 
 
 def test_summarize_live_run_telemetry_rejects_missing_log(tmp_path: Path):

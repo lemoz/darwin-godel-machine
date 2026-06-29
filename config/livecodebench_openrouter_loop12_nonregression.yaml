@@ -46,6 +46,9 @@ agents:
   initial_agent_path: agent/agent.py
   max_steps: 5
 
+self_modification:
+  max_consecutive_noop_mutations: 3
+
 benchmarks:
   timeout_default: 30
   max_attempts: 3
@@ -72,7 +75,7 @@ stop_on_error: true
 live_run:
   purpose: livecodebench_openrouter_loop12
   approval_required: true
-  recommended_generations: 10
+  recommended_generations: 12
   segment:
     config: config/livecodebench_segment_loop12.yaml
     manifest_path: .dgm-live-runs/livecodebench-loop12/manifest.json
@@ -91,17 +94,17 @@ live_run:
     input_price_per_mtok: 0.74
     output_price_per_mtok: 3.50
     assumed_input_tokens_per_call: 50000
-    max_estimated_cost_usd: 70
-    max_generations_without_reapproval: 10
+    max_estimated_cost_usd: 85
+    max_generations_without_reapproval: 12
     max_agent_steps: 5
     max_output_tokens_per_call: 2048
     max_enabled_benchmarks: 12
   required_preflight:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/prepare_livecodebench_segment.py --config config/livecodebench_segment_loop12.yaml
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --require
-    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_loop12_nonregression.yaml --input-price-per-mtok 0.74 --output-price-per-mtok 3.50 --assumed-input-tokens-per-call 50000 --max-budget 70
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_loop12_nonregression.yaml --input-price-per-mtok 0.74 --output-price-per-mtok 3.50 --assumed-input-tokens-per-call 50000 --max-budget 85
   recommended_run:
-    - PATH="$PWD/.venv/bin:$PATH" python scripts/run_dgm_in_sandbox.py --config config/livecodebench_openrouter_loop12_nonregression.yaml --generations 10 --allow-network --env OPENROUTER_API_KEY --timeout 10800 --audit-output .dgm-sandbox-runs/livecodebench-openrouter-loop12-nonregression-audit.json
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/run_dgm_in_sandbox.py --config config/livecodebench_openrouter_loop12_nonregression.yaml --generations 12 --allow-network --env OPENROUTER_API_KEY --timeout 10800 --audit-output .dgm-sandbox-runs/livecodebench-openrouter-loop12-nonregression-audit.json
   post_run_scorecard:
     command: PATH="$PWD/.venv/bin:$PATH" python scripts/summarize_archive_scores.py --archive-metadata .dgm-live-runs/livecodebench-openrouter-loop12-nonregression/archive/archive_metadata.json --output .dgm-live-runs/livecodebench-openrouter-loop12-nonregression/scorecard.json
     require_improvement: false

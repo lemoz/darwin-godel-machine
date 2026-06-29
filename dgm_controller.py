@@ -141,6 +141,7 @@ class DGMController:
         self.successful_improvements = 0
         self.start_time = datetime.now()
         self._mutation_metadata_by_agent_path: Dict[str, Dict[str, Any]] = {}
+        self.consecutive_noop_mutations = 0
 
         # Create necessary directories
         Path(self.config['archive']['path']).mkdir(parents=True, exist_ok=True)
@@ -344,7 +345,10 @@ class Agent:
                 "Archived no-op child %s as invalid mutation_status=noop",
                 archived_agent.agent_id,
             )
+            self.consecutive_noop_mutations += 1
             return
+
+        self.consecutive_noop_mutations = 0
 
         # 4. Validate modified agent (validator takes only agent_path, returns {'valid': bool, ...})
         logger.info("Validating modified agent...")
@@ -932,6 +936,17 @@ performance."""
                 logger.info(f"Reached target performance ({top_agents[0].average_score:.3f})")
                 return True
 
+        max_noops = (
+            self.config.get('self_modification', {})
+            .get('max_consecutive_noop_mutations')
+        )
+        if max_noops is not None and self.consecutive_noop_mutations >= int(max_noops):
+            logger.info(
+                "Reached consecutive no-op mutation limit "
+                f"({self.consecutive_noop_mutations}/{int(max_noops)})"
+            )
+            return True
+
         return False
 
     def _log_progress(self):
@@ -962,6 +977,7 @@ performance."""
                 'total_agents_created': self.total_agents_created,
                 'successful_improvements': self.successful_improvements,
                 'improvement_rate': self.successful_improvements / max(1, self.total_agents_created),
+                'consecutive_noop_mutations': self.consecutive_noop_mutations,
                 'final_archive_size': len(self.archive.agents)
             },
             'top_agents': [],
@@ -990,6 +1006,7 @@ performance."""
         logger.info(f"Generations: {self.generation}")
         logger.info(f"Agents created: {self.total_agents_created}")
         logger.info(f"Improvements: {self.successful_improvements} ({report['summary']['improvement_rate']:.1%})")
+        logger.info(f"Consecutive no-op mutations: {self.consecutive_noop_mutations}")
         logger.info(f"\nTop agent: {top_agents[0].agent_id if top_agents else 'None'}")
         if top_agents:
             logger.info(f"Top score: {top_agents[0].average_score:.3f}")

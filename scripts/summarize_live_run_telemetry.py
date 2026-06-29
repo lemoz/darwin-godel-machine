@@ -361,6 +361,9 @@ def summarize_dgm_report(report: dict[str, Any] | None) -> dict[str, Any] | None
         "total_agents_created": int(summary.get("total_agents_created", 0) or 0),
         "successful_improvements": int(summary.get("successful_improvements", 0) or 0),
         "improvement_rate": float(summary.get("improvement_rate", 0.0) or 0.0),
+        "consecutive_noop_mutations": int(
+            summary.get("consecutive_noop_mutations", 0) or 0
+        ),
         "final_archive_size": int(summary.get("final_archive_size", 0) or 0),
     }
 
