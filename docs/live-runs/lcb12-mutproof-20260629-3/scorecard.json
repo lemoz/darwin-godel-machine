@@ -1,0 +1,102 @@
+{
+  "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-loop12-nonregression/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "1c67073d-9dc1-45f9-ba25-dfff565cbf69",
+      "average_score": 0.3333333333333333,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "generation": 0
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "1c67073d-9dc1-45f9-ba25-dfff565cbf69",
+      "average_score": 0.3333333333333333,
+      "benchmark_count": 12,
+      "created_at": "2026-06-29T19:24:28.941707",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 4
+    },
+    {
+      "agent_id": "caa81061-f82f-4645-bfcc-b8624df0c563",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T19:25:10.956197",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "1c67073d-9dc1-45f9-ba25-dfff565cbf69",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "f479a21b-e7f3-405f-810f-104f93f3c5a8",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T19:25:54.306675",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "1c67073d-9dc1-45f9-ba25-dfff565cbf69",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "070d9f6f-c6dd-4b88-874c-378212d690e5",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T19:26:30.679471",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "1c67073d-9dc1-45f9-ba25-dfff565cbf69",
+      "solved_count": 0
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [],
+    "changed_count": 0,
+    "noop_agents": [
+      "caa81061-f82f-4645-bfcc-b8624df0c563",
+      "f479a21b-e7f3-405f-810f-104f93f3c5a8",
+      "070d9f6f-c6dd-4b88-874c-378212d690e5"
+    ],
+    "noop_count": 3,
+    "status_counts": {
+      "noop": 3
+    },
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [],
+  "top_agent_id": "1c67073d-9dc1-45f9-ba25-dfff565cbf69",
+  "top_score": 0.3333333333333333,
+  "total_agents": 4,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 0,
+  "valid_agents": 1
+}
