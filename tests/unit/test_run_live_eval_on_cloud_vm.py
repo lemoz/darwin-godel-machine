@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+import yaml
 
 from scripts.run_live_eval_on_cloud_vm import (
     CloudVmRunError,
@@ -157,6 +158,21 @@ def test_read_exit_code_from_synced_artifact_dir(tmp_path: Path):
     plan = {"artifacts": {"local_dir": str(artifact_dir)}}
 
     assert _read_exit_code(plan) == 2
+
+
+def test_loop12_cloud_preflight_builds_sandbox_image_on_fresh_vm():
+    project_root = Path(__file__).resolve().parents[2]
+    config_path = project_root / "config" / "livecodebench_openrouter_loop12_nonregression.yaml"
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+
+    preflight = config["live_run"]["required_preflight"]
+    sandbox_checks = [
+        command for command in preflight if "scripts/verify_sandbox_docker.py" in command
+    ]
+
+    assert sandbox_checks == [
+        'PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --build-image --require'
+    ]
 
 
 def test_cloud_vm_plan_rejects_non_ephemeral_short_disk(tmp_path: Path):
