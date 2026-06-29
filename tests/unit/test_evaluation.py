@@ -770,6 +770,46 @@ class Helper:
         pass
 '''
 
+BROKEN_PROMPT_AGENT = '''\
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional
+
+@dataclass
+class AgentConfig:
+    agent_id: str
+    fm_provider: str
+    fm_config: Dict[str, Any]
+    working_directory: str
+    tool_timeout: int = 30
+    max_iterations: int = 10
+    use_sandbox: bool = False
+    retain_conversation_history: bool = True
+
+@dataclass
+class ConversationContext:
+    task_id: Optional[str] = None
+    agent_id: Optional[str] = None
+    iteration: Optional[int] = None
+    benchmark_name: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+class Message:
+    def __init__(self, content):
+        self.content = content
+
+class Agent:
+    def __init__(self, config):
+        self.config = config
+        self.fm_interface = None
+        self.tools = []
+
+    def solve_task(self, task):
+        return "done"
+
+    def _build_system_message(self, context):
+        return Message(base_instructions)
+'''
+
 
 class TestAgentValidator:
 
@@ -807,6 +847,14 @@ class TestAgentValidator:
         # _validate_structure will fail because suffix is .py but file doesn't exist
         # OR _validate_syntax will fail when trying to read it
         assert result["valid"] is False
+
+    async def test_prompt_build_failure_fails_validation(self, tmp_path):
+        f = tmp_path / "agent.py"
+        f.write_text(BROKEN_PROMPT_AGENT)
+        validator = AgentValidator()
+        result = await validator.validate_agent(str(f))
+        assert result["valid"] is False
+        assert any("prompt-build smoke failed" in e for e in result["errors"])
 
     async def test_non_py_file_fails(self, tmp_path):
         f = tmp_path / "agent.txt"

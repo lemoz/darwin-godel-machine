@@ -194,7 +194,10 @@ class EditTool(BaseTool):
             ToolParameter(
                 name="replace_text",
                 type="string",
-                description="Text to replace with in modify actions",
+                description=(
+                    "Text to replace with in modify actions. Required for modify; "
+                    "use an explicit empty string only for intentional deletion."
+                ),
                 required=False
             )
         ]
@@ -296,13 +299,30 @@ class EditTool(BaseTool):
                     )
 
                 search_text = parameters.get("search_text")
-                replace_text = parameters.get("replace_text", "")
 
                 if not search_text:
                     return ToolResult(
                         status=ToolExecutionStatus.ERROR,
                         output="",
                         error="search_text parameter is required for modify action",
+                    )
+
+                if "replace_text" not in parameters:
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error=(
+                            "replace_text parameter is required for modify action; "
+                            "use an explicit empty string only for intentional deletion"
+                        ),
+                    )
+
+                replace_text = parameters.get("replace_text")
+                if not isinstance(replace_text, str):
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error="replace_text parameter must be a string for modify action",
                     )
 
                 current_content = full_path.read_text(encoding="utf-8")

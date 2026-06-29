@@ -333,6 +333,23 @@ class TestEditTool:
         assert "XXX" in read.output
         assert "bbb" not in read.output
 
+    async def test_modify_missing_replace_text_rejected(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "f.txt",
+            "content": "aaa bbb ccc",
+        })
+        result = await self.tool.execute({
+            "action": "modify",
+            "file_path": "f.txt",
+            "search_text": "bbb",
+        })
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "replace_text" in (result.error or "")
+
+        read = await self.tool.execute({"action": "read", "file_path": "f.txt"})
+        assert read.output == "aaa bbb ccc"
+
     async def test_modify_zero_occurrences_rejected(self):
         await self.tool.execute({
             "action": "write",

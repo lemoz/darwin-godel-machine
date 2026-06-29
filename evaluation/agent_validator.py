@@ -21,11 +21,13 @@ from utils.agent_loader import AgentLoader
 
 
 _SANDBOX_VALIDATION_RUNNER = r"""
+import asyncio
 import hashlib
 import importlib.util
 import inspect
 import json
 import sys
+import tempfile
 import types
 from pathlib import Path
 
@@ -77,6 +79,68 @@ def load_agent_class(agent_file, preferred_name):
     return agent_class
 
 
+def smoke_prompt_build(agent_class, result):
+    if not hasattr(agent_class, "_build_system_message"):
+        return True
+
+    module = sys.modules.get(getattr(agent_class, "__module__", ""))
+    if module is None:
+        result["warnings"].append(
+            "Skipping prompt-build smoke: loaded agent module is unavailable"
+        )
+        return True
+
+    agent_config_cls = getattr(module, "AgentConfig", None)
+    conversation_context_cls = getattr(module, "ConversationContext", None)
+    if agent_config_cls is None or conversation_context_cls is None:
+        result["warnings"].append(
+            "Skipping prompt-build smoke: AgentConfig or ConversationContext is unavailable"
+        )
+        return True
+
+    agent = None
+    try:
+        with tempfile.TemporaryDirectory(prefix="dgm-validator-smoke-") as work_dir:
+            config = agent_config_cls(
+                agent_id="validator-smoke",
+                fm_provider="openrouter",
+                fm_config={
+                    "api_key": "sk-validator-dummy",
+                    "base_url": "https://openrouter.ai/api/v1",
+                    "model": "validator-smoke",
+                    "max_tokens": 16,
+                    "temperature": 0,
+                    "timeout": 1,
+                },
+                working_directory=work_dir,
+                tool_timeout=1,
+                max_iterations=1,
+                use_sandbox=False,
+                retain_conversation_history=False,
+            )
+            agent = agent_class(config)
+            context = conversation_context_cls(
+                task_id="validator-smoke",
+                agent_id="validator-smoke",
+                benchmark_name="validator-smoke",
+            )
+            message = agent._build_system_message(context)
+            if not getattr(message, "content", None):
+                raise RuntimeError("_build_system_message returned an empty message")
+        result["checks_passed"].append("Agent prompt-build smoke passed")
+        return True
+    except Exception as exc:
+        result["errors"].append(f"Agent prompt-build smoke failed: {exc}")
+        return False
+    finally:
+        if agent is not None:
+            close = getattr(agent, "close", None)
+            if callable(close):
+                maybe_awaitable = close()
+                if inspect.isawaitable(maybe_awaitable):
+                    asyncio.run(maybe_awaitable)
+
+
 def main():
     if len(sys.argv) != 2:
         raise SystemExit("Usage: sandbox_validator PARAMS_JSON")
@@ -109,6 +173,9 @@ def main():
                 result["warnings"].append(
                     "solve_task should have 'task' parameter"
                 )
+
+        if result["valid"] and not smoke_prompt_build(agent_class, result):
+            result["valid"] = False
 
         if result["valid"]:
             result["checks_passed"].append(
@@ -461,12 +528,84 @@ class AgentValidator:
                         "solve_task should have 'task' parameter"
                     )
 
+            if not await self._validate_prompt_build_smoke(agent_class, results):
+                return False
+
             results['checks_passed'].append("Agent class loaded and verified successfully")
             return True
 
         except Exception as e:
             results['errors'].append(f"Implementation validation failed: {str(e)}")
             return False
+
+    async def _validate_prompt_build_smoke(
+        self,
+        agent_class: Any,
+        results: Dict[str, Any],
+    ) -> bool:
+        """Exercise the real DGM prompt-construction path without model calls."""
+        if not hasattr(agent_class, '_build_system_message'):
+            return True
+
+        module = sys.modules.get(getattr(agent_class, '__module__', ''))
+        if module is None:
+            results['warnings'].append(
+                "Skipping prompt-build smoke: loaded agent module is unavailable"
+            )
+            return True
+
+        agent_config_cls = getattr(module, 'AgentConfig', None)
+        conversation_context_cls = getattr(module, 'ConversationContext', None)
+        if agent_config_cls is None or conversation_context_cls is None:
+            results['warnings'].append(
+                "Skipping prompt-build smoke: AgentConfig or ConversationContext is unavailable"
+            )
+            return True
+
+        agent = None
+        try:
+            with tempfile.TemporaryDirectory(prefix="dgm-validator-smoke-") as work_dir:
+                config = agent_config_cls(
+                    agent_id="validator-smoke",
+                    fm_provider="openrouter",
+                    fm_config={
+                        "api_key": "sk-validator-dummy",
+                        "base_url": "https://openrouter.ai/api/v1",
+                        "model": "validator-smoke",
+                        "max_tokens": 16,
+                        "temperature": 0,
+                        "timeout": 1,
+                    },
+                    working_directory=work_dir,
+                    tool_timeout=1,
+                    max_iterations=1,
+                    use_sandbox=False,
+                    retain_conversation_history=False,
+                )
+                agent = agent_class(config)
+                context = conversation_context_cls(
+                    task_id="validator-smoke",
+                    agent_id="validator-smoke",
+                    benchmark_name="validator-smoke",
+                )
+                message = agent._build_system_message(context)
+                if not getattr(message, 'content', None):
+                    raise RuntimeError("_build_system_message returned an empty message")
+
+            results['checks_passed'].append("Agent prompt-build smoke passed")
+            return True
+
+        except Exception as e:
+            results['errors'].append(f"Agent prompt-build smoke failed: {e}")
+            return False
+
+        finally:
+            if agent is not None:
+                close = getattr(agent, 'close', None)
+                if callable(close):
+                    maybe_awaitable = close()
+                    if inspect.isawaitable(maybe_awaitable):
+                        await maybe_awaitable
 
     async def _validate_runtime_load_in_sandbox(
         self,
