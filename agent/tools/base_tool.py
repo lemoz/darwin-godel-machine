@@ -119,6 +119,20 @@ class BaseTool(ABC):
             ToolResult: Success result if valid, error result if invalid
         """
         try:
+            valid_parameter_names = {param.name for param in self._parameters}
+
+            for param_name in parameters:
+                if param_name not in valid_parameter_names:
+                    valid_names = ", ".join(sorted(valid_parameter_names)) or "none"
+                    return ToolResult(
+                        status=ToolExecutionStatus.INVALID_PARAMS,
+                        output="",
+                        error=(
+                            f"Unknown parameter '{param_name}' for tool "
+                            f"'{self._name}'. Valid parameters: {valid_names}"
+                        ),
+                    )
+
             # Check for required parameters
             for param in self._parameters:
                 if param.required and param.name not in parameters:

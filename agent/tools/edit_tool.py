@@ -176,7 +176,10 @@ class EditTool(BaseTool):
             ToolParameter(
                 name="content",
                 type="string",
-                description="Content to write (for write/append actions)",
+                description=(
+                    "Content to write. Required for write/append actions; "
+                    "use an explicit empty string only to create an empty file."
+                ),
                 required=False
             ),
             ToolParameter(
@@ -256,6 +259,11 @@ class EditTool(BaseTool):
 
         try:
             if action == "write":
+                content_error = self._validate_content_parameter(parameters, action)
+                if content_error is not None:
+                    return content_error
+                content = parameters["content"]
+
                 full_path.parent.mkdir(parents=True, exist_ok=True)
                 full_path.write_text(content, encoding="utf-8")
                 return ToolResult(
@@ -279,6 +287,11 @@ class EditTool(BaseTool):
                 )
 
             elif action == "append":
+                content_error = self._validate_content_parameter(parameters, action)
+                if content_error is not None:
+                    return content_error
+                content = parameters["content"]
+
                 if not full_path.exists():
                     full_path.parent.mkdir(parents=True, exist_ok=True)
                     full_path.touch()
@@ -385,6 +398,30 @@ class EditTool(BaseTool):
                 output="",
                 error=f"Error executing {action} on {file_path_str}: {str(e)}",
             )
+
+    @staticmethod
+    def _validate_content_parameter(
+        parameters: Dict[str, Any],
+        action: str,
+    ) -> ToolResult | None:
+        if "content" not in parameters:
+            return ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error=(
+                    f"content parameter is required for {action} action; "
+                    "use an explicit empty string only for an intentional empty write"
+                ),
+            )
+
+        if not isinstance(parameters["content"], str):
+            return ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error=f"content parameter must be a string for {action} action",
+            )
+
+        return None
 
     async def _execute_sandbox_edit(self, parameters: Dict[str, Any]) -> ToolResult:
         """Execute the edit operation inside the configured Docker sandbox."""

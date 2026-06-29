@@ -60,6 +60,18 @@ class TestToolRegistry:
         assert schema["name"] == "test_tool"
         assert "parameters" in schema
 
+    async def test_tool_registry_rejects_unknown_parameters(self):
+        registry = ToolRegistry()
+        registry.register_tool(ConcreteTestTool())
+
+        result = await registry.execute_tool(
+            "test_tool",
+            {"arguments": '{"action": "write"}'},
+        )
+
+        assert result.status == ToolExecutionStatus.INVALID_PARAMS
+        assert "Unknown parameter 'arguments'" in (result.error or "")
+
 
 # ---------------------------------------------------------------------------
 # BashTool
@@ -314,6 +326,28 @@ class TestEditTool:
         })
         assert result2.status == ToolExecutionStatus.SUCCESS
         assert result2.output == "hello world"
+
+    async def test_write_missing_content_rejected(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "empty.txt",
+            "replace_text": "not content",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "content parameter is required" in (result.error or "")
+        assert not (self.tmp / "empty.txt").exists()
+
+    async def test_append_missing_content_rejected(self):
+        result = await self.tool.execute({
+            "action": "append",
+            "file_path": "empty.txt",
+            "replace_text": "not content",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "content parameter is required" in (result.error or "")
+        assert not (self.tmp / "empty.txt").exists()
 
     async def test_modify_single_occurrence(self):
         await self.tool.execute({
