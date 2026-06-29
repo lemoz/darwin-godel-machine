@@ -260,6 +260,42 @@ class TestAgentSolveTask:
         "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
         new_callable=AsyncMock,
     )
+    async def test_solve_task_reasks_after_empty_no_tool_response(self, mock_gc):
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 3
+        agent = Agent(cfg)
+        mock_gc.side_effect = [
+            CompletionResponse(
+                content="No response generated",
+                tool_calls=[],
+                finish_reason="length",
+            ),
+            CompletionResponse(
+                content=(
+                    "Here is the solution:\n\n"
+                    "```python\nprint('ok')\n```\n\n"
+                    "Task complete"
+                ),
+                tool_calls=[],
+                finish_reason="stop",
+            ),
+        ]
+
+        task = Task(task_id="empty_then_complete", description="Write a program")
+        result = await agent.solve_task(task)
+
+        assert result["success"] is True
+        assert result["solution"] == "print('ok')"
+        assert mock_gc.await_count == 2
+        assert any(
+            "previous response had no usable content" in msg.content
+            for msg in agent.conversation_history
+        )
+
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
     async def test_solve_task_returns_tool_written_solution_at_max_steps(self, mock_gc):
         cfg = _make_config(self.tmp)
         cfg.max_iterations = 2

@@ -268,6 +268,8 @@ class Agent:
             logger.info(f"API call completed. Tool calls: {len(response.tool_calls) if response.tool_calls else 0}")
             if response.usage:
                 logger.info(f"API usage: {response.usage}")
+            if response.finish_reason:
+                logger.info(f"API finish reason: {response.finish_reason}")
             
             # Log agent's response for debugging
             if response.content:
@@ -345,17 +347,41 @@ class Agent:
                 # Add a nudge to help the agent continue
                 nudge_message = Message(
                     role=MessageRole.USER,
-                    content="Please continue working on the task. If you've completed it, say 'Task complete'."
+                    content=self._build_no_progress_nudge(response)
                 )
                 self.conversation_history.append(nudge_message)
                 
-                # If this is near the end, break to avoid infinite nudging
-                if step >= max_steps - 5:
-                    logger.warning(f"Approaching max steps without completion")
+                # Use the remaining configured attempts for explicit reasks.
+                if step >= max_steps - 1:
+                    logger.warning("No task completion by the final configured step")
                     break
         
         logger.warning(f"Reached max steps ({max_steps}) without task completion")
         return solution or self._read_workspace_solution(task)
+
+    def _build_no_progress_nudge(self, response: CompletionResponse) -> str:
+        """Build a targeted reask after an empty or non-terminal assistant turn."""
+        content = (response.content or "").strip()
+        finish_reason = response.finish_reason or "unknown"
+        if not content or content == "No response generated":
+            return (
+                "Your previous response had no usable content or tool calls "
+                f"(finish_reason={finish_reason}). Continue from the task prompt now: "
+                "either call the edit/bash tools to create and test solution.py, "
+                "or provide the final Python code in a markdown block ending with "
+                "'Task complete'."
+            )
+        if finish_reason in {"length", "max_tokens", "content_filter"}:
+            return (
+                f"Your previous response stopped with finish_reason={finish_reason} "
+                "before the task was complete. Continue concisely: call a tool if "
+                "work remains, or provide the final Python code in a markdown block "
+                "ending with 'Task complete'."
+            )
+        return (
+            "Please continue working on the task. If you have completed it, provide "
+            "the final Python code in a markdown block and end with 'Task complete'."
+        )
 
     def _read_workspace_solution(self, task: Optional[Task] = None) -> str:
         """Return solution.py from the working directory when tool use produced one."""

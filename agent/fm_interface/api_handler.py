@@ -85,6 +85,8 @@ class ApiHandler(ABC):
         self.model = config.get("model")
         self.api_key = config.get("api_key")
         self.timeout = config.get("timeout", 60)
+        self.timeout_retries = int(config.get("timeout_retries", 0) or 0)
+        self.timeout_retry_delay = float(config.get("timeout_retry_delay", 0) or 0)
         self.max_tokens = config.get("max_tokens", 8192)
         self.temperature = config.get("temperature", 0.1)
     

@@ -212,6 +212,41 @@ def test_parse_response_unwraps_single_arguments_tool_wrapper():
     }
 
 
+def test_parse_response_repairs_prose_wrapped_tool_arguments():
+    h = _handler()
+    response = {
+        "model": "test/model",
+        "choices": [
+            {
+                "finish_reason": "tool_calls",
+                "message": {
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "id": "call_wrapped",
+                            "function": {
+                                "name": "bash",
+                                "arguments": (
+                                    '{"arguments": "I will run this now: '
+                                    '{\\"command\\": \\"python3 solution.py\\", '
+                                    '\\"capture_output\\": true}"}'
+                                ),
+                            },
+                        }
+                    ],
+                },
+            }
+        ],
+    }
+
+    parsed = h.parse_response(response)
+
+    assert parsed.tool_calls[0].parameters == {
+        "command": "python3 solution.py",
+        "capture_output": True,
+    }
+
+
 async def test_get_completion_preserves_zero_temperature_and_extra_body():
     h = _handler(extra_body={"reasoning": {"enabled": True}})
     fake_response = {
@@ -238,6 +273,28 @@ async def test_get_completion_preserves_zero_temperature_and_extra_body():
     assert kwargs["temperature"] == 0.0
     assert kwargs["max_tokens"] == 12
     assert kwargs["extra_body"] == {"reasoning": {"enabled": True}}
+
+
+async def test_get_completion_retries_configured_timeout_once():
+    h = _handler(timeout=1, timeout_retries=1, timeout_retry_delay=0)
+    fake_response = {
+        "model": "test/model",
+        "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+    }
+
+    with patch.object(
+        h.client.chat.completions,
+        "create",
+        new_callable=AsyncMock,
+        side_effect=[asyncio.TimeoutError(), fake_response],
+    ) as mock_create:
+        request = CompletionRequest(
+            messages=[Message(role=MessageRole.USER, content="hi")],
+        )
+        parsed = await h.get_completion(request)
+
+    assert parsed.content == "ok"
+    assert mock_create.await_count == 2
 
 
 async def test_get_completion_enforces_outer_timeout():

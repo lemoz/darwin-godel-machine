@@ -80,6 +80,7 @@ class DGMController:
             alpha_0=ps_cfg.get('alpha_0', 0.5),
             require_non_regression=ps_cfg.get('require_non_regression', False),
             regression_tolerance=ps_cfg.get('regression_tolerance', 0.0),
+            elite_selection_probability=ps_cfg.get('elite_selection_probability', 0.0),
         )
 
         evaluation_config = self.config.get('evaluation', {})

@@ -24,8 +24,11 @@ class ParentSelector:
         lam: lambda parameter for the sigmoid (default 10)
         alpha_0: midpoint of the sigmoid (default 0.5)
         require_non_regression: when true, exclude children that regress
-            relative to their parent on average score or any benchmark score.
+            relative to their parent on average score and do not improve overall.
         regression_tolerance: small tolerance for floating-point score deltas.
+        elite_selection_probability: optional probability of selecting the
+            highest-scoring eligible parent for single-parent draws before
+            falling back to the paper's stochastic formula.
     """
 
     def __init__(
@@ -34,11 +37,16 @@ class ParentSelector:
         alpha_0: float = 0.5,
         require_non_regression: bool = False,
         regression_tolerance: float = 0.0,
+        elite_selection_probability: float = 0.0,
     ):
         self.lam = lam
         self.alpha_0 = alpha_0
         self.require_non_regression = require_non_regression
         self.regression_tolerance = regression_tolerance
+        self.elite_selection_probability = max(
+            0.0,
+            min(1.0, elite_selection_probability),
+        )
 
     # ------------------------------------------------------------------
     # Public API
@@ -69,6 +77,11 @@ class ParentSelector:
         if not eligible:
             return []
 
+        k = min(n_parents, len(eligible))
+        if k == 1 and self.elite_selection_probability > 0:
+            if random.random() < self.elite_selection_probability:
+                return [max(eligible, key=lambda a: (a.average_score, a.generation))]
+
         # Build child-count map: count VALID children per agent
         child_counts: dict = {a.agent_id: 0 for a in eligible}
         for a in archive.agents.values():
@@ -92,7 +105,6 @@ class ParentSelector:
         probs = [w / total_w for w in weights]
 
         # Sample without replacement
-        k = min(n_parents, len(eligible))
         if k == 1:
             # Fast path for the common single-parent case
             r = random.random()
@@ -143,6 +155,9 @@ class ParentSelector:
             return True
 
         tolerance = self.regression_tolerance
+        if agent.average_score > parent.average_score + tolerance:
+            return True
+
         if agent.average_score < parent.average_score - tolerance:
             return False
 

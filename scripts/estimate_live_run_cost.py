@@ -90,6 +90,7 @@ def estimate_live_run_cost(
 
     max_steps = int(config.get("agents", {}).get("max_steps", 0))
     output_tokens_per_call = int(provider.get("max_tokens", 0))
+    timeout_retry_multiplier = max(1, int(provider.get("timeout_retries", 0) or 0) + 1)
     benchmark_count = len(enabled_benchmarks)
     _require_positive("recommended_generations", int(generations))
     _require_positive("agents.max_steps", max_steps)
@@ -97,9 +98,10 @@ def estimate_live_run_cost(
 
     base_evaluation_requests = benchmark_count * max_steps
     requests_per_generation = max_steps + (benchmark_count * max_steps)
-    request_ceiling = base_evaluation_requests + (
+    request_ceiling_without_retries = base_evaluation_requests + (
         int(generations) * requests_per_generation
     )
+    request_ceiling = request_ceiling_without_retries * timeout_retry_multiplier
     input_token_ceiling = request_ceiling * assumed_input_tokens_per_call
     output_token_ceiling = request_ceiling * output_tokens_per_call
     input_cost = input_token_ceiling / 1_000_000 * input_price_per_mtok
@@ -114,7 +116,9 @@ def estimate_live_run_cost(
         "benchmark_count": benchmark_count,
         "generations": int(generations),
         "max_agent_steps": max_steps,
+        "timeout_retry_multiplier": timeout_retry_multiplier,
         "request_ceiling": request_ceiling,
+        "request_ceiling_without_retries": request_ceiling_without_retries,
         "base_evaluation_request_ceiling": base_evaluation_requests,
         "requests_per_generation_ceiling": requests_per_generation,
         "assumed_input_tokens_per_call": assumed_input_tokens_per_call,

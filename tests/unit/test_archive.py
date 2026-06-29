@@ -409,3 +409,46 @@ class TestParentSelector:
         assert parent.agent_id in selected_ids
         assert clean_child.agent_id in selected_ids
         assert len(selected_ids) == 2
+
+    def test_non_regression_gate_allows_average_improving_child(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        parent_file = _make_agent_file(tmp_path, "parent.py")
+        improved_file = _make_agent_file(tmp_path, "improved.py")
+        parent = archive.add_agent(
+            str(parent_file),
+            benchmark_scores={"a": 1.0, "b": 0.0, "c": 0.0},
+            is_valid=True,
+        )
+        improved_child = archive.add_agent(
+            str(improved_file),
+            parent_id=parent.agent_id,
+            benchmark_scores={"a": 0.0, "b": 1.0, "c": 1.0},
+            is_valid=True,
+        )
+
+        selector = ParentSelector(require_non_regression=True)
+        selected_ids = {
+            agent.agent_id
+            for agent in selector.select_parents(archive, n_parents=10)
+        }
+
+        assert improved_child.agent_id in selected_ids
+
+    def test_elite_selection_probability_selects_top_eligible_agent(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        low = archive.add_agent(
+            str(_make_agent_file(tmp_path, "low.py")),
+            benchmark_scores={"b": 0.2},
+            is_valid=True,
+        )
+        high = archive.add_agent(
+            str(_make_agent_file(tmp_path, "high.py")),
+            benchmark_scores={"b": 0.9},
+            is_valid=True,
+        )
+
+        selector = ParentSelector(elite_selection_probability=1.0)
+        selected = selector.select_parents(archive, n_parents=1)
+
+        assert selected == [high]
+        assert low.agent_id != selected[0].agent_id

@@ -97,29 +97,43 @@ class OpenAICompatibleHandler(ApiHandler):
             if isinstance(self.extra_body, dict) and self.extra_body:
                 api_params["extra_body"] = self.extra_body
 
-            logger.info(
-                "Starting OpenAI-compatible API request "
-                f"(timeout: {self.timeout}s, model: {self.model}, base_url: {self.base_url})"
-            )
-            start_time = time.time()
-            try:
-                response = await asyncio.wait_for(
-                    self.client.chat.completions.create(**api_params),
-                    timeout=float(self.timeout),
+            max_attempts = max(1, int(self.timeout_retries) + 1)
+            response = None
+            last_timeout: Optional[asyncio.TimeoutError] = None
+
+            for attempt in range(1, max_attempts + 1):
+                logger.info(
+                    "Starting OpenAI-compatible API request "
+                    f"(timeout: {self.timeout}s, model: {self.model}, "
+                    f"base_url: {self.base_url}) attempt: {attempt}/{max_attempts}"
                 )
-            except asyncio.TimeoutError as exc:
-                elapsed_time = time.time() - start_time
-                logger.warning(
-                    "OpenAI-compatible API request timed out after %.2fs "
-                    "(configured timeout: %ss, model: %s)",
-                    elapsed_time,
-                    self.timeout,
-                    self.model,
-                )
+                start_time = time.time()
+                try:
+                    response = await asyncio.wait_for(
+                        self.client.chat.completions.create(**api_params),
+                        timeout=float(self.timeout),
+                    )
+                    break
+                except asyncio.TimeoutError as exc:
+                    elapsed_time = time.time() - start_time
+                    last_timeout = exc
+                    logger.warning(
+                        "OpenAI-compatible API request timed out after %.2fs "
+                        "(configured timeout: %ss, model: %s, attempt: %s/%s)",
+                        elapsed_time,
+                        self.timeout,
+                        self.model,
+                        attempt,
+                        max_attempts,
+                    )
+                    if attempt < max_attempts and self.timeout_retry_delay > 0:
+                        await asyncio.sleep(self.timeout_retry_delay)
+
+            if response is None:
                 raise ApiError(
                     f"OpenAI-compatible request timed out after {self.timeout}s",
                     provider="openai_compatible",
-                ) from exc
+                ) from last_timeout
             elapsed_time = time.time() - start_time
             logger.info(
                 "OpenAI-compatible API request completed successfully "
@@ -250,6 +264,13 @@ class OpenAICompatibleHandler(ApiHandler):
                 )
 
             if not content and not tool_calls:
+                logger.warning(
+                    "OpenAI-compatible empty response "
+                    "(finish_reason=%s, model=%s, usage=%s)",
+                    self._get(choice, "finish_reason"),
+                    self._get(response, "model", self.model),
+                    self._get(response, "usage"),
+                )
                 content = "No response generated"
 
             usage = None
@@ -326,9 +347,11 @@ class OpenAICompatibleHandler(ApiHandler):
             return OpenAICompatibleHandler._normalize_tool_arguments(raw_arguments)
         if not isinstance(raw_arguments, str):
             return {"arguments": raw_arguments}
-        try:
-            parsed = json.loads(raw_arguments or "{}")
-        except json.JSONDecodeError:
+        parsed = OpenAICompatibleHandler._decode_json_like(raw_arguments)
+        if parsed is None:
+            logger.warning(
+                "Could not parse OpenAI-compatible tool arguments; preserving raw text"
+            )
             return {"arguments": raw_arguments}
         if isinstance(parsed, dict):
             return OpenAICompatibleHandler._normalize_tool_arguments(parsed)
@@ -350,9 +373,64 @@ class OpenAICompatibleHandler(ApiHandler):
         if not isinstance(wrapped, str):
             return parsed
 
-        try:
-            inner = json.loads(wrapped.strip() or "{}")
-        except json.JSONDecodeError:
-            return parsed
-
+        inner = OpenAICompatibleHandler._decode_json_like(wrapped)
         return inner if isinstance(inner, dict) else parsed
+
+    @staticmethod
+    def _decode_json_like(raw_text: str) -> Any:
+        """Decode JSON even when providers wrap it with extra prose."""
+        stripped = raw_text.strip()
+        if not stripped:
+            return {}
+
+        try:
+            return json.loads(stripped)
+        except json.JSONDecodeError:
+            pass
+
+        decoder = json.JSONDecoder()
+        try:
+            value, _ = decoder.raw_decode(stripped)
+            return value
+        except json.JSONDecodeError:
+            pass
+
+        object_text = OpenAICompatibleHandler._extract_balanced_json_object(stripped)
+        if object_text is None:
+            return None
+        try:
+            return json.loads(object_text)
+        except json.JSONDecodeError:
+            return None
+
+    @staticmethod
+    def _extract_balanced_json_object(raw_text: str) -> Optional[str]:
+        """Return the first balanced JSON object found in raw provider text."""
+        start = raw_text.find("{")
+        if start < 0:
+            return None
+
+        depth = 0
+        in_string = False
+        escape = False
+        for idx in range(start, len(raw_text)):
+            char = raw_text[idx]
+            if escape:
+                escape = False
+                continue
+            if char == "\\":
+                escape = True
+                continue
+            if char == '"':
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return raw_text[start : idx + 1]
+
+        return None

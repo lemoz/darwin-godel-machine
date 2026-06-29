@@ -13,6 +13,8 @@ fm_providers:
     max_tokens: 4096
     temperature: 0.1
     timeout: 90
+    timeout_retries: 1
+    timeout_retry_delay: 1
 
 archive:
   path: .dgm-live-runs/livecodebench-openrouter-scale72-nonregression/archive
@@ -22,6 +24,7 @@ parent_selection:
   alpha_0: 0.5
   require_non_regression: true
   regression_tolerance: 0.0
+  elite_selection_probability: 0.35
 
 evaluation:
   benchmarks_dir: .dgm-live-runs/livecodebench-scale72/benchmarks
@@ -159,7 +162,7 @@ live_run:
     input_price_per_mtok: 0.74
     output_price_per_mtok: 3.50
     assumed_input_tokens_per_call: 50000
-    max_estimated_cost_usd: 90
+    max_estimated_cost_usd: 180
     max_generations_without_reapproval: 3
     max_agent_steps: 5
     max_output_tokens_per_call: 4096
@@ -168,7 +171,7 @@ live_run:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/prepare_livecodebench_segment.py --config config/livecodebench_segment_scale72.yaml
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_livecodebench_segment_plan.py --config config/livecodebench_openrouter_scale72_nonregression.yaml --require-generated
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --require
-    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_scale72_nonregression.yaml --input-price-per-mtok 0.74 --output-price-per-mtok 3.50 --assumed-input-tokens-per-call 50000 --max-budget 90
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_scale72_nonregression.yaml --input-price-per-mtok 0.74 --output-price-per-mtok 3.50 --assumed-input-tokens-per-call 50000 --max-budget 180
     - PATH="$PWD/.venv/bin:$PATH" python scripts/run_livecodebench_shards.py --config config/livecodebench_openrouter_scale72_nonregression.yaml --plan-only
   recommended_run:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/run_livecodebench_shards.py --config config/livecodebench_openrouter_scale72_nonregression.yaml --execute --resume --generations 3 --allow-network --env OPENROUTER_API_KEY --timeout 7200

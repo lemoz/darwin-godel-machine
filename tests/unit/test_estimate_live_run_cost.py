@@ -26,13 +26,49 @@ def test_estimate_live_score_movement_cost_from_config():
     assert estimate["benchmark_count"] == 1
     assert estimate["generations"] == 2
     assert estimate["max_agent_steps"] == 5
+    assert estimate["timeout_retry_multiplier"] == 1
     assert estimate["request_ceiling"] == 25
+    assert estimate["request_ceiling_without_retries"] == 25
     assert estimate["base_evaluation_request_ceiling"] == 5
     assert estimate["requests_per_generation_ceiling"] == 10
     assert estimate["input_token_ceiling"] == 1_250_000
     assert estimate["output_token_ceiling"] == 51_200
     assert estimate["estimated_total_cost_usd"] == pytest.approx(4.518)
     assert estimate["within_budget"] is True
+
+
+def test_estimate_live_run_cost_counts_timeout_retries(tmp_path):
+    config = tmp_path / "live.yaml"
+    config.write_text(
+        """
+fm_providers:
+  primary: openai_compatible
+  openai_compatible:
+    model: test/model
+    max_tokens: 100
+    timeout_retries: 1
+agents:
+  max_steps: 2
+benchmarks:
+  enabled:
+    - bench_one
+live_run:
+  recommended_generations: 1
+""",
+        encoding="utf-8",
+    )
+
+    estimate = estimate_live_run_cost(
+        config_path=config,
+        input_price_per_mtok=1,
+        output_price_per_mtok=1,
+        assumed_input_tokens_per_call=1000,
+        max_budget=1,
+    )
+
+    assert estimate["request_ceiling_without_retries"] == 6
+    assert estimate["timeout_retry_multiplier"] == 2
+    assert estimate["request_ceiling"] == 12
 
 
 def test_estimate_live_run_cost_rejects_zero_price():

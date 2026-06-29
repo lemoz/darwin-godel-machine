@@ -101,6 +101,8 @@ def _write_live_config(tmp_path: Path, segment_config_path: Path) -> Path:
                 "max_tokens": 4096,
                 "temperature": 0.1,
                 "timeout": 90,
+                "timeout_retries": 1,
+                "timeout_retry_delay": 1,
             },
         },
         "archive": {"path": "runs/archive"},
@@ -109,6 +111,7 @@ def _write_live_config(tmp_path: Path, segment_config_path: Path) -> Path:
             "alpha_0": 0.5,
             "require_non_regression": True,
             "regression_tolerance": 0.0,
+            "elite_selection_probability": 0.35,
         },
         "evaluation": {
             "benchmarks_dir": "generated/benchmarks",
@@ -143,7 +146,7 @@ def _write_live_config(tmp_path: Path, segment_config_path: Path) -> Path:
                 "input_price_per_mtok": 0.74,
                 "output_price_per_mtok": 3.50,
                 "assumed_input_tokens_per_call": 50000,
-                "max_estimated_cost_usd": 3,
+                "max_estimated_cost_usd": 6,
                 "max_generations_without_reapproval": 3,
                 "max_agent_steps": 5,
                 "max_output_tokens_per_call": 4096,
@@ -172,8 +175,8 @@ def test_default_livecodebench_segment_plan_is_bounded():
 
     assert report["benchmark_count"] == 24
     assert report["recommended_generations"] == 3
-    assert report["request_ceiling"] == 495
-    assert report["estimated_total_cost_usd"] == pytest.approx(25.41132)
+    assert report["request_ceiling"] == 990
+    assert report["estimated_total_cost_usd"] == pytest.approx(50.82264)
 
 
 def test_scale72_livecodebench_segment_plan_is_bounded():
@@ -186,8 +189,8 @@ def test_scale72_livecodebench_segment_plan_is_bounded():
 
     assert report["benchmark_count"] == 72
     assert report["recommended_generations"] == 3
-    assert report["request_ceiling"] == 1455
-    assert report["estimated_total_cost_usd"] == pytest.approx(74.69388)
+    assert report["request_ceiling"] == 2910
+    assert report["estimated_total_cost_usd"] == pytest.approx(149.38776)
 
 
 def test_livecodebench_segment_plan_requires_generated_manifest(tmp_path):
@@ -202,8 +205,10 @@ def test_livecodebench_segment_plan_requires_generated_manifest(tmp_path):
 
     assert report["generated_manifest"]["benchmark_count"] == 2
     assert report["generated_manifest"]["total_test_count"] == 4
-    assert report["estimated_total_cost_usd"] == pytest.approx(2.82348)
+    assert report["estimated_total_cost_usd"] == pytest.approx(5.64696)
     assert report["require_non_regression"] is True
+    assert report["timeout_retries"] == 1
+    assert report["elite_selection_probability"] == pytest.approx(0.35)
 
 
 def test_livecodebench_segment_plan_rejects_mismatched_enabled(tmp_path):

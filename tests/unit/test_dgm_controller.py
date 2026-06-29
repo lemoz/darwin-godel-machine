@@ -155,11 +155,13 @@ class TestDGMControllerInit:
         cfg = _minimal_config(tmp_path)
         cfg["parent_selection"]["require_non_regression"] = True
         cfg["parent_selection"]["regression_tolerance"] = 0.01
+        cfg["parent_selection"]["elite_selection_probability"] = 0.25
 
         ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
 
         assert ctrl.parent_selector.require_non_regression is True
         assert ctrl.parent_selector.regression_tolerance == pytest.approx(0.01)
+        assert ctrl.parent_selector.elite_selection_probability == pytest.approx(0.25)
 
     def test_build_score_delta_metadata_marks_regressions(self, tmp_path):
         from archive.agent_archive import ArchivedAgent

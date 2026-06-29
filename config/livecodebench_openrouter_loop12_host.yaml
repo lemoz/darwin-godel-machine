@@ -13,6 +13,8 @@ fm_providers:
     max_tokens: 2048
     temperature: 0.1
     timeout: 60
+    timeout_retries: 1
+    timeout_retry_delay: 1
 
 archive:
   path: .dgm-live-runs/livecodebench-openrouter-loop12-host/archive
@@ -22,6 +24,7 @@ parent_selection:
   alpha_0: 0.5
   require_non_regression: true
   regression_tolerance: 0.0
+  elite_selection_probability: 0.35
 
 evaluation:
   benchmarks_dir: .dgm-live-runs/livecodebench-loop12/benchmarks
@@ -88,14 +91,14 @@ live_run:
     input_price_per_mtok: 0.74
     output_price_per_mtok: 3.50
     assumed_input_tokens_per_call: 50000
-    max_estimated_cost_usd: 35
+    max_estimated_cost_usd: 70
     max_generations_without_reapproval: 10
     max_agent_steps: 5
     max_output_tokens_per_call: 2048
     max_enabled_benchmarks: 12
   required_preflight:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/prepare_livecodebench_segment.py --config config/livecodebench_segment_loop12.yaml
-    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_loop12_host.yaml --input-price-per-mtok 0.74 --output-price-per-mtok 3.50 --assumed-input-tokens-per-call 50000 --max-budget 35
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_loop12_host.yaml --input-price-per-mtok 0.74 --output-price-per-mtok 3.50 --assumed-input-tokens-per-call 50000 --max-budget 70
   recommended_run:
     - PATH="$PWD/.venv/bin:$PATH" python run_dgm.py --config config/livecodebench_openrouter_loop12_host.yaml --generations 10
   post_run_scorecard:

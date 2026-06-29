@@ -95,6 +95,11 @@ def verify_livecodebench_segment_plan(
     _require(provider.get("api_key") == "${OPENROUTER_API_KEY}", "Provider must use OPENROUTER_API_KEY env placeholder")
     _require(provider.get("base_url") == "https://openrouter.ai/api/v1", "Provider must use OpenRouter base_url")
     _require(int(provider.get("max_tokens", 0)) == 4096, "Provider max_tokens must be 4096")
+    _require(int(provider.get("timeout_retries", 0)) == 1, "Provider timeout_retries must be 1")
+    _require(
+        float(provider.get("timeout_retry_delay", 0)) >= 0.0,
+        "Provider timeout_retry_delay must be non-negative",
+    )
 
     live_run = config.get("live_run", {})
     _require(isinstance(live_run, dict), "live_run must be a mapping")
@@ -116,6 +121,11 @@ def verify_livecodebench_segment_plan(
     _require(
         float(parent_selection.get("regression_tolerance", 0.0)) == 0.0,
         "LiveCodeBench regression_tolerance must be 0.0",
+    )
+    elite_probability = float(parent_selection.get("elite_selection_probability", 0.0))
+    _require(
+        0.0 < elite_probability < 1.0,
+        "LiveCodeBench elite_selection_probability must be between 0 and 1",
     )
 
     segment = live_run.get("segment", {})
@@ -217,8 +227,10 @@ def verify_livecodebench_segment_plan(
         "benchmark_count": len(enabled),
         "recommended_generations": generations,
         "max_agent_steps": int(agents["max_steps"]),
+        "timeout_retries": int(provider["timeout_retries"]),
         "require_non_regression": parent_selection["require_non_regression"],
         "regression_tolerance": float(parent_selection["regression_tolerance"]),
+        "elite_selection_probability": elite_probability,
         "request_ceiling": estimate["request_ceiling"],
         "estimated_total_cost_usd": estimate["estimated_total_cost_usd"],
         "max_budget_usd": float(cost_gate["max_estimated_cost_usd"]),
