@@ -1,0 +1,91 @@
+{
+  "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "b9b2012c-fe0c-4861-945c-0d76ea1f07e2",
+      "average_score": 0.16666666666666666,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "generation": 0
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "b9b2012c-fe0c-4861-945c-0d76ea1f07e2",
+      "average_score": 0.16666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-06-29T23:07:04.137865",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 2
+    },
+    {
+      "agent_id": "1b457243-a922-4257-9f04-f909d7570358",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T23:07:57.903321",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": false,
+      "mutation_status": "changed",
+      "parent_id": "b9b2012c-fe0c-4861-945c-0d76ea1f07e2",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "848215b4-0ca3-4c22-9d6d-bbd0a394422f",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T23:08:07.891774",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "b9b2012c-fe0c-4861-945c-0d76ea1f07e2",
+      "solved_count": 0
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [
+      "1b457243-a922-4257-9f04-f909d7570358"
+    ],
+    "changed_count": 1,
+    "noop_agents": [
+      "848215b4-0ca3-4c22-9d6d-bbd0a394422f"
+    ],
+    "noop_count": 1,
+    "status_counts": {
+      "changed": 1,
+      "noop": 1
+    },
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [],
+  "top_agent_id": "b9b2012c-fe0c-4861-945c-0d76ea1f07e2",
+  "top_score": 0.16666666666666666,
+  "total_agents": 3,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 0,
+  "valid_agents": 1
+}
