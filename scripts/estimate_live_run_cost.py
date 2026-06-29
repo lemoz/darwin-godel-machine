@@ -88,16 +88,22 @@ def estimate_live_run_cost(
     if generations is None:
         raise CostEstimateError("Config live_run must define recommended_generations")
 
-    max_steps = int(config.get("agents", {}).get("max_steps", 0))
+    benchmark_max_steps = int(config.get("agents", {}).get("max_steps", 0))
+    self_modification_max_steps = int(
+        config.get("self_modification", {}).get("max_steps", benchmark_max_steps)
+    )
     output_tokens_per_call = int(provider.get("max_tokens", 0))
     timeout_retry_multiplier = max(1, int(provider.get("timeout_retries", 0) or 0) + 1)
     benchmark_count = len(enabled_benchmarks)
     _require_positive("recommended_generations", int(generations))
-    _require_positive("agents.max_steps", max_steps)
+    _require_positive("agents.max_steps", benchmark_max_steps)
+    _require_positive("self_modification.max_steps", self_modification_max_steps)
     _require_positive("provider.max_tokens", output_tokens_per_call)
 
-    base_evaluation_requests = benchmark_count * max_steps
-    requests_per_generation = max_steps + (benchmark_count * max_steps)
+    base_evaluation_requests = benchmark_count * benchmark_max_steps
+    requests_per_generation = self_modification_max_steps + (
+        benchmark_count * benchmark_max_steps
+    )
     request_ceiling_without_retries = base_evaluation_requests + (
         int(generations) * requests_per_generation
     )
@@ -115,7 +121,8 @@ def estimate_live_run_cost(
         "enabled_benchmarks": list(enabled_benchmarks),
         "benchmark_count": benchmark_count,
         "generations": int(generations),
-        "max_agent_steps": max_steps,
+        "max_agent_steps": benchmark_max_steps,
+        "max_self_modification_steps": self_modification_max_steps,
         "timeout_retry_multiplier": timeout_retry_multiplier,
         "request_ceiling": request_ceiling,
         "request_ceiling_without_retries": request_ceiling_without_retries,

@@ -470,6 +470,17 @@ class Agent:
         logger.info(f"Base agent {base_agent.agent_id} added to archive")
         logger.info(f"Base agent score: {base_agent.average_score:.3f}")
 
+    def _self_modification_max_steps(self) -> int:
+        """Return the iteration budget for self-modification tasks."""
+        configured = (
+            self.config.get('self_modification', {})
+            .get('max_steps', self.config['agents'].get('max_steps', 20))
+        )
+        max_steps = int(configured)
+        if max_steps < 1:
+            raise ValueError("self_modification.max_steps must be at least 1")
+        return max_steps
+
     def _create_modification_task(self, parent_agent) -> Task:
         """
         Create a self-modification task for the parent agent.
@@ -523,6 +534,8 @@ Improvement suggestions:
         except Exception as _exc:
             logger.warning(f"Diagnosis/proposal enrichment failed (using static template): {_exc}")
 
+        self_modification_max_steps = self._self_modification_max_steps()
+
         # --- Build task description ---
         task_description = f"""You are an AI agent participating in the Darwin Gödel Machine (DGM) experiment.
 Your task is to modify your own source code to create an improved version of yourself.
@@ -533,6 +546,7 @@ Average Score: {parent_agent.average_score:.3f}
 {enrichment}
 Your goal is to improve your performance on coding benchmarks by modifying your source code.
 You have access to your complete source code in the current directory.
+Self-modification turn budget: {self_modification_max_steps} model/tool iterations.
 
 Specific areas to consider:
 1. Improve your problem-solving strategies
@@ -545,8 +559,14 @@ Important constraints:
 - Maintain compatibility with the existing Agent interface
 - Preserve your self-modification capabilities
 - Ensure the modified version can still be instantiated and run
-- Change at least one Python source file that is part of the agent package.
+- Change at least one Python source file that is part of the agent package
+  (`agent.py`, `tools/*.py`, `fm_interface/*.py`, or provider modules).
   No-op attempts or benchmark-only solution files will be rejected as invalid.
+- Inspect only the files you need, then make a concrete edit. Do not spend the
+  full turn budget only reading files.
+- Prefer making your first source write by the halfway point of the turn budget.
+- Do not use shell command chaining such as `&&` or `;`; use separate tool calls.
+- In your final answer, briefly name the changed source file or files.
 
 Create your improved version by modifying agent.py (and its subpackages) in your
 working directory. Focus on meaningful improvements that will enhance benchmark
@@ -603,7 +623,7 @@ performance."""
                 fm_provider=primary_provider,
                 fm_config=self.config['fm_providers'][primary_provider],
                 working_directory=str(workspace_dir),
-                max_iterations=self.config['agents'].get('max_steps', 20),
+                max_iterations=self._self_modification_max_steps(),
                 sandbox_manager=self.sandbox_manager,
                 use_sandbox=self.use_sandbox,
             )

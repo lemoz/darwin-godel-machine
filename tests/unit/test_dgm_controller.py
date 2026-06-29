@@ -143,6 +143,7 @@ class TestDGMControllerInit:
         from dgm_controller import DGMController
         from archive.agent_archive import ArchivedAgent
         cfg = _minimal_config(tmp_path)
+        cfg["self_modification"] = {"max_steps": 7}
         ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
 
         mock_parent = ArchivedAgent(
@@ -160,6 +161,10 @@ class TestDGMControllerInit:
         from agent.agent import Task
         assert isinstance(task, Task)
         assert "0.700" in task.description or "0.7" in task.description
+        assert "Self-modification turn budget: 7" in task.description
+        assert "No-op attempts" in task.description
+        assert "Do not use shell command chaining" in task.description
+        assert "first source write" in task.description
 
     def test_parent_selection_non_regression_config_is_wired(self, tmp_path):
         from dgm_controller import DGMController
@@ -441,6 +446,59 @@ class TestDGMControllerInit:
         assert json.loads(archived_metadata.read_text(encoding="utf-8"))[
             "mutation_status"
         ] == "noop"
+
+    async def test_self_modification_uses_self_modification_step_budget(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from archive.agent_archive import ArchivedAgent
+        from agent.agent import Task
+        from dgm_controller import DGMController
+
+        captured = {}
+
+        class CapturingAgent:
+            def __init__(self, config):
+                captured["max_iterations"] = config.max_iterations
+
+            async def solve_task(self, task):
+                return {"success": True, "solution": ""}
+
+        monkeypatch.setattr("dgm_controller.Agent", CapturingAgent)
+
+        cfg = _minimal_config(tmp_path)
+        cfg["agents"]["max_steps"] = 1
+        cfg["self_modification"] = {"max_steps": 7}
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        parent_dir = tmp_path / "parent_agent"
+        parent_dir.mkdir()
+        (parent_dir / "agent.py").write_text(
+            "class Agent:\n"
+            "    def __init__(self, config=None): pass\n"
+            "    def solve_task(self, task): return 'old'\n",
+            encoding="utf-8",
+        )
+        parent = ArchivedAgent(
+            agent_id="parent_001",
+            parent_id=None,
+            generation=0,
+            source_path=str(parent_dir / "agent.py"),
+            created_at="2026-06-15T00:00:00",
+            benchmark_scores={"dummy": 0.0},
+            average_score=0.0,
+            is_valid=True,
+            metadata={},
+        )
+
+        result_path = await ctrl._perform_self_modification(
+            parent,
+            Task(task_id="self_modify_parent_001_0", description="modify"),
+        )
+
+        assert result_path is not None
+        assert captured["max_iterations"] == 7
 
     async def test_run_generation_archives_noop_without_evaluation(
         self,
