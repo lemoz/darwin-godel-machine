@@ -184,6 +184,17 @@ class EditTool(BaseTool):
                 required=False
             ),
             ToolParameter(
+                name="content_lines",
+                type="array",
+                description=(
+                    "Alternative to content for write/append actions. Provide one "
+                    "source line per string; the tool joins lines with newlines and "
+                    "adds a final newline when the list is non-empty. Use this when "
+                    "large escaped string arguments are unreliable."
+                ),
+                required=False
+            ),
+            ToolParameter(
                 name="line_number",
                 type="integer",
                 description="Line number for modify actions",
@@ -260,10 +271,13 @@ class EditTool(BaseTool):
 
         try:
             if action == "write":
-                content_error = self._validate_content_parameter(parameters, action)
+                content, content_error = self._get_content_parameter(
+                    parameters,
+                    action,
+                )
                 if content_error is not None:
                     return content_error
-                content = parameters["content"]
+                content = self._repair_wrapped_python_source(file_path_str, content)
                 existing_content = ""
                 if full_path.exists():
                     existing_content = full_path.read_text(encoding="utf-8")
@@ -306,10 +320,13 @@ class EditTool(BaseTool):
                 )
 
             elif action == "append":
-                content_error = self._validate_content_parameter(parameters, action)
+                content, content_error = self._get_content_parameter(
+                    parameters,
+                    action,
+                )
                 if content_error is not None:
                     return content_error
-                content = parameters["content"]
+                content = self._repair_wrapped_python_source(file_path_str, content)
 
                 existing_content = ""
                 if full_path.exists():
@@ -446,28 +463,65 @@ class EditTool(BaseTool):
             )
 
     @staticmethod
-    def _validate_content_parameter(
+    def _get_content_parameter(
         parameters: Dict[str, Any],
         action: str,
-    ) -> ToolResult | None:
-        if "content" not in parameters:
-            return ToolResult(
+    ) -> tuple[str, ToolResult | None]:
+        has_content = "content" in parameters
+        has_content_lines = "content_lines" in parameters
+
+        if has_content and has_content_lines:
+            return "", ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error=(
+                    f"Provide either content or content_lines for {action} action, "
+                    "not both"
+                ),
+            )
+
+        if not has_content and not has_content_lines:
+            return "", ToolResult(
                 status=ToolExecutionStatus.ERROR,
                 output="",
                 error=(
                     f"content parameter is required for {action} action; "
-                    "use an explicit empty string only for an intentional empty write"
+                    "alternatively provide content_lines as an array of source "
+                    "lines. Use an explicit empty string only for an intentional "
+                    "empty write"
                 ),
             )
 
-        if not isinstance(parameters["content"], str):
-            return ToolResult(
+        if has_content:
+            if not isinstance(parameters["content"], str):
+                return "", ToolResult(
+                    status=ToolExecutionStatus.ERROR,
+                    output="",
+                    error=f"content parameter must be a string for {action} action",
+                )
+            return parameters["content"], None
+
+        content_lines = parameters["content_lines"]
+        if not isinstance(content_lines, list):
+            return "", ToolResult(
                 status=ToolExecutionStatus.ERROR,
                 output="",
-                error=f"content parameter must be a string for {action} action",
+                error=f"content_lines parameter must be an array for {action} action",
+            )
+        if not all(isinstance(line, str) for line in content_lines):
+            return "", ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error=(
+                    f"content_lines parameter must contain only strings for "
+                    f"{action} action"
+                ),
             )
 
-        return None
+        content = "\n".join(content_lines)
+        if content_lines:
+            content += "\n"
+        return content, None
 
     @staticmethod
     def _validate_python_replacement(
@@ -553,11 +607,55 @@ class EditTool(BaseTool):
                     f"Rejected {action} for Python file {file_path}: content looks "
                     "like a serialized/list fragment, not raw Python source. "
                     "Write the complete Python file text directly, starting with "
-                    "imports, definitions, assignments, or executable statements."
+                    "imports, definitions, assignments, or executable statements. "
+                    "If escaped multiline strings are being mangled, retry with "
+                    "content_lines as an array of complete source lines, or provide "
+                    "the final solution in a markdown python code block followed by "
+                    "Task complete."
                 ),
             )
 
         return None
+
+    @staticmethod
+    def _repair_wrapped_python_source(file_path: str, content: str) -> str:
+        """Unwrap unambiguous provider wrappers around complete Python source."""
+        if Path(file_path).suffix != ".py":
+            return content
+
+        stripped = content.strip()
+        if not stripped or stripped[0] not in "[({":
+            return content
+
+        try:
+            wrapped = ast.literal_eval(stripped)
+        except (SyntaxError, ValueError):
+            return content
+
+        candidate = None
+        if (
+            isinstance(wrapped, (list, tuple))
+            and len(wrapped) == 1
+            and isinstance(wrapped[0], str)
+        ):
+            candidate = wrapped[0]
+        elif isinstance(wrapped, dict) and len(wrapped) == 1:
+            key, value = next(iter(wrapped.items()))
+            if key in {"content", "source", "code"} and isinstance(value, str):
+                candidate = value
+
+        if candidate is None or not candidate.strip():
+            return content
+
+        try:
+            tree = ast.parse(candidate, filename=file_path)
+        except SyntaxError:
+            return content
+
+        if EditTool._looks_like_serialized_python_fragment(candidate.strip(), tree):
+            return content
+
+        return candidate
 
     @staticmethod
     def _looks_like_serialized_python_fragment(

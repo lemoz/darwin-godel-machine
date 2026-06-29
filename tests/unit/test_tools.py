@@ -350,6 +350,58 @@ class TestEditTool:
             "import sys\nprint(sys.stdin.read().strip())\n"
         )
 
+    async def test_write_python_content_lines_allowed(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content_lines": [
+                "import sys",
+                "print(sys.stdin.read().strip())",
+            ],
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "solution.py").read_text() == (
+            "import sys\nprint(sys.stdin.read().strip())\n"
+        )
+
+    async def test_write_python_content_lines_must_be_strings(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content_lines": ["print('ok')", 123],
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "content_lines parameter must contain only strings" in (
+            result.error or ""
+        )
+        assert not (self.tmp / "solution.py").exists()
+
+    async def test_write_content_and_content_lines_rejected(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content": "print('ok')\n",
+            "content_lines": ["print('ok')"],
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "either content or content_lines" in (result.error or "")
+        assert not (self.tmp / "solution.py").exists()
+
+    async def test_write_python_wrapped_single_source_string_repaired(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content": "['import sys\\nprint(sys.stdin.read().strip())\\n']",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "solution.py").read_text() == (
+            "import sys\nprint(sys.stdin.read().strip())\n"
+        )
+
     async def test_write_python_syntax_error_rejected(self):
         result = await self.tool.execute({
             "action": "write",

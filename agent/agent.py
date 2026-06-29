@@ -504,6 +504,10 @@ BENCHMARK SOLUTION FILE:
   `/tmp/...` path unless you also copy the final code into `solution.py`.
 - The evaluator can recover `solution.py` even if you hit the step limit, so
   create or update that file early.
+- If the edit tool rejects a Python write as a serialized/list fragment, do
+  not retry the same payload. Retry the edit call with `content_lines`, using
+  one complete Python source line per string, or provide the final solution in
+  a markdown `python` code block and end with the required completion phrase.
 
 TESTING GUIDELINES:
 ==================
