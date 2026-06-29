@@ -1,0 +1,168 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "8c9297d8-e04e-4395-9b83-40170fe32f22",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 24,
+        "created_at": "2026-06-29T15:37:54.964288",
+        "generation": 0,
+        "is_valid": true,
+        "parent_id": null,
+        "solved_count": 14
+      },
+      {
+        "agent_id": "e9384c6e-fa44-423e-8c17-f61868492579",
+        "average_score": 0.5,
+        "benchmark_count": 24,
+        "created_at": "2026-06-29T16:24:04.143141",
+        "generation": 1,
+        "is_valid": true,
+        "parent_id": "8c9297d8-e04e-4395-9b83-40170fe32f22",
+        "solved_count": 12
+      },
+      {
+        "agent_id": "94442148-429d-477b-bcf2-113e6839f43c",
+        "average_score": 0.5416666666666666,
+        "benchmark_count": 24,
+        "created_at": "2026-06-29T17:08:23.336264",
+        "generation": 1,
+        "is_valid": true,
+        "parent_id": "8c9297d8-e04e-4395-9b83-40170fe32f22",
+        "solved_count": 13
+      },
+      {
+        "agent_id": "24400539-becc-499e-a7ae-a2a600a96ffd",
+        "average_score": 0.4583333333333333,
+        "benchmark_count": 24,
+        "created_at": "2026-06-29T17:54:39.811657",
+        "generation": 1,
+        "is_valid": true,
+        "parent_id": "8c9297d8-e04e-4395-9b83-40170fe32f22",
+        "solved_count": 11
+      }
+    ],
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc387_f": 4,
+      "livecodebench_abc388_d": 2,
+      "livecodebench_abc388_e": 2,
+      "livecodebench_abc388_f": 4,
+      "livecodebench_abc388_g": 4,
+      "livecodebench_abc389_d": 2,
+      "livecodebench_abc389_e": 4,
+      "livecodebench_abc389_f": 4,
+      "livecodebench_abc389_g": 4,
+      "livecodebench_abc390_c": 1,
+      "livecodebench_abc390_d": 4,
+      "livecodebench_abc390_e": 2,
+      "livecodebench_abc391_d": 4,
+      "livecodebench_abc392_d": 4
+    }
+  },
+  "dgm_report": {
+    "final_archive_size": 2,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.82887012,
+    "successful_improvements": 0,
+    "total_agents_created": 1,
+    "total_generations": 1
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 59,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 71,
+    "resource_guard_rejections": 4,
+    "traceback_count": 1,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc387_f": 4,
+      "livecodebench_abc388_d": 2,
+      "livecodebench_abc388_e": 2,
+      "livecodebench_abc388_f": 4,
+      "livecodebench_abc388_g": 4,
+      "livecodebench_abc389_d": 2,
+      "livecodebench_abc389_e": 4,
+      "livecodebench_abc389_f": 4,
+      "livecodebench_abc389_g": 4,
+      "livecodebench_abc390_c": 1,
+      "livecodebench_abc390_d": 4,
+      "livecodebench_abc390_e": 2,
+      "livecodebench_abc391_d": 4,
+      "livecodebench_abc392_d": 4
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 17.132840909090913,
+      "count": 264,
+      "max": 88.81
+    },
+    "configured_timeout_seconds": 90.0,
+    "empty_response_count": 59,
+    "finish_reasons": {
+      "length": 34,
+      "stop": 25
+    },
+    "http_post_count": 336,
+    "model": "moonshotai/kimi-k2.7-code",
+    "model_from_log": "moonshotai/kimi-k2.7-code",
+    "name": "openrouter",
+    "timeout_count": 71
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-segment/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/lcb24-cloud-20260629-retry-1/artifacts/controller.log",
+    "dgm_report": "docs/live-runs/livecodebench-openrouter-scale72-nonregression-2026-06-25/dgm_report_20260625_101503.json",
+    "end_time": "2026-06-29T17:54:39.814000",
+    "line_count": 8413,
+    "observed_runtime_seconds": 11333.93,
+    "scorecard": "/var/tmp/dgm-live-runs/lcb24-cloud-20260629-retry-1/artifacts/scorecard.json",
+    "start_time": "2026-06-29T14:45:45.884000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.5833333333333334,
+    "best_average_delta": -0.04166666666666674,
+    "generation_best_scores": [
+      {
+        "agent_id": "8c9297d8-e04e-4395-9b83-40170fe32f22",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 24,
+        "generation": 0,
+        "solved_count": 14
+      },
+      {
+        "agent_id": "94442148-429d-477b-bcf2-113e6839f43c",
+        "average_score": 0.5416666666666666,
+        "benchmark_count": 24,
+        "generation": 1,
+        "solved_count": 13
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": true,
+    "improvement_count": 0,
+    "improvements": [],
+    "top_agent_id": "8c9297d8-e04e-4395-9b83-40170fe32f22",
+    "top_score": 0.5833333333333334,
+    "total_agents": 4,
+    "total_benchmark_improvements": 2,
+    "total_benchmark_regressions": 8,
+    "total_benchmark_unchanged": 62,
+    "valid_agents": 4
+  },
+  "tokens": {
+    "completion_tokens": 190820,
+    "estimated_cost_usd": 1.138978,
+    "input_price_per_mtok": 0.74,
+    "output_price_per_mtok": 3.5,
+    "prompt_tokens": 636632,
+    "total_tokens": 827452,
+    "usage_events": 264
+  }
+}
