@@ -38,6 +38,11 @@ def test_build_startup_script_clones_exact_commit_and_hides_secret_values():
     assert "secret-value" not in script
     assert "summarize_live_run_telemetry.py" in script
     assert "summarize_archive_scores.py" in script
+    assert 'ARCHIVE_DIR="$(python - "${CONFIG}"' in script
+    assert "archive.tar.gz" in script
+    assert "Path(results_dir).glob(\"dgm_report_*.json\")" in script
+    assert "find . -path '*/archive_metadata.json'" not in script
+    assert "find . -path '*/dgm_report_*.json'" not in script
     assert "preflight_commands.txt" in script
     assert "required_preflight" in script
     assert "gcloud storage rsync --recursive" in script

@@ -6,7 +6,9 @@ Main controller that orchestrates the DGM loop of self-improvement.
 
 import ast
 import asyncio
+import difflib
 import gc
+import hashlib
 import logging
 import json
 import os
@@ -138,6 +140,7 @@ class DGMController:
         self.total_agents_created = 0
         self.successful_improvements = 0
         self.start_time = datetime.now()
+        self._mutation_metadata_by_agent_path: Dict[str, Dict[str, Any]] = {}
 
         # Create necessary directories
         Path(self.config['archive']['path']).mkdir(parents=True, exist_ok=True)
@@ -321,6 +324,28 @@ class Agent:
             logger.warning("Self-modification failed")
             return
 
+        mutation_metadata = self._mutation_metadata_by_agent_path.get(
+            str(Path(modified_agent_path).resolve()),
+            {},
+        )
+        if mutation_metadata.get("mutation_status") == "noop":
+            logger.warning(
+                "Self-modification produced no Python agent code changes; "
+                "archiving invalid no-op child without benchmark evaluation"
+            )
+            archived_agent = self.archive.add_agent(
+                agent_path=modified_agent_path,
+                parent_id=parent.agent_id,
+                benchmark_scores={},
+                is_valid=False,
+                metadata={"mutation": mutation_metadata},
+            )
+            logger.info(
+                "Archived no-op child %s as invalid mutation_status=noop",
+                archived_agent.agent_id,
+            )
+            return
+
         # 4. Validate modified agent (validator takes only agent_path, returns {'valid': bool, ...})
         logger.info("Validating modified agent...")
         validation_result = await self.validator.validate_agent(
@@ -329,6 +354,20 @@ class Agent:
 
         if not validation_result['valid']:
             logger.warning(f"Modified agent validation failed: {validation_result['errors']}")
+            archived_agent = self.archive.add_agent(
+                agent_path=modified_agent_path,
+                parent_id=parent.agent_id,
+                benchmark_scores={},
+                is_valid=False,
+                metadata={
+                    "mutation": mutation_metadata,
+                    "validation": validation_result,
+                },
+            )
+            logger.info(
+                "Archived validation-failed child %s as invalid",
+                archived_agent.agent_id,
+            )
             return
 
         # 5. Evaluate on benchmarks
@@ -345,7 +384,10 @@ class Agent:
             agent_path=modified_agent_path,
             parent_id=parent.agent_id,
             benchmark_scores=benchmark_scores,
-            metadata={"score_delta": score_delta_metadata},
+            metadata={
+                "score_delta": score_delta_metadata,
+                "mutation": mutation_metadata,
+            },
         )
 
         logger.info(f"Added agent {archived_agent.agent_id} to archive")
@@ -499,6 +541,8 @@ Important constraints:
 - Maintain compatibility with the existing Agent interface
 - Preserve your self-modification capabilities
 - Ensure the modified version can still be instantiated and run
+- Change at least one Python source file that is part of the agent package.
+  No-op attempts or benchmark-only solution files will be rejected as invalid.
 
 Create your improved version by modifying agent.py (and its subpackages) in your
 working directory. Focus on meaningful improvements that will enhance benchmark
@@ -546,6 +590,7 @@ performance."""
                 dirs_exist_ok=True,
                 ignore=shutil.ignore_patterns('__pycache__', '*.pyc', '.git'),
             )
+            before_snapshot = self._snapshot_agent_tree(workspace_dir)
 
             # Create agent configuration
             primary_provider = self.config['fm_providers']['primary']
@@ -613,6 +658,33 @@ performance."""
                     )
                     return None
 
+                mutation_metadata = self._build_mutation_metadata(
+                    parent_agent=parent_agent,
+                    task_id=modification_task.task_id,
+                    workspace_dir=workspace_dir,
+                    before_snapshot=before_snapshot,
+                    after_snapshot=self._snapshot_agent_tree(workspace_dir),
+                )
+                patch_text = self._build_mutation_patch(
+                    before_snapshot=before_snapshot,
+                    after_snapshot=self._snapshot_agent_tree(workspace_dir),
+                    changed_files=mutation_metadata["changed_files"],
+                )
+                self._write_mutation_artifacts(
+                    workspace_dir=workspace_dir,
+                    metadata=mutation_metadata,
+                    patch_text=patch_text,
+                )
+                self._mutation_metadata_by_agent_path[
+                    str(agent_file.resolve())
+                ] = mutation_metadata
+                logger.info(
+                    "Mutation proof: status=%s changed_code_files=%d changed_files=%d",
+                    mutation_metadata["mutation_status"],
+                    len(mutation_metadata["changed_code_files"]),
+                    len(mutation_metadata["changed_files"]),
+                )
+
                 # (c) Return the FILE path, not the directory
                 return str(agent_file)
             else:
@@ -623,6 +695,150 @@ performance."""
             logger.error(f"Error during self-modification: {e}")
             logger.error(traceback.format_exc())
             return None
+
+    @staticmethod
+    def _skip_mutation_path(path: Path) -> bool:
+        """Return True for generated/cache paths that should not prove mutation."""
+        excluded_dirs = {".git", "__pycache__", ".dgm_metadata"}
+        if any(part in excluded_dirs for part in path.parts):
+            return True
+        return path.suffix == ".pyc"
+
+    @staticmethod
+    def _is_agent_code_path(relative_path: str) -> bool:
+        """Return True when a changed path is executable agent package code."""
+        path = Path(relative_path)
+        if path.suffix != ".py":
+            return False
+        return path.name not in {"solution.py", "solve.py", "main.py"}
+
+    def _snapshot_agent_tree(self, root: Path) -> Dict[str, bytes]:
+        """Snapshot non-generated files under an agent package directory."""
+        snapshot: Dict[str, bytes] = {}
+        for path in sorted(root.rglob("*")):
+            relative_path = path.relative_to(root)
+            if path.is_dir() or self._skip_mutation_path(relative_path):
+                continue
+            snapshot[relative_path.as_posix()] = path.read_bytes()
+        return snapshot
+
+    @staticmethod
+    def _hash_manifest(snapshot: Dict[str, bytes]) -> Dict[str, Dict[str, Any]]:
+        return {
+            path: {
+                "sha256": hashlib.sha256(content).hexdigest(),
+                "size_bytes": len(content),
+            }
+            for path, content in sorted(snapshot.items())
+        }
+
+    @staticmethod
+    def _tree_sha256(manifest: Dict[str, Dict[str, Any]]) -> str:
+        digest = hashlib.sha256()
+        for path, item in sorted(manifest.items()):
+            digest.update(path.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(str(item["size_bytes"]).encode("ascii"))
+            digest.update(b"\0")
+            digest.update(item["sha256"].encode("ascii"))
+            digest.update(b"\0")
+        return digest.hexdigest()
+
+    def _build_mutation_metadata(
+        self,
+        *,
+        parent_agent,
+        task_id: str,
+        workspace_dir: Path,
+        before_snapshot: Dict[str, bytes],
+        after_snapshot: Dict[str, bytes],
+    ) -> Dict[str, Any]:
+        before_manifest = self._hash_manifest(before_snapshot)
+        after_manifest = self._hash_manifest(after_snapshot)
+        before_paths = set(before_manifest)
+        after_paths = set(after_manifest)
+        added_files = sorted(after_paths - before_paths)
+        removed_files = sorted(before_paths - after_paths)
+        modified_files = sorted(
+            path
+            for path in before_paths & after_paths
+            if before_manifest[path]["sha256"] != after_manifest[path]["sha256"]
+        )
+        changed_files = sorted(added_files + modified_files + removed_files)
+        changed_code_files = [
+            path for path in changed_files if self._is_agent_code_path(path)
+        ]
+        mutation_status = "changed" if changed_code_files else "noop"
+        return {
+            "schema_version": 1,
+            "task_id": task_id,
+            "parent_agent_id": parent_agent.agent_id,
+            "parent_source_path": str(parent_agent.source_path),
+            "workspace_dir": str(workspace_dir),
+            "mutation_status": mutation_status,
+            "has_changes": bool(changed_files),
+            "has_code_changes": bool(changed_code_files),
+            "added_files": added_files,
+            "modified_files": modified_files,
+            "removed_files": removed_files,
+            "changed_files": changed_files,
+            "changed_code_files": changed_code_files,
+            "parent_tree_sha256": self._tree_sha256(before_manifest),
+            "child_tree_sha256": self._tree_sha256(after_manifest),
+            "parent_manifest": before_manifest,
+            "child_manifest": after_manifest,
+            "artifact_paths": {
+                "metadata": ".dgm_metadata/mutation.json",
+                "patch": ".dgm_metadata/mutation.patch",
+            },
+        }
+
+    def _build_mutation_patch(
+        self,
+        *,
+        before_snapshot: Dict[str, bytes],
+        after_snapshot: Dict[str, bytes],
+        changed_files: List[str],
+    ) -> str:
+        chunks: List[str] = []
+        for relative_path in changed_files:
+            before = before_snapshot.get(relative_path, b"")
+            after = after_snapshot.get(relative_path, b"")
+            try:
+                before_lines = before.decode("utf-8").splitlines(keepends=True)
+                after_lines = after.decode("utf-8").splitlines(keepends=True)
+            except UnicodeDecodeError:
+                chunks.append(f"Binary file changed: {relative_path}\n")
+                continue
+            chunks.extend(
+                difflib.unified_diff(
+                    before_lines,
+                    after_lines,
+                    fromfile=f"parent/{relative_path}",
+                    tofile=f"child/{relative_path}",
+                )
+            )
+        return "".join(chunks)
+
+    @staticmethod
+    def _write_mutation_artifacts(
+        *,
+        workspace_dir: Path,
+        metadata: Dict[str, Any],
+        patch_text: str,
+    ) -> None:
+        metadata_dir = workspace_dir / ".dgm_metadata"
+        metadata_dir.mkdir(parents=True, exist_ok=True)
+        patch_path = metadata_dir / "mutation.patch"
+        patch_path.write_text(patch_text, encoding="utf-8")
+        metadata["patch_sha256"] = hashlib.sha256(
+            patch_text.encode("utf-8")
+        ).hexdigest()
+        metadata["patch_size_bytes"] = len(patch_text.encode("utf-8"))
+        (metadata_dir / "mutation.json").write_text(
+            json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
 
     async def _evaluate_agent(self, agent_path: str) -> Dict[str, float]:
         """

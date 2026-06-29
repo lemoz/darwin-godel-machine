@@ -366,6 +366,138 @@ class TestDGMControllerInit:
         assert len(sandbox_manager.calls) == 1
         assert sandbox_manager.calls[0]["timeout"] == 9
         assert sandbox_manager.calls[0]["workspace_path"] != str(result_file.parent)
+        mutation = ctrl._mutation_metadata_by_agent_path[str(result_file.resolve())]
+        assert mutation["mutation_status"] == "changed"
+        assert mutation["changed_code_files"] == ["agent.py"]
+        assert (result_file.parent / ".dgm_metadata" / "mutation.json").exists()
+        assert (result_file.parent / ".dgm_metadata" / "mutation.patch").exists()
+
+    async def test_self_modification_noop_records_mutation_metadata(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from archive.agent_archive import ArchivedAgent
+        from agent.agent import Task
+        from dgm_controller import DGMController
+
+        class NoopAgent:
+            def __init__(self, config):
+                self.config = config
+
+            async def solve_task(self, task):
+                return {"success": True, "solution": ""}
+
+        monkeypatch.setattr("dgm_controller.Agent", NoopAgent)
+
+        cfg = _minimal_config(tmp_path)
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        parent_dir = tmp_path / "parent_agent"
+        parent_dir.mkdir()
+        (parent_dir / "agent.py").write_text(
+            "class Agent:\n"
+            "    def __init__(self, config=None): pass\n"
+            "    def solve_task(self, task): return 'old'\n",
+            encoding="utf-8",
+        )
+        parent = ArchivedAgent(
+            agent_id="parent_001",
+            parent_id=None,
+            generation=0,
+            source_path=str(parent_dir / "agent.py"),
+            created_at="2026-06-15T00:00:00",
+            benchmark_scores={"dummy": 0.0},
+            average_score=0.0,
+            is_valid=True,
+            metadata={},
+        )
+
+        result_path = await ctrl._perform_self_modification(
+            parent,
+            Task(task_id="self_modify_parent_001_0", description="modify"),
+        )
+
+        assert result_path is not None
+        result_file = Path(result_path)
+        mutation = ctrl._mutation_metadata_by_agent_path[str(result_file.resolve())]
+        assert mutation["mutation_status"] == "noop"
+        assert mutation["has_code_changes"] is False
+        assert mutation["changed_code_files"] == []
+        assert mutation["changed_files"] == []
+        archived_metadata = result_file.parent / ".dgm_metadata" / "mutation.json"
+        assert json.loads(archived_metadata.read_text(encoding="utf-8"))[
+            "mutation_status"
+        ] == "noop"
+
+    async def test_run_generation_archives_noop_without_evaluation(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from dgm_controller import DGMController
+
+        cfg = _minimal_config(tmp_path)
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        parent_dir = tmp_path / "parent_agent"
+        parent_dir.mkdir()
+        parent_file = parent_dir / "agent.py"
+        parent_file.write_text(
+            "class Agent:\n"
+            "    def __init__(self, config=None): pass\n"
+            "    def solve_task(self, task): return 'old'\n",
+            encoding="utf-8",
+        )
+        parent = ctrl.archive.add_agent(
+            agent_path=str(parent_file),
+            benchmark_scores={"dummy": 1.0},
+            is_valid=True,
+        )
+
+        child_dir = tmp_path / "workspace" / "noop_child"
+        child_dir.mkdir(parents=True)
+        child_file = child_dir / "agent.py"
+        child_file.write_text(parent_file.read_text(encoding="utf-8"), encoding="utf-8")
+        mutation = {
+            "schema_version": 1,
+            "task_id": "self_modify_parent_001_1",
+            "parent_agent_id": parent.agent_id,
+            "mutation_status": "noop",
+            "has_code_changes": False,
+            "changed_files": [],
+            "changed_code_files": [],
+        }
+        ctrl._mutation_metadata_by_agent_path[str(child_file.resolve())] = mutation
+
+        async def fake_perform_self_modification(parent_agent, modification_task):
+            return str(child_file)
+
+        async def fail_validate(agent_path):
+            raise AssertionError("noop child should not be validated")
+
+        async def fail_evaluate(agent_path):
+            raise AssertionError("noop child should not be evaluated")
+
+        monkeypatch.setattr(
+            ctrl,
+            "_perform_self_modification",
+            fake_perform_self_modification,
+        )
+        monkeypatch.setattr(ctrl.validator, "validate_agent", fail_validate)
+        monkeypatch.setattr(ctrl, "_evaluate_agent", fail_evaluate)
+
+        await ctrl._run_generation()
+
+        children = [
+            agent for agent in ctrl.archive.agents.values()
+            if agent.parent_id == parent.agent_id
+        ]
+        assert len(children) == 1
+        child = children[0]
+        assert child.is_valid is False
+        assert child.benchmark_scores == {}
+        assert child.metadata["mutation"]["mutation_status"] == "noop"
 
     async def test_evaluate_agent_passes_sandbox_config_to_loaded_agent(
         self,

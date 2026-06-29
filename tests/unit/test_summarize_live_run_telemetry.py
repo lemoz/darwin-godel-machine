@@ -84,6 +84,33 @@ def test_summarize_live_run_telemetry_merges_score_and_archive_artifacts(tmp_pat
                         "benchmark_scores": {"a": 1.0, "b": 1.0},
                     },
                 ],
+                "loop_order_agents": [
+                    {
+                        "agent_id": "base",
+                        "parent_id": None,
+                        "generation": 0,
+                        "average_score": 0.5,
+                        "is_valid": True,
+                        "benchmark_count": 2,
+                        "solved_count": 1,
+                    },
+                    {
+                        "agent_id": "child",
+                        "parent_id": "base",
+                        "generation": 1,
+                        "average_score": 0.75,
+                        "is_valid": True,
+                        "benchmark_count": 2,
+                        "solved_count": 2,
+                        "mutation_status": "changed",
+                        "has_code_changes": True,
+                    },
+                ],
+                "mutation_summary": {
+                    "status_counts": {"changed": 1},
+                    "changed_count": 1,
+                    "noop_count": 0,
+                },
                 "improvements": [
                     {
                         "parent_id": "base",
@@ -116,6 +143,12 @@ def test_summarize_live_run_telemetry_merges_score_and_archive_artifacts(tmp_pat
                         "average_score": 0.75,
                         "is_valid": True,
                         "benchmark_scores": {"a": 1.0, "b": 1.0},
+                        "metadata": {
+                            "mutation": {
+                                "mutation_status": "changed",
+                                "has_code_changes": True,
+                            }
+                        },
                     },
                 }
             }
@@ -156,6 +189,10 @@ def test_summarize_live_run_telemetry_merges_score_and_archive_artifacts(tmp_pat
     assert telemetry["score"]["base_score"] == 0.5
     assert telemetry["score"]["top_score"] == 0.75
     assert telemetry["score"]["improvement_count"] == 1
+    assert telemetry["score"]["loop_order_agents"][1]["mutation_status"] == "changed"
+    assert telemetry["score"]["mutation_summary"]["status_counts"] == {"changed": 1}
+    assert telemetry["archive"]["loop_order_agents"][1]["has_code_changes"] is True
+    assert telemetry["archive"]["mutation_summary"]["status_counts"] == {"changed": 1}
     assert telemetry["archive"]["zero_score_counts_by_benchmark"] == {"b": 1}
     assert telemetry["dgm_report"]["total_generations"] == 1
 

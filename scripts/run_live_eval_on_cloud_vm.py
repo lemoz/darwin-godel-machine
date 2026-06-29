@@ -243,14 +243,45 @@ python run_dgm.py --config "${{CONFIG}}" --generations "${{GENERATIONS}}" 2>&1 |
 RUN_STATUS=${{PIPESTATUS[0]}}
 set -e
 
-ARCHIVE_METADATA="$(find . -path '*/archive_metadata.json' -type f | sort | tail -n 1 || true)"
+ARCHIVE_DIR="$(python - "${{CONFIG}}" <<'PY'
+import sys
+import yaml
+from pathlib import Path
+
+config = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {{}}
+archive_dir = (config.get("archive") or {{}}).get("path", "")
+if archive_dir:
+    print(archive_dir)
+PY
+)"
+ARCHIVE_METADATA=""
+if [ -n "${{ARCHIVE_DIR}}" ] && [ -f "${{ARCHIVE_DIR}}/archive_metadata.json" ]; then
+  ARCHIVE_METADATA="${{ARCHIVE_DIR}}/archive_metadata.json"
+fi
 if [ -n "${{ARCHIVE_METADATA}}" ]; then
   python scripts/summarize_archive_scores.py \
     --archive-metadata "${{ARCHIVE_METADATA}}" \
     --output "${{SCORECARD_PATH}}" || true
 fi
 
-DGM_REPORT="$(find . -path '*/dgm_report_*.json' -type f | sort | tail -n 1 || true)"
+if [ -n "${{ARCHIVE_DIR}}" ] && [ -d "${{ARCHIVE_DIR}}" ]; then
+  tar -czf "${{ARTIFACT_DIR}}/archive.tar.gz" \
+    -C "$(dirname "${{ARCHIVE_DIR}}")" "$(basename "${{ARCHIVE_DIR}}")" || true
+fi
+
+DGM_REPORT="$(python - "${{CONFIG}}" <<'PY'
+import sys
+import yaml
+from pathlib import Path
+
+config = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {{}}
+results_dir = (config.get("evaluation") or {{}}).get("results_dir", "")
+if results_dir:
+    reports = sorted(Path(results_dir).glob("dgm_report_*.json"))
+    if reports:
+        print(reports[-1])
+PY
+)"
 TELEMETRY_ARGS=(--controller-log "${{CONTROLLER_LOG}}" --provider "${{PROVIDER}}" --model "${{MODEL}}" --input-price-per-mtok "${{INPUT_PRICE_PER_MTOK}}" --output-price-per-mtok "${{OUTPUT_PRICE_PER_MTOK}}" --output "${{TELEMETRY_PATH}}")
 if [ -f "${{SCORECARD_PATH}}" ]; then
   TELEMETRY_ARGS+=(--scorecard "${{SCORECARD_PATH}}")

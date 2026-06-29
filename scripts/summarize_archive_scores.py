@@ -43,6 +43,7 @@ def _normalize_agent(agent_id: str, raw: dict[str, Any]) -> dict[str, Any]:
         },
         "is_valid": bool(raw.get("is_valid", False)),
         "created_at": raw.get("created_at"),
+        "metadata": raw.get("metadata") if isinstance(raw.get("metadata"), dict) else {},
     }
 
 
@@ -73,6 +74,77 @@ def _generation_best_scores(agents: list[dict[str, Any]]) -> list[dict[str, Any]
         }
         for generation, agent in sorted(best_by_generation.items())
     ]
+
+
+def _mutation_status(agent: dict[str, Any]) -> str | None:
+    metadata = agent.get("metadata") or {}
+    mutation = metadata.get("mutation") if isinstance(metadata, dict) else None
+    if not isinstance(mutation, dict):
+        return None
+    status = mutation.get("mutation_status")
+    return str(status) if status else None
+
+
+def _has_code_changes(agent: dict[str, Any]) -> bool | None:
+    metadata = agent.get("metadata") or {}
+    mutation = metadata.get("mutation") if isinstance(metadata, dict) else None
+    if not isinstance(mutation, dict):
+        return None
+    return bool(mutation.get("has_code_changes", False))
+
+
+def _loop_order_agents(agents: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "agent_id": agent["agent_id"],
+            "parent_id": agent.get("parent_id"),
+            "generation": agent["generation"],
+            "average_score": agent["average_score"],
+            "is_valid": agent["is_valid"],
+            "created_at": agent.get("created_at"),
+            "benchmark_count": len(agent["benchmark_scores"]),
+            "solved_count": sum(
+                1 for score in agent["benchmark_scores"].values() if score > 0.0
+            ),
+            "mutation_status": _mutation_status(agent),
+            "has_code_changes": _has_code_changes(agent),
+        }
+        for agent in sorted(
+            agents,
+            key=lambda item: (
+                str(item.get("created_at") or ""),
+                item["generation"],
+                item["agent_id"],
+            ),
+        )
+    ]
+
+
+def _mutation_summary(agents: list[dict[str, Any]]) -> dict[str, Any]:
+    status_counts: dict[str, int] = {}
+    noop_agents = []
+    changed_agents = []
+    unknown_agents = []
+    for agent in agents:
+        if not agent.get("parent_id"):
+            continue
+        status = _mutation_status(agent) or "unknown"
+        status_counts[status] = status_counts.get(status, 0) + 1
+        if status == "noop":
+            noop_agents.append(agent["agent_id"])
+        elif status == "changed":
+            changed_agents.append(agent["agent_id"])
+        elif status == "unknown":
+            unknown_agents.append(agent["agent_id"])
+    return {
+        "status_counts": dict(sorted(status_counts.items())),
+        "noop_agents": noop_agents,
+        "changed_agents": changed_agents,
+        "unknown_agents": unknown_agents,
+        "noop_count": len(noop_agents),
+        "changed_count": len(changed_agents),
+        "unknown_count": len(unknown_agents),
+    }
 
 
 def summarize_archive_scores(
@@ -172,6 +244,8 @@ def summarize_archive_scores(
             len(delta["benchmark_unchanged"]) for delta in parent_child_deltas
         ),
         "generation_best_scores": _generation_best_scores(agents),
+        "loop_order_agents": _loop_order_agents(agents),
+        "mutation_summary": _mutation_summary(agents),
         "parent_child_deltas": parent_child_deltas,
         "improvements": improvements,
     }

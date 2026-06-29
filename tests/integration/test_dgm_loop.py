@@ -18,6 +18,7 @@ Strategy
 """
 
 import asyncio
+import json
 import math
 import os
 import random
@@ -275,6 +276,17 @@ class TestDGMLoopIntegration:
 
         # Child is marked valid
         assert child.is_valid is True
+        mutation = child.metadata["mutation"]
+        assert mutation["mutation_status"] == "changed"
+        assert mutation["has_code_changes"] is True
+        assert "agent.py" in mutation["changed_code_files"]
+        archived_metadata = Path(child.source_path) / ".dgm_metadata" / "mutation.json"
+        archived_patch = Path(child.source_path) / ".dgm_metadata" / "mutation.patch"
+        assert archived_metadata.exists()
+        assert archived_patch.exists()
+        assert json.loads(archived_metadata.read_text(encoding="utf-8"))[
+            "mutation_status"
+        ] == "changed"
 
         # --- Phase 3: second generation can select the child as a parent ---
         selector = ParentSelector(lam=10.0, alpha_0=0.5)

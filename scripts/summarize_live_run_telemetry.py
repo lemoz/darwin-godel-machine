@@ -247,6 +247,24 @@ def summarize_scorecard(scorecard: dict[str, Any] | None) -> dict[str, Any] | No
             }
         )
 
+    loop_order_agents = []
+    for item in scorecard.get("loop_order_agents") or []:
+        if not isinstance(item, dict):
+            continue
+        loop_order_agents.append(
+            {
+                "agent_id": item.get("agent_id"),
+                "parent_id": item.get("parent_id"),
+                "generation": int(item.get("generation", 0) or 0),
+                "average_score": float(item.get("average_score", 0.0) or 0.0),
+                "is_valid": bool(item.get("is_valid", False)),
+                "benchmark_count": int(item.get("benchmark_count", 0) or 0),
+                "solved_count": int(item.get("solved_count", 0) or 0),
+                "mutation_status": item.get("mutation_status"),
+                "has_code_changes": item.get("has_code_changes"),
+            }
+        )
+
     return {
         "base_score": _generation_score(scorecard, 0),
         "top_score": float(scorecard.get("top_score", 0.0)),
@@ -261,6 +279,8 @@ def summarize_scorecard(scorecard: dict[str, Any] | None) -> dict[str, Any] | No
         "total_benchmark_regressions": int(scorecard.get("total_benchmark_regressions", 0) or 0),
         "total_benchmark_unchanged": int(scorecard.get("total_benchmark_unchanged", 0) or 0),
         "generation_best_scores": generations,
+        "loop_order_agents": loop_order_agents,
+        "mutation_summary": scorecard.get("mutation_summary") or {},
         "improvements": improvements,
     }
 
@@ -275,9 +295,18 @@ def summarize_archive_metadata(metadata: dict[str, Any] | None) -> dict[str, Any
 
     loop_agents = []
     zero_scores_by_benchmark: Counter[str] = Counter()
+    mutation_status_counts: Counter[str] = Counter()
     for agent_id, raw in agents.items():
         if not isinstance(raw, dict):
             continue
+        mutation = {}
+        metadata_raw = raw.get("metadata")
+        if isinstance(metadata_raw, dict) and isinstance(metadata_raw.get("mutation"), dict):
+            mutation = metadata_raw["mutation"]
+        mutation_status = mutation.get("mutation_status")
+        has_code_changes = mutation.get("has_code_changes")
+        if raw.get("parent_id"):
+            mutation_status_counts[str(mutation_status or "unknown")] += 1
         benchmark_scores = raw.get("benchmark_scores") or {}
         if not isinstance(benchmark_scores, dict):
             benchmark_scores = {}
@@ -299,18 +328,23 @@ def summarize_archive_metadata(metadata: dict[str, Any] | None) -> dict[str, Any
                 "created_at": raw.get("created_at"),
                 "benchmark_count": len(normalized_scores),
                 "solved_count": _solved_count(normalized_scores),
+                "mutation_status": mutation_status,
+                "has_code_changes": has_code_changes,
             }
         )
 
     loop_agents.sort(
         key=lambda item: (
-            int(item["generation"]),
             str(item.get("created_at") or ""),
+            int(item["generation"]),
             str(item["agent_id"]),
         )
     )
     return {
         "loop_order_agents": loop_agents,
+        "mutation_summary": {
+            "status_counts": dict(sorted(mutation_status_counts.items())),
+        },
         "zero_score_counts_by_benchmark": dict(sorted(zero_scores_by_benchmark.items())),
     }
 

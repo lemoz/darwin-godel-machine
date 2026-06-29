@@ -139,7 +139,10 @@ class AgentArchive:
         if os.path.exists(agent_path):
             if os.path.isfile(agent_path):
                 parent_dir = os.path.dirname(os.path.abspath(agent_path))
-                if os.path.exists(os.path.join(parent_dir, '__init__.py')):
+                if (
+                    os.path.exists(os.path.join(parent_dir, '__init__.py'))
+                    or os.path.exists(os.path.join(parent_dir, '.dgm_metadata'))
+                ):
                     shutil.copytree(parent_dir, agent_archive_path, ignore=ignore)
                 else:
                     agent_archive_path.mkdir(parents=True, exist_ok=True)

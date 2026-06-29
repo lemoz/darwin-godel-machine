@@ -88,6 +88,22 @@ class TestAgentArchive:
         assert child.parent_id == parent.agent_id
         assert child.generation == 1
 
+    def test_add_agent_preserves_mutation_metadata_for_standalone_file(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        workspace = tmp_path / "workspace"
+        metadata_dir = workspace / ".dgm_metadata"
+        metadata_dir.mkdir(parents=True)
+        agent_file = _make_agent_file(workspace, "agent.py")
+        (metadata_dir / "mutation.json").write_text('{"mutation_status": "changed"}')
+        (metadata_dir / "mutation.patch").write_text("--- parent/agent.py\n")
+
+        agent = _add_agent(archive, agent_file)
+
+        archived_root = Path(agent.source_path)
+        assert (archived_root / "agent.py").exists()
+        assert (archived_root / ".dgm_metadata" / "mutation.json").exists()
+        assert (archived_root / ".dgm_metadata" / "mutation.patch").exists()
+
     def test_average_score_multiple_benchmarks(self, tmp_path):
         archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
         f = _make_agent_file(tmp_path)
