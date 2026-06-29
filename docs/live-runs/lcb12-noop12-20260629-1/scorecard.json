@@ -1,0 +1,219 @@
+{
+  "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-loop12-noop12/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "average_score": 0.5,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "generation": 0
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "average_score": 0.5,
+      "benchmark_count": 12,
+      "created_at": "2026-06-29T20:59:21.102191",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 6
+    },
+    {
+      "agent_id": "e48db9cc-01ba-4f79-82e4-b59d5e012396",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T20:59:36.741073",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "98acb0bb-9799-42b8-ade2-b989d743a2db",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:00:00.089726",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "a46290fb-51ca-4566-af2b-f7e9edb42633",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:00:32.735611",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "f8c0a058-b441-4645-be91-3974bad5f89d",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:00:48.142167",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "45b3684e-a664-443b-a4f8-f524c8f7a34c",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:01:09.738049",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "e49ea611-bc61-4203-9eae-91fba420c0d2",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:01:21.705450",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "2fececae-0e35-4621-9ef8-137ec6b82670",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:01:30.664631",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "0f7632dd-c325-489f-beb2-4509ed392840",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:01:51.900398",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "6177196c-eb50-4d68-b8f2-7e0db1babdfc",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:02:01.612892",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "236bc6e0-1497-4449-b877-efb519cb3613",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:02:13.299171",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "6fe02d36-8cc3-4fea-88e4-f94b8e10f2ea",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:02:26.183335",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "f1fb9ede-5abc-40e2-ba44-c23b44f759ab",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-06-29T21:02:38.177085",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+      "solved_count": 0
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [],
+    "changed_count": 0,
+    "noop_agents": [
+      "e48db9cc-01ba-4f79-82e4-b59d5e012396",
+      "98acb0bb-9799-42b8-ade2-b989d743a2db",
+      "a46290fb-51ca-4566-af2b-f7e9edb42633",
+      "f8c0a058-b441-4645-be91-3974bad5f89d",
+      "45b3684e-a664-443b-a4f8-f524c8f7a34c",
+      "e49ea611-bc61-4203-9eae-91fba420c0d2",
+      "2fececae-0e35-4621-9ef8-137ec6b82670",
+      "0f7632dd-c325-489f-beb2-4509ed392840",
+      "6177196c-eb50-4d68-b8f2-7e0db1babdfc",
+      "236bc6e0-1497-4449-b877-efb519cb3613",
+      "6fe02d36-8cc3-4fea-88e4-f94b8e10f2ea",
+      "f1fb9ede-5abc-40e2-ba44-c23b44f759ab"
+    ],
+    "noop_count": 12,
+    "status_counts": {
+      "noop": 12
+    },
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [],
+  "top_agent_id": "ffd0afb6-a083-45eb-97c2-544e8eb8a58c",
+  "top_score": 0.5,
+  "total_agents": 13,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 0,
+  "valid_agents": 1
+}
