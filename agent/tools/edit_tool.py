@@ -264,6 +264,9 @@ class EditTool(BaseTool):
                 if content_error is not None:
                     return content_error
                 content = parameters["content"]
+                existing_content = ""
+                if full_path.exists():
+                    existing_content = full_path.read_text(encoding="utf-8")
                 python_error = self._validate_python_content(
                     file_path_str,
                     content,
@@ -271,6 +274,14 @@ class EditTool(BaseTool):
                 )
                 if python_error is not None:
                     return python_error
+                replacement_error = self._validate_python_replacement(
+                    file_path_str,
+                    existing_content,
+                    content,
+                    action=action,
+                )
+                if replacement_error is not None:
+                    return replacement_error
 
                 full_path.parent.mkdir(parents=True, exist_ok=True)
                 full_path.write_text(content, encoding="utf-8")
@@ -387,6 +398,14 @@ class EditTool(BaseTool):
                 )
                 if python_error is not None:
                     return python_error
+                replacement_error = self._validate_python_replacement(
+                    file_path_str,
+                    current_content,
+                    new_content,
+                    action=action,
+                )
+                if replacement_error is not None:
+                    return replacement_error
 
                 full_path.write_text(new_content, encoding="utf-8")
                 return ToolResult(
@@ -451,6 +470,54 @@ class EditTool(BaseTool):
         return None
 
     @staticmethod
+    def _validate_python_replacement(
+        file_path: str,
+        current_content: str,
+        replacement_content: str,
+        *,
+        action: str,
+    ) -> ToolResult | None:
+        """Reject obvious partial replacements of existing Python modules."""
+        if Path(file_path).suffix != ".py":
+            return None
+        if not current_content.strip():
+            return None
+
+        current_stripped = current_content.strip()
+        replacement_stripped = replacement_content.strip()
+
+        if (
+            len(current_stripped) >= 500
+            and len(replacement_stripped) < 200
+            and len(replacement_stripped) < len(current_stripped) * 0.25
+        ):
+            return ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error=(
+                    f"Rejected {action} for Python file {file_path}: replacement "
+                    "would overwrite a substantial existing module with a tiny "
+                    "fragment. Modify the specific section instead, or write the "
+                    "complete replacement module."
+                ),
+            )
+
+        if EditTool._defines_agent_class(
+            current_content
+        ) and not EditTool._defines_agent_class(replacement_content):
+            return ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error=(
+                    f"Rejected {action} for Python file {file_path}: existing "
+                    "module defines an Agent class but the replacement does not. "
+                    "Preserve the Agent class when self-modifying the agent."
+                ),
+            )
+
+        return None
+
+    @staticmethod
     def _validate_python_content(
         file_path: str,
         content: str,
@@ -498,9 +565,9 @@ class EditTool(BaseTool):
         tree: ast.Module,
     ) -> bool:
         """Detect provider/tool-call fragments like ``['partial code']``."""
-        if not stripped_content.startswith("["):
+        if not stripped_content:
             return False
-        if not tree.body:
+        if len(tree.body) != 1:
             return False
 
         first_statement = tree.body[0]
@@ -511,6 +578,18 @@ class EditTool(BaseTool):
             return True
 
         return False
+
+    @staticmethod
+    def _defines_agent_class(content: str) -> bool:
+        try:
+            tree = ast.parse(content)
+        except SyntaxError:
+            return False
+
+        return any(
+            isinstance(node, ast.ClassDef) and "Agent" in node.name
+            for node in ast.walk(tree)
+        )
 
     async def _execute_sandbox_edit(self, parameters: Dict[str, Any]) -> ToolResult:
         """Execute the edit operation inside the configured Docker sandbox."""

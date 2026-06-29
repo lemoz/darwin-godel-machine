@@ -372,6 +372,69 @@ class TestEditTool:
         assert "serialized/list fragment" in (result.error or "")
         assert not (self.tmp / "solution.py").exists()
 
+    async def test_write_python_dict_fragment_rejected(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content": "{'foods': 'vitamin_foods[v].append((a)'}",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "serialized/list fragment" in (result.error or "")
+        assert not (self.tmp / "solution.py").exists()
+
+    async def test_write_tiny_python_overwrite_rejected_and_preserves_file(self):
+        original = (
+            "class Agent:\n"
+            "    pass\n\n"
+            + "\n".join(f"def helper_{i}():\n    return {i}" for i in range(80))
+            + "\n"
+        )
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": original,
+        })
+
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": "import re\n",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "tiny fragment" in (result.error or "")
+        assert (self.tmp / "agent.py").read_text() == original
+
+    async def test_write_removing_agent_class_rejected_and_preserves_file(self):
+        original = (
+            "class Agent:\n"
+            "    pass\n\n"
+            + "\n".join(f"def helper_{i}():\n    return {i}" for i in range(80))
+            + "\n"
+        )
+        replacement = (
+            "class Solver:\n"
+            "    pass\n\n"
+            + "\n".join(f"def helper_{i}():\n    return {i}" for i in range(80))
+            + "\n"
+        )
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": original,
+        })
+
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": replacement,
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "Agent class" in (result.error or "")
+        assert (self.tmp / "agent.py").read_text() == original
+
     async def test_append_missing_content_rejected(self):
         result = await self.tool.execute({
             "action": "append",
@@ -453,6 +516,30 @@ class TestEditTool:
 
         assert result.status == ToolExecutionStatus.ERROR
         assert "serialized/list fragment" in (result.error or "")
+        assert (self.tmp / "agent.py").read_text() == original
+
+    async def test_modify_tiny_python_replacement_rejected_and_preserves_file(self):
+        original = (
+            "class Agent:\n"
+            "    pass\n\n"
+            + "\n".join(f"def helper_{i}():\n    return {i}" for i in range(80))
+            + "\n"
+        )
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": original,
+        })
+
+        result = await self.tool.execute({
+            "action": "modify",
+            "file_path": "agent.py",
+            "search_text": original,
+            "replace_text": "import re\n",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "tiny fragment" in (result.error or "")
         assert (self.tmp / "agent.py").read_text() == original
 
     async def test_modify_zero_occurrences_rejected(self):
