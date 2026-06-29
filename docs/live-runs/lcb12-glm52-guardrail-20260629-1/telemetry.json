@@ -1,0 +1,193 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "96991c98-8a49-4957-8c15-68274a879d19",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-06-29T22:22:10.224045",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 6
+      },
+      {
+        "agent_id": "b65d1f64-f959-4db9-93ec-b4767ee56f06",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-06-29T22:23:12.251919",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "96991c98-8a49-4957-8c15-68274a879d19",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "54d96a0f-2c67-49e5-a929-ecfe3999dc60",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-06-29T22:25:12.382911",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "96991c98-8a49-4957-8c15-68274a879d19",
+        "solved_count": 0
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {
+        "noop": 2
+      }
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_d": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_d": 1
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 2,
+    "final_archive_size": 3,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.4756151475,
+    "successful_improvements": 0,
+    "total_agents_created": 0,
+    "total_generations": 2
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 30,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 3,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_d": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_d": 1
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 17.697721518987347,
+      "count": 79,
+      "max": 60.6
+    },
+    "configured_timeout_seconds": 90.0,
+    "empty_response_count": 30,
+    "finish_reasons": {
+      "length": 30
+    },
+    "http_post_count": 82,
+    "model": "z-ai/glm-5.2",
+    "model_from_log": "z-ai/glm-5.2",
+    "name": "openrouter",
+    "timeout_count": 3
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-loop12-glm52-selfmod-recovery/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/lcb12-glm52-guardrail-20260629-1/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/livecodebench-openrouter-loop12-glm52-selfmod-recovery/results/dgm_report_20260629_222512.json",
+    "end_time": "2026-06-29T22:25:12.385000",
+    "line_count": 2191,
+    "observed_runtime_seconds": 1723.867,
+    "scorecard": "/var/tmp/dgm-live-runs/lcb12-glm52-guardrail-20260629-1/artifacts/scorecard.json",
+    "start_time": "2026-06-29T21:56:28.518000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.5,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "96991c98-8a49-4957-8c15-68274a879d19",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 6
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": false,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "96991c98-8a49-4957-8c15-68274a879d19",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 6
+      },
+      {
+        "agent_id": "b65d1f64-f959-4db9-93ec-b4767ee56f06",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "96991c98-8a49-4957-8c15-68274a879d19",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "54d96a0f-2c67-49e5-a929-ecfe3999dc60",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "96991c98-8a49-4957-8c15-68274a879d19",
+        "solved_count": 0
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [],
+      "changed_count": 0,
+      "noop_agents": [
+        "b65d1f64-f959-4db9-93ec-b4767ee56f06",
+        "54d96a0f-2c67-49e5-a929-ecfe3999dc60"
+      ],
+      "noop_count": 2,
+      "status_counts": {
+        "noop": 2
+      },
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "96991c98-8a49-4957-8c15-68274a879d19",
+    "top_score": 0.5,
+    "total_agents": 3,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 0,
+    "valid_agents": 1
+  },
+  "tokens": {
+    "completion_tokens": 50061,
+    "estimated_cost_usd": 0.590888,
+    "input_price_per_mtok": 0.94,
+    "output_price_per_mtok": 3.0,
+    "prompt_tokens": 468835,
+    "total_tokens": 518896,
+    "usage_events": 79
+  }
+}
