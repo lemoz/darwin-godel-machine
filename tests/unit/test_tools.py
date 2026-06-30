@@ -516,6 +516,70 @@ class TestEditTool:
         assert "XXX" in read.output
         assert "bbb" not in read.output
 
+    async def test_line_replace_single_line_content_lines(self):
+        original = "class Agent:\n    pass\n"
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": original,
+        })
+
+        result = await self.tool.execute({
+            "action": "line_replace",
+            "file_path": "agent.py",
+            "line_number": 2,
+            "line_count": 1,
+            "content_lines": [
+                "    def solve(self):",
+                "        return 'ok'",
+            ],
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "agent.py").read_text() == (
+            "class Agent:\n"
+            "    def solve(self):\n"
+            "        return 'ok'\n"
+        )
+
+    async def test_line_replace_insert_zero_lines(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "f.txt",
+            "content": "alpha\nomega\n",
+        })
+
+        result = await self.tool.execute({
+            "action": "line_replace",
+            "file_path": "f.txt",
+            "line_number": 2,
+            "line_count": 0,
+            "content_lines": ["middle"],
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "f.txt").read_text() == "alpha\nmiddle\nomega\n"
+
+    async def test_line_replace_python_syntax_error_rejected_and_preserves_file(self):
+        original = "class Agent:\n    pass\n"
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": original,
+        })
+
+        result = await self.tool.execute({
+            "action": "line_replace",
+            "file_path": "agent.py",
+            "line_number": 2,
+            "line_count": 1,
+            "content_lines": ["    def broken(:"],
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "syntax error" in (result.error or "").lower()
+        assert (self.tmp / "agent.py").read_text() == original
+
     async def test_modify_missing_replace_text_rejected(self):
         await self.tool.execute({
             "action": "write",
@@ -608,6 +672,7 @@ class TestEditTool:
         })
         assert result.status == ToolExecutionStatus.ERROR
         assert "not found" in (result.error or "").lower() or "no occurrences" in (result.error or "").lower()
+        assert "line_replace" in (result.error or "")
 
     async def test_modify_two_occurrences_rejected(self):
         await self.tool.execute({

@@ -336,7 +336,7 @@ class Agent:
             # Execute any tool calls
             if response.tool_calls:
                 logger.info(f"Executing {len(response.tool_calls)} tool calls")
-                await self._execute_tool_calls(response.tool_calls)
+                await self._execute_tool_calls(response.tool_calls, task)
                 if is_self_modification:
                     consumed_steps = step + 1
                     remaining_steps = max_steps - consumed_steps
@@ -422,14 +422,16 @@ class Agent:
                     f"finish_reason={finish_reason}. Continue concisely. Your "
                     "next response must call the edit tool to modify a Python "
                     "agent-code file such as agent.py, tools/*.py, or "
-                    "fm_interface/*.py. Do not list more files or write "
-                    "solution.py."
+                    "fm_interface/*.py. Prefer action='line_replace' with "
+                    "line_number, line_count, and content_lines. Do not list "
+                    "more files or write solution.py."
                 )
             return (
                 "Continue the self-modification task by making a concrete "
                 "Python source edit now. Your next response must call the edit "
-                "tool on agent.py, tools/*.py, or fm_interface/*.py, then finish "
-                "by naming the changed file."
+                "tool on agent.py, tools/*.py, or fm_interface/*.py. Prefer "
+                "action='line_replace' with line_number, line_count, and "
+                "content_lines, then finish by naming the changed file."
             )
         if not content or content == "No response generated":
             return (
@@ -465,17 +467,19 @@ class Agent:
                 f"changes are detected after {consumed_steps}/{max_steps} "
                 "steps. The next response must call the edit tool and change "
                 "agent.py, tools/*.py, fm_interface/*.py, or a provider module. "
-                "Do not call bash or read more files. If you do not make a "
-                "source edit now, this child will be archived as an invalid "
-                "no-op mutation."
+                "Use action='line_replace' with line_number, line_count, and "
+                "content_lines if exact modify text is brittle. Do not call bash "
+                "or read more files. If you do not make a source edit now, this "
+                "child will be archived as an invalid no-op mutation."
             )
         return (
             "SELF-MODIFICATION PATCH REQUIRED: no Python agent-code changes are "
             f"detected after {consumed_steps}/{max_steps} steps. Stop exploring "
             "and make one small, valid source edit now. Prefer an edit tool "
-            "modify/write call against agent.py, tools/*.py, fm_interface/*.py, "
-            "or a provider module. Do not write solution.py or continue with "
-            "read-only inspection."
+            "line_replace call against agent.py, tools/*.py, fm_interface/*.py, "
+            "or a provider module, using line_number, line_count, and "
+            "content_lines. Do not write solution.py or continue with read-only "
+            "inspection."
         )
 
     @staticmethod
@@ -539,7 +543,11 @@ class Agent:
             logger.warning("Could not read tool-written benchmark solution: %s", exc)
         return ""
     
-    async def _execute_tool_calls(self, tool_calls: List[ToolCall]) -> None:
+    async def _execute_tool_calls(
+        self,
+        tool_calls: List[ToolCall],
+        task: Optional[Task] = None,
+    ) -> None:
         """
         Execute tool calls and add results to conversation.
 
@@ -554,6 +562,7 @@ class Agent:
 
         Args:
             tool_calls: List of tool calls to execute
+            task: Current task, used for self-modification-specific repair nudges
         """
         for i, tool_call in enumerate(tool_calls):
             try:
@@ -586,6 +595,15 @@ class Agent:
                     result_message.metadata["tool_use_id"] = tool_call.call_id
 
                 self.conversation_history.append(result_message)
+                repair_nudge = self._build_self_modification_edit_repair_nudge(
+                    tool_call,
+                    result,
+                    task,
+                )
+                if repair_nudge:
+                    self.conversation_history.append(
+                        Message(role=MessageRole.USER, content=repair_nudge)
+                    )
 
             except Exception as e:
                 error_message = Message(
@@ -598,6 +616,61 @@ class Agent:
                     ),
                 )
                 self.conversation_history.append(error_message)
+
+    def _build_self_modification_edit_repair_nudge(
+        self,
+        tool_call: ToolCall,
+        result: ToolResult,
+        task: Optional[Task],
+    ) -> Optional[str]:
+        """Return a focused repair prompt after failed self-modification edits."""
+        if task is None or not self._is_self_modification_task(task):
+            return None
+        if tool_call.tool_name != "edit":
+            return None
+        if result.status == ToolExecutionStatus.SUCCESS:
+            return None
+
+        action = tool_call.parameters.get("action")
+        error_text = (result.error or result.output or "").lower()
+        brittle_match_error = any(
+            phrase in error_text
+            for phrase in (
+                "old_code not found",
+                "no occurrences",
+                "ambiguous match",
+                "search text",
+            )
+        )
+        malformed_content_error = any(
+            phrase in error_text
+            for phrase in (
+                "serialized/list fragment",
+                "content_lines parameter",
+                "content parameter",
+                "json array",
+            )
+        )
+        if action not in {"modify", "line_replace", "write"}:
+            return None
+        if not brittle_match_error and not malformed_content_error:
+            return None
+
+        if malformed_content_error:
+            return (
+                "SELF-MODIFICATION EDIT REPAIR: the edit payload was malformed. "
+                "Retry with the edit tool using content_lines as a JSON array of "
+                "plain strings, one complete Python source line per string. Do "
+                "not send a serialized list inside the content string."
+            )
+
+        return (
+            "SELF-MODIFICATION EDIT REPAIR: the exact modify search_text did not "
+            "apply cleanly. Do not retry the same search_text. Read a narrow line "
+            "range if needed, then call the edit tool with action='line_replace', "
+            "file_path, line_number, line_count, and content_lines. Keep the "
+            "replacement syntactically valid and preserve the surrounding code."
+        )
     
     def _build_system_message(self, context: ConversationContext) -> Message:
         """
@@ -619,6 +692,10 @@ SELF-MODIFICATION MODE:
   in `agent.py`, `tools/*.py`, `fm_interface/*.py`, or a provider module.
 - Read only the files needed to choose a patch. After a few inspection calls,
   make a small valid edit instead of continuing analysis.
+- For source edits, prefer the edit tool action `line_replace` after reading a
+  narrow line range. Provide `line_number`, `line_count`, and `content_lines`
+  with one complete Python source line per string. Use this instead of long
+  `search_text` values when exact matching is unreliable.
 - If you are unsure what to change, improve the prompt/nudge/tool-use logic in
   `agent.py` with a minimal, syntactically valid patch.
 - Before finalizing, name the changed source file and end with `Task complete`.

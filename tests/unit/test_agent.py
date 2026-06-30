@@ -15,6 +15,7 @@ from agent.fm_interface.api_handler import (
 from agent.fm_interface.message_formatter import ConversationContext
 from agent.fm_interface.providers.openai_compatible import OpenAICompatibleHandler
 from agent.tools.bash_tool import BashTool
+from agent.tools.base_tool import ToolExecutionStatus, ToolResult
 from agent.tools.edit_tool import EditTool
 
 
@@ -439,6 +440,8 @@ class TestAgentSolveTask:
         assert "SELF-MODIFICATION MODE" in system_message.content
         assert "Do not create `solution.py`" in system_message.content
         assert "real Python source change" in system_message.content
+        assert "line_replace" in system_message.content
+        assert "line_number" in system_message.content
 
     @patch(
         "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
@@ -478,6 +481,40 @@ class TestAgentSolveTask:
             "SELF-MODIFICATION PATCH REQUIRED" in msg.content
             for msg in agent.conversation_history
         )
+
+    def test_self_modification_edit_error_gets_line_replace_repair_nudge(self):
+        task = Task(
+            task_id="self_modify_parent_001_1",
+            description="Modify yourself",
+            metadata={"parent_id": "parent_001", "generation": 1},
+        )
+        tool_call = ToolCall(
+            tool_name="edit",
+            parameters={
+                "action": "modify",
+                "file_path": "agent.py",
+                "search_text": "missing",
+                "replace_text": "replacement",
+            },
+            call_id="toolu_edit",
+        )
+        result = ToolResult(
+            status=ToolExecutionStatus.ERROR,
+            output="",
+            error="old_code not found in agent.py: no occurrences of the search text",
+        )
+
+        nudge = self.agent._build_self_modification_edit_repair_nudge(
+            tool_call,
+            result,
+            task,
+        )
+
+        assert nudge is not None
+        assert "SELF-MODIFICATION EDIT REPAIR" in nudge
+        assert "line_replace" in nudge
+        assert "line_number" in nudge
+        assert "content_lines" in nudge
 
 
 # ---------------------------------------------------------------------------

@@ -164,9 +164,19 @@ class EditTool(BaseTool):
             ToolParameter(
                 name="action",
                 type="string",
-                description="Action to perform: 'read', 'write', 'append', 'modify', or 'delete'",
+                description=(
+                    "Action to perform: 'read', 'write', 'append', "
+                    "'modify', 'line_replace', or 'delete'"
+                ),
                 required=True,
-                enum_values=["read", "write", "append", "modify", "delete"],
+                enum_values=[
+                    "read",
+                    "write",
+                    "append",
+                    "modify",
+                    "line_replace",
+                    "delete",
+                ],
             ),
             ToolParameter(
                 name="file_path",
@@ -178,7 +188,7 @@ class EditTool(BaseTool):
                 name="content",
                 type="string",
                 description=(
-                    "Content to write. Required for write/append actions; "
+                    "Content to write. Required for write/append/line_replace actions; "
                     "use an explicit empty string only to create an empty file."
                 ),
                 required=False
@@ -187,17 +197,29 @@ class EditTool(BaseTool):
                 name="content_lines",
                 type="array",
                 description=(
-                    "Alternative to content for write/append actions. Provide one "
-                    "source line per string; the tool joins lines with newlines and "
-                    "adds a final newline when the list is non-empty. Use this when "
-                    "large escaped string arguments are unreliable."
+                    "Alternative to content for write/append/line_replace actions. "
+                    "Provide one source line per string; the tool joins lines with "
+                    "newlines and adds a final newline when the list is non-empty. "
+                    "Use this when large escaped string arguments are unreliable."
                 ),
                 required=False
             ),
             ToolParameter(
                 name="line_number",
                 type="integer",
-                description="Line number for modify actions",
+                description=(
+                    "1-based start line for line_replace actions. Prefer this over "
+                    "modify when exact search_text is unreliable."
+                ),
+                required=False
+            ),
+            ToolParameter(
+                name="line_count",
+                type="integer",
+                description=(
+                    "Number of existing lines to replace for line_replace actions. "
+                    "Defaults to 1."
+                ),
                 required=False
             ),
             ToolParameter(
@@ -350,6 +372,112 @@ class EditTool(BaseTool):
                     error="",
                 )
 
+            elif action == "line_replace":
+                if not full_path.exists():
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error=f"File not found: {file_path_str}",
+                    )
+
+                content, content_error = self._get_content_parameter(
+                    parameters,
+                    action,
+                )
+                if content_error is not None:
+                    return content_error
+
+                line_number = parameters.get("line_number")
+                if not isinstance(line_number, int):
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error="line_number parameter is required for line_replace action",
+                    )
+                if line_number < 1:
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error="line_number must be >= 1 for line_replace action",
+                    )
+
+                line_count = parameters.get("line_count", 1)
+                if not isinstance(line_count, int):
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error="line_count must be an integer for line_replace action",
+                    )
+                if line_count < 0:
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error="line_count must be >= 0 for line_replace action",
+                    )
+
+                current_content = full_path.read_text(encoding="utf-8")
+                current_lines = current_content.splitlines()
+                start_index = line_number - 1
+                if start_index > len(current_lines):
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error=(
+                            f"line_number {line_number} is past end of "
+                            f"{file_path_str} ({len(current_lines)} lines)"
+                        ),
+                    )
+                end_index = start_index + line_count
+                if end_index > len(current_lines):
+                    return ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error=(
+                            f"line_replace range {line_number}-{line_number + line_count - 1} "
+                            f"is past end of {file_path_str} ({len(current_lines)} lines)"
+                        ),
+                    )
+
+                replacement_lines = content.splitlines()
+                new_lines = (
+                    current_lines[:start_index]
+                    + replacement_lines
+                    + current_lines[end_index:]
+                )
+                new_content = "\n".join(new_lines)
+                if new_lines:
+                    new_content += "\n"
+
+                python_error = self._validate_python_content(
+                    file_path_str,
+                    new_content,
+                    action=action,
+                )
+                if python_error is not None:
+                    return python_error
+                replacement_error = self._validate_python_replacement(
+                    file_path_str,
+                    current_content,
+                    new_content,
+                    action=action,
+                )
+                if replacement_error is not None:
+                    return replacement_error
+
+                full_path.write_text(new_content, encoding="utf-8")
+                end_line = line_number + line_count - 1
+                if line_count == 0:
+                    replaced = f"inserted before line {line_number}"
+                elif line_count == 1:
+                    replaced = f"replaced line {line_number}"
+                else:
+                    replaced = f"replaced lines {line_number}-{end_line}"
+                return ToolResult(
+                    status=ToolExecutionStatus.SUCCESS,
+                    output=f"Successfully {replaced} in {file_path_str}",
+                    error="",
+                )
+
             elif action == "modify":
                 if not full_path.exists():
                     return ToolResult(
@@ -392,7 +520,12 @@ class EditTool(BaseTool):
                     return ToolResult(
                         status=ToolExecutionStatus.ERROR,
                         output="",
-                        error=f"old_code not found in {file_path_str}: no occurrences of the search text",
+                        error=(
+                            f"old_code not found in {file_path_str}: no occurrences "
+                            "of the search text. Do not retry the same search_text; "
+                            "use action='line_replace' with line_number, line_count, "
+                            "and content_lines after reading a narrow line range."
+                        ),
                     )
 
                 if occurrences > 1:
