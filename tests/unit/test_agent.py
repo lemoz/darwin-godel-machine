@@ -584,6 +584,81 @@ class TestAgentSolveTask:
         assert "content_lines as a JSON array of plain strings" in nudge
         assert "Do not nest arrays or objects" in nudge
 
+    def test_benchmark_tool_registry_param_error_gets_repair_nudge(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        tool_call = ToolCall(
+            tool_name="edit",
+            parameters={
+                "action": "append",
+                "file_path": "solution.py",
+                "content_lines": "['print(1)']",
+            },
+            call_id="toolu_edit",
+        )
+        result = ToolResult(
+            status=ToolExecutionStatus.INVALID_PARAMS,
+            output="",
+            error="Parameter 'content_lines' must be an array, got str",
+        )
+
+        nudge = self.agent._build_edit_repair_nudge(tool_call, result, task)
+
+        assert nudge is not None
+        assert "BENCHMARK EDIT REPAIR" in nudge
+        assert "content_lines as a JSON array of plain strings" in nudge
+        assert "final Python code in a markdown python block" in nudge
+
+    def test_benchmark_unknown_edit_parameter_gets_repair_nudge(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        tool_call = ToolCall(
+            tool_name="edit",
+            parameters={
+                "action": "write",
+                "file_path": "solution.py",
+                "1": "print(1)",
+            },
+            call_id="toolu_edit",
+        )
+        result = ToolResult(
+            status=ToolExecutionStatus.INVALID_PARAMS,
+            output="",
+            error=(
+                "Unknown parameter '1' for tool 'edit'. "
+                "Valid parameters: action, file_path, content_lines"
+            ),
+        )
+
+        nudge = self.agent._build_edit_repair_nudge(tool_call, result, task)
+
+        assert nudge is not None
+        assert "BENCHMARK EDIT REPAIR" in nudge
+        assert "complete solution.py" in nudge
+
+    def test_length_nudge_rejects_pseudo_tool_call_text(self):
+        response = CompletionResponse(
+            content="<tool_call><function=edit>",
+            tool_calls=[],
+            finish_reason="length",
+        )
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+
+        nudge = self.agent._build_no_progress_nudge(response, task)
+
+        assert "Do not emit XML-like <tool_call> text" in nudge
+        assert "real tool call" in nudge
+
 
 # ---------------------------------------------------------------------------
 # Task dataclass

@@ -444,9 +444,11 @@ class Agent:
         if finish_reason in {"length", "max_tokens", "content_filter"}:
             return (
                 f"Your previous response stopped with finish_reason={finish_reason} "
-                "before the task was complete. Continue concisely: call a tool if "
-                "work remains, or provide the final Python code in a markdown block "
-                "ending with 'Task complete'."
+                "before the task was complete. Continue concisely. Do not emit "
+                "XML-like <tool_call> text in the assistant message; either make "
+                "a real tool call through the provided tool interface, or provide "
+                "the final Python code in a markdown block ending with "
+                "'Task complete'."
             )
         return (
             "Please continue working on the task. If you have completed it, provide "
@@ -675,7 +677,14 @@ class Agent:
             for phrase in (
                 "serialized/list fragment",
                 "content_lines parameter",
+                "parameter 'content_lines'",
+                'parameter "content_lines"',
+                "must be an array",
                 "content parameter",
+                "parameter 'content'",
+                'parameter "content"',
+                "unknown parameter",
+                "valid parameters",
                 "json array",
             )
         )
@@ -756,7 +765,14 @@ class Agent:
             for phrase in (
                 "serialized/list fragment",
                 "content_lines parameter",
+                "parameter 'content_lines'",
+                'parameter "content_lines"',
+                "must be an array",
                 "content parameter",
+                "parameter 'content'",
+                'parameter "content"',
+                "unknown parameter",
+                "valid parameters",
                 "json array",
             )
         )
@@ -853,6 +869,11 @@ TESTING GUIDELINES:
 - DO NOT invent additional test cases with your own expected outputs
 - If you want to test edge cases, clearly state you're exploring, don't assume the outputs
 - Your primary goal is to satisfy the given examples and requirements
+- Once `solution.py` passes the provided examples, stop using tools and provide
+  the final code block ending with `Task complete`.
+- If you are on the final available step and `solution.py` exists, do not run
+  more exploratory tests or attempt a risky rewrite. Finalize with the current
+  complete solution code unless a provided sample is known to fail.
 - For stdin/stdout programs, prefer testing with a quoted heredoc, for example:
   `python3 solution.py << 'EOF'`
   then the sample input, then `EOF` on its own line.

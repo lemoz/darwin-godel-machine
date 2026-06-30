@@ -46,7 +46,7 @@ sandbox:
 agents:
   workspace_dir: .dgm-live-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery/workspace
   initial_agent_path: agent/agent.py
-  max_steps: 5
+  max_steps: 7
 
 self_modification:
   max_steps: 12
@@ -97,16 +97,16 @@ live_run:
     input_price_per_mtok: 0.22
     output_price_per_mtok: 1.80
     assumed_input_tokens_per_call: 50000
-    max_estimated_cost_usd: 45
+    max_estimated_cost_usd: 60
     max_generations_without_reapproval: 12
-    max_agent_steps: 5
+    max_agent_steps: 7
     max_self_modification_steps: 12
     max_output_tokens_per_call: 4096
     max_enabled_benchmarks: 12
   required_preflight:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/prepare_livecodebench_segment.py --config config/livecodebench_segment_loop12.yaml
     - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --build-image --require
-    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_loop12_qwen3_coder_selfmod_recovery.yaml --input-price-per-mtok 0.22 --output-price-per-mtok 1.80 --assumed-input-tokens-per-call 50000 --max-budget 45
+    - PATH="$PWD/.venv/bin:$PATH" python scripts/estimate_live_run_cost.py --config config/livecodebench_openrouter_loop12_qwen3_coder_selfmod_recovery.yaml --input-price-per-mtok 0.22 --output-price-per-mtok 1.80 --assumed-input-tokens-per-call 50000 --max-budget 60
   recommended_run:
     - PATH="$PWD/.venv/bin:$PATH" python scripts/run_dgm_in_sandbox.py --config config/livecodebench_openrouter_loop12_qwen3_coder_selfmod_recovery.yaml --generations 12 --allow-network --env OPENROUTER_API_KEY --timeout 10800 --audit-output .dgm-sandbox-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery-audit.json
   post_run_scorecard:
