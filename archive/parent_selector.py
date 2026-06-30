@@ -26,6 +26,8 @@ class ParentSelector:
         require_non_regression: when true, exclude children that regress
             relative to their parent on average score and do not improve overall.
         regression_tolerance: small tolerance for floating-point score deltas.
+        reject_score_ties: when true, exclude children whose average score ties
+            their parent's score instead of improving it.
         elite_selection_probability: optional probability of selecting the
             highest-scoring eligible parent for single-parent draws before
             falling back to the paper's stochastic formula.
@@ -37,12 +39,14 @@ class ParentSelector:
         alpha_0: float = 0.5,
         require_non_regression: bool = False,
         regression_tolerance: float = 0.0,
+        reject_score_ties: bool = False,
         elite_selection_probability: float = 0.0,
     ):
         self.lam = lam
         self.alpha_0 = alpha_0
         self.require_non_regression = require_non_regression
         self.regression_tolerance = regression_tolerance
+        self.reject_score_ties = reject_score_ties
         self.elite_selection_probability = max(
             0.0,
             min(1.0, elite_selection_probability),
@@ -80,7 +84,7 @@ class ParentSelector:
         k = min(n_parents, len(eligible))
         if k == 1 and self.elite_selection_probability > 0:
             if random.random() < self.elite_selection_probability:
-                return [max(eligible, key=lambda a: (a.average_score, a.generation))]
+                return [max(eligible, key=lambda a: (a.average_score, -a.generation))]
 
         # Build child-count map: count VALID children per agent
         child_counts: dict = {a.agent_id: 0 for a in eligible}
@@ -159,6 +163,9 @@ class ParentSelector:
             return True
 
         if agent.average_score < parent.average_score - tolerance:
+            return False
+
+        if self.reject_score_ties:
             return False
 
         for benchmark, parent_score in parent.benchmark_scores.items():

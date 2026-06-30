@@ -26,6 +26,7 @@ parent_selection:
   alpha_0: 0.5
   require_non_regression: true
   regression_tolerance: 0.0
+  reject_score_ties: true
   elite_selection_probability: 0.35
 
 evaluation:

@@ -450,6 +450,34 @@ class TestParentSelector:
 
         assert improved_child.agent_id in selected_ids
 
+    def test_non_regression_gate_can_exclude_score_tied_child(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        parent_file = _make_agent_file(tmp_path, "parent.py")
+        tied_file = _make_agent_file(tmp_path, "tied.py")
+        parent = archive.add_agent(
+            str(parent_file),
+            benchmark_scores={"a": 1.0, "b": 0.0},
+            is_valid=True,
+        )
+        tied_child = archive.add_agent(
+            str(tied_file),
+            parent_id=parent.agent_id,
+            benchmark_scores={"a": 1.0, "b": 0.0},
+            is_valid=True,
+        )
+
+        selector = ParentSelector(
+            require_non_regression=True,
+            reject_score_ties=True,
+        )
+        selected_ids = {
+            agent.agent_id
+            for agent in selector.select_parents(archive, n_parents=10)
+        }
+
+        assert parent.agent_id in selected_ids
+        assert tied_child.agent_id not in selected_ids
+
     def test_elite_selection_probability_selects_top_eligible_agent(self, tmp_path):
         archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
         low = archive.add_agent(
@@ -468,3 +496,22 @@ class TestParentSelector:
 
         assert selected == [high]
         assert low.agent_id != selected[0].agent_id
+
+    def test_elite_selection_probability_prefers_earlier_generation_on_score_tie(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        parent = archive.add_agent(
+            str(_make_agent_file(tmp_path, "parent.py")),
+            benchmark_scores={"b": 0.8},
+            is_valid=True,
+        )
+        archive.add_agent(
+            str(_make_agent_file(tmp_path, "child.py")),
+            parent_id=parent.agent_id,
+            benchmark_scores={"b": 0.8},
+            is_valid=True,
+        )
+
+        selector = ParentSelector(elite_selection_probability=1.0)
+        selected = selector.select_parents(archive, n_parents=1)
+
+        assert selected == [parent]
