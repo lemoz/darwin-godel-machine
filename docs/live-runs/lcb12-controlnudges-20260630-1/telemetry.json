@@ -1,0 +1,275 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-06-30T16:03:58.200040",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 7
+      },
+      {
+        "agent_id": "4fb50010-cd36-4a80-888c-44011fb27aad",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-06-30T16:18:14.501168",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "9c63f48a-76b3-4843-8bd0-af6bac0b1450",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-06-30T16:19:00.737334",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "26aa8d06-adeb-4d5a-b7c3-68eb1b14cfe3",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-06-30T16:19:34.793459",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "5b40474d-c543-4d29-b2bf-ae8ddeaab70e",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-06-30T16:31:25.437192",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 6
+      },
+      {
+        "agent_id": "b33d01a4-ede1-4ca9-9627-ce78eaf8d8f4",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-06-30T16:39:23.258412",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 6
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {
+        "changed": 3,
+        "noop": 2
+      }
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_d": 4,
+      "livecodebench_abc388_e": 3,
+      "livecodebench_abc389_d": 3,
+      "livecodebench_abc389_e": 4,
+      "livecodebench_abc390_d": 4,
+      "livecodebench_abc390_e": 4
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 6,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.7462076513888889,
+    "successful_improvements": 0,
+    "total_agents_created": 3,
+    "total_generations": 5
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 2,
+    "resource_guard_rejections": 0,
+    "traceback_count": 26,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_d": 4,
+      "livecodebench_abc388_e": 3,
+      "livecodebench_abc389_d": 3,
+      "livecodebench_abc389_e": 4,
+      "livecodebench_abc390_d": 4,
+      "livecodebench_abc390_e": 4
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 6.721120943952801,
+      "count": 339,
+      "max": 70.63
+    },
+    "configured_timeout_seconds": 90.0,
+    "empty_response_count": 0,
+    "finish_reasons": {
+      "length": 14
+    },
+    "http_post_count": 341,
+    "model": "qwen/qwen3-coder",
+    "model_from_log": "qwen/qwen3-coder",
+    "name": "openrouter",
+    "timeout_count": 2
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/lcb12-controlnudges-20260630-1/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery/results/dgm_report_20260630_163923.json",
+    "end_time": "2026-06-30T16:39:23.262000",
+    "line_count": 19033,
+    "observed_runtime_seconds": 2696.058,
+    "scorecard": "/var/tmp/dgm-live-runs/lcb12-controlnudges-20260630-1/artifacts/scorecard.json",
+    "start_time": "2026-06-30T15:54:27.204000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.5833333333333334,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 7
+      },
+      {
+        "agent_id": "4fb50010-cd36-4a80-888c-44011fb27aad",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 1,
+        "solved_count": 7
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": true,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 7
+      },
+      {
+        "agent_id": "4fb50010-cd36-4a80-888c-44011fb27aad",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "9c63f48a-76b3-4843-8bd0-af6bac0b1450",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "26aa8d06-adeb-4d5a-b7c3-68eb1b14cfe3",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "5b40474d-c543-4d29-b2bf-ae8ddeaab70e",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 6
+      },
+      {
+        "agent_id": "b33d01a4-ede1-4ca9-9627-ce78eaf8d8f4",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+        "solved_count": 6
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [
+        "4fb50010-cd36-4a80-888c-44011fb27aad",
+        "5b40474d-c543-4d29-b2bf-ae8ddeaab70e",
+        "b33d01a4-ede1-4ca9-9627-ce78eaf8d8f4"
+      ],
+      "changed_count": 3,
+      "noop_agents": [
+        "9c63f48a-76b3-4843-8bd0-af6bac0b1450",
+        "26aa8d06-adeb-4d5a-b7c3-68eb1b14cfe3"
+      ],
+      "noop_count": 2,
+      "status_counts": {
+        "changed": 3,
+        "noop": 2
+      },
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "57d7e30e-1779-4e28-8414-61f709a4e9ad",
+    "top_score": 0.5833333333333334,
+    "total_agents": 6,
+    "total_benchmark_improvements": 1,
+    "total_benchmark_regressions": 3,
+    "total_benchmark_unchanged": 32,
+    "valid_agents": 4
+  },
+  "tokens": {
+    "completion_tokens": 140904,
+    "estimated_cost_usd": 0.871623,
+    "input_price_per_mtok": 0.22,
+    "output_price_per_mtok": 1.8,
+    "prompt_tokens": 2809072,
+    "total_tokens": 2949976,
+    "usage_events": 339
+  }
+}
