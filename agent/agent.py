@@ -469,8 +469,10 @@ class Agent:
                 "agent.py, tools/*.py, fm_interface/*.py, or a provider module. "
                 "Use action='line_replace' with line_number, line_count, and "
                 "content_lines if exact modify text is brittle. Do not call bash "
-                "or read more files. If you do not make a source edit now, this "
-                "child will be archived as an invalid no-op mutation."
+                "or read more files. Target executable logic or a named prompt "
+                "instruction block, not incidental examples. If you do not make "
+                "a source edit now, this child will be archived as an invalid "
+                "no-op mutation."
             )
         return (
             "SELF-MODIFICATION PATCH REQUIRED: no Python agent-code changes are "
@@ -478,8 +480,9 @@ class Agent:
             "and make one small, valid source edit now. Prefer an edit tool "
             "line_replace call against agent.py, tools/*.py, fm_interface/*.py, "
             "or a provider module, using line_number, line_count, and "
-            "content_lines. Do not write solution.py or continue with read-only "
-            "inspection."
+            "content_lines. Target executable logic or a named instruction block; "
+            "do not edit sample workflow text. Do not write solution.py or "
+            "continue with read-only inspection."
         )
 
     @staticmethod
@@ -487,6 +490,15 @@ class Agent:
         metadata = task.metadata or {}
         return task.task_id.startswith("self_modify") or (
             "parent_id" in metadata and "generation" in metadata
+        )
+
+    @staticmethod
+    def _is_benchmark_task(task: Task) -> bool:
+        metadata = task.metadata or {}
+        return bool(
+            task.benchmark_name
+            or metadata.get("benchmark")
+            or task.task_id.startswith("benchmark_")
         )
 
     @staticmethod
@@ -527,7 +539,7 @@ class Agent:
                         "Using tool-written solution.py after task did not return inline code"
                     )
                     return solution
-            if task and (task.metadata or {}).get("benchmark"):
+            if task and self._is_benchmark_task(task):
                 for candidate_name in ("solve.py", "main.py"):
                     candidate = self.working_directory / candidate_name
                     if candidate.is_file():
@@ -595,7 +607,7 @@ class Agent:
                     result_message.metadata["tool_use_id"] = tool_call.call_id
 
                 self.conversation_history.append(result_message)
-                repair_nudge = self._build_self_modification_edit_repair_nudge(
+                repair_nudge = self._build_edit_repair_nudge(
                     tool_call,
                     result,
                     task,
@@ -616,6 +628,22 @@ class Agent:
                     ),
                 )
                 self.conversation_history.append(error_message)
+
+    def _build_edit_repair_nudge(
+        self,
+        tool_call: ToolCall,
+        result: ToolResult,
+        task: Optional[Task],
+    ) -> Optional[str]:
+        """Return the most specific repair prompt for a failed edit call."""
+        self_modification_nudge = self._build_self_modification_edit_repair_nudge(
+            tool_call,
+            result,
+            task,
+        )
+        if self_modification_nudge:
+            return self_modification_nudge
+        return self._build_benchmark_edit_repair_nudge(tool_call, result, task)
 
     def _build_self_modification_edit_repair_nudge(
         self,
@@ -651,9 +679,23 @@ class Agent:
                 "json array",
             )
         )
+        syntax_error = "syntax error" in error_text
+        line_range_error = any(
+            phrase in error_text
+            for phrase in (
+                "line_number",
+                "line_replace range",
+                "past end",
+            )
+        )
         if action not in {"modify", "line_replace", "write"}:
             return None
-        if not brittle_match_error and not malformed_content_error:
+        if (
+            not brittle_match_error
+            and not malformed_content_error
+            and not syntax_error
+            and not line_range_error
+        ):
             return None
 
         if malformed_content_error:
@@ -664,12 +706,81 @@ class Agent:
                 "not send a serialized list inside the content string."
             )
 
+        if syntax_error:
+            return (
+                "SELF-MODIFICATION EDIT REPAIR: the attempted source edit made "
+                "agent code syntactically invalid. Read only the exact target "
+                "line range, then retry a smaller action='line_replace' patch "
+                "with complete Python lines that preserve surrounding indentation "
+                "and brackets. Prefer changing executable logic or a named "
+                "instruction block, not example workflow text."
+            )
+
+        if line_range_error:
+            return (
+                "SELF-MODIFICATION EDIT REPAIR: the requested line_replace range "
+                "does not match the current file. Read a narrow range around the "
+                "intended target, then retry with the exact current line_number "
+                "and line_count. Do not guess line numbers."
+            )
+
         return (
             "SELF-MODIFICATION EDIT REPAIR: the exact modify search_text did not "
             "apply cleanly. Do not retry the same search_text. Read a narrow line "
             "range if needed, then call the edit tool with action='line_replace', "
             "file_path, line_number, line_count, and content_lines. Keep the "
             "replacement syntactically valid and preserve the surrounding code."
+        )
+
+    def _build_benchmark_edit_repair_nudge(
+        self,
+        tool_call: ToolCall,
+        result: ToolResult,
+        task: Optional[Task],
+    ) -> Optional[str]:
+        """Return a focused repair prompt after failed benchmark solution edits."""
+        if task is None or not self._is_benchmark_task(task):
+            return None
+        if tool_call.tool_name != "edit":
+            return None
+        if result.status == ToolExecutionStatus.SUCCESS:
+            return None
+
+        action = tool_call.parameters.get("action")
+        if action not in {"write", "append", "line_replace"}:
+            return None
+
+        error_text = (result.error or result.output or "").lower()
+        malformed_content_error = any(
+            phrase in error_text
+            for phrase in (
+                "serialized/list fragment",
+                "content_lines parameter",
+                "content parameter",
+                "json array",
+            )
+        )
+        syntax_error = "syntax error" in error_text
+        if not malformed_content_error and not syntax_error:
+            return None
+
+        if syntax_error:
+            return (
+                "BENCHMARK EDIT REPAIR: the previous Python edit was rejected "
+                "because solution.py would be syntactically invalid. Retry with "
+                "one complete, valid solution.py. Prefer action='write' and "
+                "content_lines as a JSON array of plain strings, one full source "
+                "line per string. Do not patch partial fragments."
+            )
+
+        return (
+            "BENCHMARK EDIT REPAIR: the previous edit payload was malformed. "
+            "Retry immediately by writing the complete solution.py with the edit "
+            "tool using action='write' and content_lines as a JSON array of plain "
+            "strings, one complete Python source line per string. Do not nest "
+            "arrays or objects inside content_lines, and do not send a serialized "
+            "list in content. If tool arguments keep failing, provide the final "
+            "Python code in a markdown python block ending with Task complete."
         )
     
     def _build_system_message(self, context: ConversationContext) -> Message:
@@ -696,8 +807,13 @@ SELF-MODIFICATION MODE:
   narrow line range. Provide `line_number`, `line_count`, and `content_lines`
   with one complete Python source line per string. Use this instead of long
   `search_text` values when exact matching is unreliable.
-- If you are unsure what to change, improve the prompt/nudge/tool-use logic in
-  `agent.py` with a minimal, syntactically valid patch.
+- Target executable logic, tool-use repair logic, or a named instruction block
+  such as SELF-MODIFICATION MODE or BENCHMARK SOLUTION FILE. Do not edit
+  incidental examples, sample workflow text, markdown fences, or comments unless
+  the task specifically asks for documentation-only changes.
+- If you are unsure what to change, improve prompt/nudge/tool-use logic in
+  `agent.py` with a minimal, syntactically valid patch against the named
+  instruction block or method body you intend to improve.
 - Before finalizing, name the changed source file and end with `Task complete`.
 """
 

@@ -442,6 +442,7 @@ class TestAgentSolveTask:
         assert "real Python source change" in system_message.content
         assert "line_replace" in system_message.content
         assert "line_number" in system_message.content
+        assert "incidental examples" in system_message.content
 
     @patch(
         "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
@@ -515,6 +516,73 @@ class TestAgentSolveTask:
         assert "line_replace" in nudge
         assert "line_number" in nudge
         assert "content_lines" in nudge
+
+    def test_self_modification_syntax_error_gets_line_replace_repair_nudge(self):
+        task = Task(
+            task_id="self_modify_parent_001_1",
+            description="Modify yourself",
+            metadata={"parent_id": "parent_001", "generation": 1},
+        )
+        tool_call = ToolCall(
+            tool_name="edit",
+            parameters={
+                "action": "line_replace",
+                "file_path": "agent.py",
+                "line_number": 42,
+                "line_count": 3,
+                "content_lines": ["if True:"],
+            },
+            call_id="toolu_edit",
+        )
+        result = ToolResult(
+            status=ToolExecutionStatus.ERROR,
+            output="",
+            error=(
+                "Rejected line_replace for Python file agent.py: content has "
+                "a syntax error at line 44, column 1: unexpected EOF"
+            ),
+        )
+
+        nudge = self.agent._build_self_modification_edit_repair_nudge(
+            tool_call,
+            result,
+            task,
+        )
+
+        assert nudge is not None
+        assert "SELF-MODIFICATION EDIT REPAIR" in nudge
+        assert "syntactically invalid" in nudge
+        assert "retry a smaller action='line_replace' patch" in nudge
+        assert "named instruction block" in nudge
+
+    def test_benchmark_edit_error_gets_content_lines_repair_nudge(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        tool_call = ToolCall(
+            tool_name="edit",
+            parameters={
+                "action": "write",
+                "file_path": "solution.py",
+                "content_lines": [["import sys"], ["print(1)"]],
+            },
+            call_id="toolu_edit",
+        )
+        result = ToolResult(
+            status=ToolExecutionStatus.ERROR,
+            output="",
+            error="content_lines parameter must contain only strings for write action",
+        )
+
+        nudge = self.agent._build_edit_repair_nudge(tool_call, result, task)
+
+        assert nudge is not None
+        assert "BENCHMARK EDIT REPAIR" in nudge
+        assert "complete solution.py" in nudge
+        assert "content_lines as a JSON array of plain strings" in nudge
+        assert "Do not nest arrays or objects" in nudge
 
 
 # ---------------------------------------------------------------------------
