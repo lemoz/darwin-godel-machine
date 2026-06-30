@@ -1,0 +1,239 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-06-30T15:13:04.905216",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 6
+      },
+      {
+        "agent_id": "7a14195d-002b-435c-ab49-b1cab7a5ff34",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "created_at": "2026-06-30T15:24:07.142362",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a",
+        "solved_count": 5
+      },
+      {
+        "agent_id": "c100dab7-7e97-45b7-b3f2-ecb0e1293bf8",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "created_at": "2026-06-30T15:33:18.045552",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a",
+        "solved_count": 5
+      },
+      {
+        "agent_id": "fa87699b-6b93-4f57-af55-eeff48092ed6",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-06-30T15:42:03.524544",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a",
+        "solved_count": 8
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {
+        "changed": 3
+      }
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_d": 4,
+      "livecodebench_abc388_e": 2,
+      "livecodebench_abc389_d": 3,
+      "livecodebench_abc389_e": 4,
+      "livecodebench_abc390_b": 2,
+      "livecodebench_abc390_d": 4,
+      "livecodebench_abc390_e": 4
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 4,
+    "improvement_rate": 0.3333333333333333,
+    "runtime_hours": 0.6315465155555556,
+    "successful_improvements": 1,
+    "total_agents_created": 3,
+    "total_generations": 3
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 2,
+    "resource_guard_rejections": 0,
+    "traceback_count": 26,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_d": 4,
+      "livecodebench_abc388_e": 2,
+      "livecodebench_abc389_d": 3,
+      "livecodebench_abc389_e": 4,
+      "livecodebench_abc390_b": 2,
+      "livecodebench_abc390_d": 4,
+      "livecodebench_abc390_e": 4
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 5.715043731778422,
+      "count": 343,
+      "max": 69.31
+    },
+    "configured_timeout_seconds": 90.0,
+    "empty_response_count": 0,
+    "finish_reasons": {
+      "length": 6
+    },
+    "http_post_count": 343,
+    "model": "qwen/qwen3-coder",
+    "model_from_log": "qwen/qwen3-coder",
+    "name": "openrouter",
+    "timeout_count": 2
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/lcb12-editnorm-20260630-1/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/livecodebench-openrouter-loop12-qwen3-coder-selfmod-recovery/results/dgm_report_20260630_154203.json",
+    "end_time": "2026-06-30T15:42:03.528000",
+    "line_count": 15640,
+    "observed_runtime_seconds": 2285.209,
+    "scorecard": "/var/tmp/dgm-live-runs/lcb12-editnorm-20260630-1/artifacts/scorecard.json",
+    "start_time": "2026-06-30T15:03:58.319000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.5,
+    "best_average_delta": 0.16666666666666663,
+    "generation_best_scores": [
+      {
+        "agent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 6
+      },
+      {
+        "agent_id": "fa87699b-6b93-4f57-af55-eeff48092ed6",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "solved_count": 8
+      }
+    ],
+    "has_improvement": true,
+    "has_regression": true,
+    "improvement_count": 1,
+    "improvements": [
+      {
+        "average_delta": 0.16666666666666663,
+        "benchmark_improvements": [
+          "livecodebench_abc389_d",
+          "livecodebench_abc390_b"
+        ],
+        "benchmark_regressions": [],
+        "child_id": "fa87699b-6b93-4f57-af55-eeff48092ed6",
+        "parent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a"
+      }
+    ],
+    "loop_order_agents": [
+      {
+        "agent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 6
+      },
+      {
+        "agent_id": "7a14195d-002b-435c-ab49-b1cab7a5ff34",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a",
+        "solved_count": 5
+      },
+      {
+        "agent_id": "c100dab7-7e97-45b7-b3f2-ecb0e1293bf8",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a",
+        "solved_count": 5
+      },
+      {
+        "agent_id": "fa87699b-6b93-4f57-af55-eeff48092ed6",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "662011c6-b71d-4c90-be9b-ef2db1bc930a",
+        "solved_count": 8
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [
+        "7a14195d-002b-435c-ab49-b1cab7a5ff34",
+        "c100dab7-7e97-45b7-b3f2-ecb0e1293bf8",
+        "fa87699b-6b93-4f57-af55-eeff48092ed6"
+      ],
+      "changed_count": 3,
+      "noop_agents": [],
+      "noop_count": 0,
+      "status_counts": {
+        "changed": 3
+      },
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "fa87699b-6b93-4f57-af55-eeff48092ed6",
+    "top_score": 0.6666666666666666,
+    "total_agents": 4,
+    "total_benchmark_improvements": 3,
+    "total_benchmark_regressions": 3,
+    "total_benchmark_unchanged": 30,
+    "valid_agents": 4
+  },
+  "tokens": {
+    "completion_tokens": 126400,
+    "estimated_cost_usd": 0.71041,
+    "input_price_per_mtok": 0.22,
+    "output_price_per_mtok": 1.8,
+    "prompt_tokens": 2194954,
+    "total_tokens": 2321354,
+    "usage_events": 343
+  }
+}
