@@ -412,6 +412,65 @@ class TestAgentSolveTask:
         "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
         new_callable=AsyncMock,
     )
+    async def test_benchmark_sample_mismatch_blocks_workspace_solution_fallback(
+        self,
+        mock_gc,
+    ):
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 3
+        agent = Agent(cfg)
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description=(
+                "Solve a benchmark\n\nPUBLIC EXAMPLES:\n"
+                "1. Program reads stdin and writes stdout\n"
+                "   1. Stdin:\n"
+                "1\n"
+                "      Expected stdout:\n"
+                "2\n"
+                "\nFocus on the requested behavior and the examples above."
+            ),
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        mock_gc.side_effect = [
+            _make_completion(
+                "write wrong solution",
+                [
+                    ToolCall(
+                        tool_name="edit",
+                        parameters={
+                            "action": "write",
+                            "file_path": "solution.py",
+                            "content_lines": ["print(1)"],
+                        },
+                        call_id="toolu_edit",
+                    )
+                ],
+            ),
+            _make_completion(
+                "run sample",
+                [
+                    ToolCall(
+                        tool_name="bash",
+                        parameters={
+                            "command": "python3 solution.py << 'EOF'\n1\nEOF"
+                        },
+                        call_id="toolu_bash",
+                    )
+                ],
+            ),
+            _make_completion("```python\nprint(1)\n```\n\nTask complete"),
+        ]
+
+        result = await agent.solve_task(task)
+
+        assert result["success"] is True
+        assert result["solution"] == ""
+
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
     async def test_solve_task_does_not_recover_agent_file_for_self_modification(self, mock_gc):
         cfg = _make_config(self.tmp)
         cfg.max_iterations = 1
@@ -675,6 +734,7 @@ class TestAgentSolveTask:
             seen_bash_success_with_solution=False,
             has_unresolved_bash_failure=False,
             seen_unsafe_evidence=False,
+            current_solution_known_bad=False,
             can_send_constraint_nudge=True,
             can_send_finalization_nudge=True,
             can_send_edit_reset_nudge=True,
@@ -718,6 +778,7 @@ class TestAgentSolveTask:
             seen_bash_success_with_solution=True,
             has_unresolved_bash_failure=False,
             seen_unsafe_evidence=False,
+            current_solution_known_bad=False,
             can_send_constraint_nudge=True,
             can_send_finalization_nudge=True,
             can_send_edit_reset_nudge=True,
@@ -761,6 +822,7 @@ class TestAgentSolveTask:
             seen_bash_success_with_solution=False,
             has_unresolved_bash_failure=True,
             seen_unsafe_evidence=False,
+            current_solution_known_bad=False,
             can_send_constraint_nudge=True,
             can_send_finalization_nudge=True,
             can_send_edit_reset_nudge=True,
@@ -804,6 +866,7 @@ class TestAgentSolveTask:
             seen_bash_success_with_solution=True,
             has_unresolved_bash_failure=True,
             seen_unsafe_evidence=False,
+            current_solution_known_bad=False,
             can_send_constraint_nudge=True,
             can_send_finalization_nudge=True,
             can_send_edit_reset_nudge=True,
@@ -816,8 +879,100 @@ class TestAgentSolveTask:
         kind, text = nudge
         assert kind == "sample_failure_repair"
         assert "BENCHMARK FAILURE REPAIR" in text
-        assert "failed sample or runtime check" in text
+        assert "failed sample" in text
+        assert "runtime check" in text
         assert "re-run the failing check with explicit stdin" in text
+
+    def test_benchmark_sample_output_mismatch_is_detected(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description=(
+                "Solve a benchmark\n\nPUBLIC EXAMPLES:\n"
+                "1. Program reads stdin and writes stdout\n"
+                "   1. Stdin:\n"
+                "1\n"
+                "      Expected stdout:\n"
+                "2\n"
+                "\nFocus on the requested behavior and the examples above."
+            ),
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={"command": "python3 solution.py << 'EOF'\n1\nEOF"},
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.SUCCESS,
+                output="1\n",
+            ),
+        )
+
+        assert self.agent._events_include_benchmark_sample_mismatch([event], task)
+        assert not self.agent._events_include_verified_benchmark_sample_success(
+            [event],
+            task,
+        )
+
+    def test_benchmark_known_bad_solution_gets_failure_repair_nudge(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        (self.tmp / "solution.py").write_text("print(1)\n", encoding="utf-8")
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={"command": "python3 solution.py << 'EOF'\n1\nEOF"},
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.SUCCESS,
+                output="1\n",
+            ),
+        )
+
+        nudge = self.agent._build_benchmark_control_nudge(
+            tool_events=[event],
+            task=task,
+            consumed_steps=6,
+            max_steps=7,
+            edit_failure_streak=0,
+            seen_bash_success_with_solution=True,
+            has_unresolved_bash_failure=False,
+            seen_unsafe_evidence=False,
+            current_solution_known_bad=True,
+            can_send_constraint_nudge=True,
+            can_send_finalization_nudge=True,
+            can_send_edit_reset_nudge=True,
+            can_send_no_stdin_nudge=True,
+            can_send_failure_repair_nudge=True,
+            can_send_unsafe_nudge=True,
+        )
+
+        assert nudge is not None
+        kind, text = nudge
+        assert kind == "sample_failure_repair"
+        assert "mismatched expected stdout" in text
+
+    def test_benchmark_completion_block_rejects_import_only_solution(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        (self.tmp / "solution.py").write_text("import math\n", encoding="utf-8")
+
+        reason = self.agent._benchmark_completion_block_reason(
+            task=task,
+            current_solution_known_bad=False,
+            has_unresolved_bash_failure=False,
+            seen_unsafe_evidence=False,
+        )
+
+        assert reason == "current solution file is empty or import-only"
 
     def test_benchmark_unsafe_evidence_blocks_late_finalization(self):
         task = Task(
@@ -847,6 +1002,7 @@ class TestAgentSolveTask:
             seen_bash_success_with_solution=True,
             has_unresolved_bash_failure=False,
             seen_unsafe_evidence=True,
+            current_solution_known_bad=False,
             can_send_constraint_nudge=True,
             can_send_finalization_nudge=True,
             can_send_edit_reset_nudge=True,
@@ -893,6 +1049,7 @@ class TestAgentSolveTask:
             seen_bash_success_with_solution=False,
             has_unresolved_bash_failure=False,
             seen_unsafe_evidence=False,
+            current_solution_known_bad=False,
             can_send_constraint_nudge=True,
             can_send_finalization_nudge=True,
             can_send_edit_reset_nudge=True,

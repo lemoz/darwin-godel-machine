@@ -5,10 +5,12 @@ This module contains the core Agent class that represents a self-modifying
 coding agent in the Darwin Gödel Machine system.
 """
 
+import ast
 import asyncio
 import hashlib
 import json
 import logging
+import re
 import uuid
 from typing import Dict, Any, List, Optional, Union
 from dataclasses import dataclass, field
@@ -262,6 +264,7 @@ class Agent:
         benchmark_seen_bash_success_with_solution = False
         benchmark_unresolved_bash_failure = False
         benchmark_seen_unsafe_evidence = False
+        benchmark_current_solution_known_bad = False
         sent_benchmark_constraint_nudge = False
         sent_benchmark_finalization_nudge = False
         sent_benchmark_edit_reset_nudge = False
@@ -364,19 +367,47 @@ class Agent:
                         benchmark_edit_failure_streak += 1
                     elif self._events_include_successful_solution_edit(tool_events):
                         benchmark_edit_failure_streak = 0
+                        benchmark_seen_bash_success_with_solution = False
+                        benchmark_unresolved_bash_failure = False
+                        benchmark_current_solution_known_bad = (
+                            self._benchmark_solution_file_is_incomplete()
+                        )
 
+                    sample_mismatch = self._events_include_benchmark_sample_mismatch(
+                        tool_events,
+                        task,
+                    )
+                    verified_sample_success = (
+                        self._events_include_verified_benchmark_sample_success(
+                            tool_events,
+                            task,
+                        )
+                    )
                     if (
                         self._events_include_benchmark_bash_failure(tool_events)
                         and self._benchmark_solution_file_exists()
                     ):
                         benchmark_unresolved_bash_failure = True
+                        benchmark_current_solution_known_bad = True
+                        benchmark_seen_bash_success_with_solution = False
+
+                    if sample_mismatch and self._benchmark_solution_file_exists():
+                        benchmark_unresolved_bash_failure = True
+                        benchmark_current_solution_known_bad = True
+                        benchmark_seen_bash_success_with_solution = False
 
                     if (
                         self._events_include_successful_bash(tool_events)
                         and self._benchmark_solution_file_exists()
+                        and not sample_mismatch
+                        and (
+                            verified_sample_success
+                            or not self._task_has_stdin_example_expectations(task)
+                        )
                     ):
                         benchmark_seen_bash_success_with_solution = True
                         benchmark_unresolved_bash_failure = False
+                        benchmark_current_solution_known_bad = False
 
                     if self._events_include_unsafe_benchmark_evidence(tool_events):
                         benchmark_seen_unsafe_evidence = True
@@ -390,6 +421,7 @@ class Agent:
                         seen_bash_success_with_solution=benchmark_seen_bash_success_with_solution,
                         has_unresolved_bash_failure=benchmark_unresolved_bash_failure,
                         seen_unsafe_evidence=benchmark_seen_unsafe_evidence,
+                        current_solution_known_bad=benchmark_current_solution_known_bad,
                         can_send_constraint_nudge=not sent_benchmark_constraint_nudge,
                         can_send_finalization_nudge=not sent_benchmark_finalization_nudge,
                         can_send_edit_reset_nudge=not sent_benchmark_edit_reset_nudge,
@@ -463,6 +495,30 @@ class Agent:
             logger.info(f"_is_task_complete returned: {task_complete}")
             
             if task_complete:
+                if self._is_benchmark_task(task):
+                    block_reason = self._benchmark_completion_block_reason(
+                        task=task,
+                        current_solution_known_bad=benchmark_current_solution_known_bad,
+                        has_unresolved_bash_failure=benchmark_unresolved_bash_failure,
+                        seen_unsafe_evidence=benchmark_seen_unsafe_evidence,
+                    )
+                    if block_reason:
+                        logger.warning(
+                            "Blocking benchmark task completion: %s",
+                            block_reason,
+                        )
+                        if step < max_steps - 1:
+                            self.conversation_history.append(
+                                Message(
+                                    role=MessageRole.USER,
+                                    content=self._build_benchmark_completion_block_nudge(
+                                        block_reason
+                                    ),
+                                )
+                            )
+                            continue
+                        return solution
+
                 logger.info(f"Task complete after Step {step + 1}")
                 # Extract Python code from the response
                 solution = self._extract_code_solution(response.content)
@@ -484,6 +540,19 @@ class Agent:
                     break
         
         logger.warning(f"Reached max steps ({max_steps}) without task completion")
+        if self._is_benchmark_task(task):
+            block_reason = self._benchmark_completion_block_reason(
+                task=task,
+                current_solution_known_bad=benchmark_current_solution_known_bad,
+                has_unresolved_bash_failure=benchmark_unresolved_bash_failure,
+                seen_unsafe_evidence=benchmark_seen_unsafe_evidence,
+            )
+            if block_reason:
+                logger.warning(
+                    "Not using workspace benchmark solution after step limit: %s",
+                    block_reason,
+                )
+                return solution
         return solution or self._read_workspace_solution(task)
 
     def _build_no_progress_nudge(
@@ -685,6 +754,44 @@ class Agent:
                 continue
         return False
 
+    def _benchmark_solution_file_is_incomplete(self) -> bool:
+        """Return whether the current benchmark solution file is only a stub."""
+        for candidate_name in ("solution.py", "solve.py", "main.py"):
+            candidate = self.working_directory / candidate_name
+            try:
+                if not candidate.is_file():
+                    continue
+                source = candidate.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            if source.strip():
+                return self._python_solution_source_is_incomplete(source)
+        return False
+
+    @staticmethod
+    def _python_solution_source_is_incomplete(source: str) -> bool:
+        """Return True for syntactically valid Python that cannot solve a task."""
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            return True
+
+        meaningful_nodes = []
+        for node in tree.body:
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                continue
+            if (
+                isinstance(node, ast.Expr)
+                and isinstance(node.value, ast.Constant)
+                and isinstance(node.value.value, str)
+            ):
+                continue
+            meaningful_nodes.append(node)
+
+        if not meaningful_nodes:
+            return True
+        return all(isinstance(node, ast.Pass) for node in meaningful_nodes)
+
     @staticmethod
     def _tool_event_file_path(event: ToolExecutionEvent) -> str:
         file_path = event.tool_call.parameters.get("file_path")
@@ -737,6 +844,129 @@ class Agent:
         if event.result.error:
             parts.append(event.result.error)
         return "\n".join(parts)
+
+    @staticmethod
+    def _stdin_example_expectations(task: Optional[Task]) -> Dict[str, str]:
+        """Extract public stdin examples from a benchmark task description."""
+        if task is None or not task.description:
+            return {}
+
+        expectations: Dict[str, str] = {}
+        lines = task.description.splitlines()
+        index = 0
+        while index < len(lines):
+            if not re.match(r"\s*\d+\.\s+Stdin:\s*$", lines[index]):
+                index += 1
+                continue
+
+            index += 1
+            input_lines: List[str] = []
+            while index < len(lines) and not re.match(
+                r"\s*Expected stdout:\s*$",
+                lines[index],
+            ):
+                input_lines.append(lines[index])
+                index += 1
+
+            if index >= len(lines):
+                break
+
+            index += 1
+            expected_lines: List[str] = []
+            while index < len(lines):
+                line = lines[index]
+                if re.match(r"\s*\d+\.\s+Stdin:\s*$", line):
+                    break
+                if re.match(r"\s*\d+\.\s+Program reads stdin", line):
+                    break
+                if (
+                    line.strip()
+                    == "Focus on the requested behavior and the examples above."
+                ):
+                    break
+                expected_lines.append(line)
+                index += 1
+
+            raw_input = "\n".join(input_lines).strip()
+            raw_expected = "\n".join(expected_lines).strip()
+            if raw_input:
+                expectations[raw_input] = raw_expected
+
+        return expectations
+
+    @classmethod
+    def _task_has_stdin_example_expectations(cls, task: Optional[Task]) -> bool:
+        return bool(cls._stdin_example_expectations(task))
+
+    @staticmethod
+    def _extract_heredoc_stdin(command: str) -> Optional[str]:
+        """Return stdin supplied via a shell heredoc, when parseable."""
+        match = re.search(
+            r"<<\s*['\"]?([A-Za-z_][A-Za-z0-9_-]*)['\"]?\s*\n(.*?)\n\1(?:\s|$)",
+            command,
+            re.DOTALL,
+        )
+        if not match:
+            return None
+        return match.group(2).strip()
+
+    @staticmethod
+    def _stdio_text_matches(actual: str, expected: str) -> bool:
+        """Compare stdout using exact trim first, then whitespace normalization."""
+        actual_stripped = (actual or "").strip()
+        expected_stripped = (expected or "").strip()
+        if actual_stripped == expected_stripped:
+            return True
+        return actual_stripped.split() == expected_stripped.split()
+
+    @classmethod
+    def _benchmark_sample_match_for_event(
+        cls,
+        event: ToolExecutionEvent,
+        task: Optional[Task],
+    ) -> Optional[bool]:
+        """Return whether a bash run matched a prompt-visible stdin example."""
+        if event.tool_call.tool_name != "bash":
+            return None
+        if event.result.status != ToolExecutionStatus.SUCCESS:
+            return None
+        if not cls._bash_event_runs_solution_file(event):
+            return None
+
+        command = event.tool_call.parameters.get("command")
+        if not isinstance(command, str):
+            return None
+        stdin = cls._extract_heredoc_stdin(command)
+        if stdin is None:
+            return None
+
+        expectations = cls._stdin_example_expectations(task)
+        expected = expectations.get(stdin.strip())
+        if expected is None:
+            return None
+        return cls._stdio_text_matches(event.result.output or "", expected)
+
+    @classmethod
+    def _events_include_verified_benchmark_sample_success(
+        cls,
+        events: List[ToolExecutionEvent],
+        task: Optional[Task],
+    ) -> bool:
+        return any(
+            cls._benchmark_sample_match_for_event(event, task) is True
+            for event in events
+        )
+
+    @classmethod
+    def _events_include_benchmark_sample_mismatch(
+        cls,
+        events: List[ToolExecutionEvent],
+        task: Optional[Task],
+    ) -> bool:
+        return any(
+            cls._benchmark_sample_match_for_event(event, task) is False
+            for event in events
+        )
 
     @staticmethod
     def _text_has_unsafe_benchmark_evidence(text: Optional[str]) -> bool:
@@ -867,6 +1097,7 @@ class Agent:
         seen_bash_success_with_solution: bool,
         has_unresolved_bash_failure: bool,
         seen_unsafe_evidence: bool,
+        current_solution_known_bad: bool,
         can_send_constraint_nudge: bool,
         can_send_finalization_nudge: bool,
         can_send_edit_reset_nudge: bool,
@@ -912,14 +1143,19 @@ class Agent:
 
         if (
             can_send_failure_repair_nudge
-            and (has_unresolved_bash_failure or current_bash_failure)
+            and (
+                has_unresolved_bash_failure
+                or current_bash_failure
+                or current_solution_known_bad
+            )
             and self._benchmark_solution_file_exists()
         ):
             return (
                 "sample_failure_repair",
-                "BENCHMARK FAILURE REPAIR: a failed sample or runtime check is "
-                "still unresolved for the current solution file. Do not finalize "
-                "or cosmetically rewrite. Inspect the failing input/output or "
+                "BENCHMARK FAILURE REPAIR: a failed sample, mismatched expected "
+                "stdout, incomplete solution file, or runtime check is still "
+                "unresolved for the current solution file. Do not finalize or "
+                "cosmetically rewrite. Inspect the failing input/output or "
                 "traceback, patch solution.py once, and re-run the failing check "
                 "with explicit stdin before ending with Task complete.",
             )
@@ -978,6 +1214,37 @@ class Agent:
             )
 
         return None
+
+    def _benchmark_completion_block_reason(
+        self,
+        *,
+        task: Optional[Task],
+        current_solution_known_bad: bool,
+        has_unresolved_bash_failure: bool,
+        seen_unsafe_evidence: bool,
+    ) -> Optional[str]:
+        """Return why benchmark completion must not recover solution.py."""
+        if task is None or not self._is_benchmark_task(task):
+            return None
+        if current_solution_known_bad:
+            return "current solution file is known bad or incomplete"
+        if has_unresolved_bash_failure:
+            return "current solution file has an unresolved failed check"
+        if seen_unsafe_evidence:
+            return "unsafe complexity evidence remains unresolved"
+        if self._benchmark_solution_file_is_incomplete():
+            return "current solution file is empty or import-only"
+        return None
+
+    @staticmethod
+    def _build_benchmark_completion_block_nudge(block_reason: str) -> str:
+        return (
+            "BENCHMARK COMPLETION BLOCK: do not end with Task complete yet; "
+            f"{block_reason}. Patch solution.py with a complete benchmark "
+            "solution and re-run a provided sample with explicit stdin. Only "
+            "finalize after the actual stdout matches the expected stdout and "
+            "no unsafe-complexity evidence remains."
+        )
     
     async def _execute_tool_calls(
         self,
