@@ -12,6 +12,7 @@ from agent.agent import Agent, AgentConfig, Task
 from agent.fm_interface.api_handler import (
     ApiHandler, CompletionResponse, CompletionRequest, ToolCall
 )
+from agent.fm_interface.message_formatter import ConversationContext
 from agent.fm_interface.providers.openai_compatible import OpenAICompatibleHandler
 from agent.tools.bash_tool import BashTool
 from agent.tools.edit_tool import EditTool
@@ -426,6 +427,57 @@ class TestAgentSolveTask:
 
         assert result["success"] is True
         assert result["solution"] == ""
+
+    def test_self_modification_system_message_includes_patch_mode(self):
+        system_message = self.agent._build_system_message(
+            ConversationContext(
+                task_id="self_modify_parent_001_1",
+                agent_id="agent_001",
+            )
+        )
+
+        assert "SELF-MODIFICATION MODE" in system_message.content
+        assert "Do not create `solution.py`" in system_message.content
+        assert "real Python source change" in system_message.content
+
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
+    async def test_self_modification_read_only_loop_gets_patch_nudge(self, mock_gc):
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 3
+        agent = Agent(cfg)
+        (self.tmp / "agent.py").write_text(
+            "class Agent:\n"
+            "    def __init__(self, config=None): pass\n",
+            encoding="utf-8",
+        )
+        mock_gc.return_value = CompletionResponse(
+            content="I will inspect more files.",
+            tool_calls=[
+                ToolCall(
+                    tool_name="bash",
+                    parameters={"command": "pwd"},
+                    call_id="toolu_readonly",
+                )
+            ],
+            finish_reason="tool_use",
+        )
+
+        task = Task(
+            task_id="self_modify_parent_001_1",
+            description="Modify yourself",
+            metadata={"parent_id": "parent_001", "generation": 1},
+        )
+        result = await agent.solve_task(task)
+
+        assert result["success"] is True
+        assert mock_gc.await_count == 3
+        assert any(
+            "SELF-MODIFICATION PATCH REQUIRED" in msg.content
+            for msg in agent.conversation_history
+        )
 
 
 # ---------------------------------------------------------------------------

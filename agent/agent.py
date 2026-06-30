@@ -6,6 +6,7 @@ coding agent in the Darwin Gödel Machine system.
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import uuid
@@ -242,6 +243,14 @@ class Agent:
         """
         solution = ""
         max_steps = max(1, int(self.config.max_iterations))
+        is_self_modification = self._is_self_modification_task(task)
+        initial_agent_code_snapshot = (
+            self._snapshot_agent_code_files() if is_self_modification else {}
+        )
+        patch_due_step = max(2, min(max_steps, max_steps // 3 or 1))
+        final_patch_step = max(1, max_steps - 2)
+        sent_patch_due_nudge = False
+        sent_final_patch_nudge = False
         
         logger.info(f"Starting task solution with up to {max_steps} steps for task {task.task_id}")
         
@@ -328,6 +337,45 @@ class Agent:
             if response.tool_calls:
                 logger.info(f"Executing {len(response.tool_calls)} tool calls")
                 await self._execute_tool_calls(response.tool_calls)
+                if is_self_modification:
+                    consumed_steps = step + 1
+                    remaining_steps = max_steps - consumed_steps
+                    has_agent_code_changes = self._has_agent_code_changes(
+                        initial_agent_code_snapshot
+                    )
+                    if not has_agent_code_changes and remaining_steps > 0:
+                        nudge = None
+                        if (
+                            consumed_steps >= final_patch_step
+                            and not sent_final_patch_nudge
+                        ):
+                            nudge = self._build_self_modification_patch_nudge(
+                                consumed_steps=consumed_steps,
+                                max_steps=max_steps,
+                                final_window=True,
+                            )
+                            sent_final_patch_nudge = True
+                        elif (
+                            consumed_steps >= patch_due_step
+                            and not sent_patch_due_nudge
+                        ):
+                            nudge = self._build_self_modification_patch_nudge(
+                                consumed_steps=consumed_steps,
+                                max_steps=max_steps,
+                                final_window=False,
+                            )
+                            sent_patch_due_nudge = True
+
+                        if nudge:
+                            logger.warning(
+                                "Self-modification has no agent-code changes "
+                                "after step %d/%d; injecting patch-contract nudge",
+                                consumed_steps,
+                                max_steps,
+                            )
+                            self.conversation_history.append(
+                                Message(role=MessageRole.USER, content=nudge)
+                            )
                 # Continue to next step so agent can see tool results
                 continue
             
@@ -347,7 +395,7 @@ class Agent:
                 # Add a nudge to help the agent continue
                 nudge_message = Message(
                     role=MessageRole.USER,
-                    content=self._build_no_progress_nudge(response)
+                    content=self._build_no_progress_nudge(response, task)
                 )
                 self.conversation_history.append(nudge_message)
                 
@@ -359,10 +407,30 @@ class Agent:
         logger.warning(f"Reached max steps ({max_steps}) without task completion")
         return solution or self._read_workspace_solution(task)
 
-    def _build_no_progress_nudge(self, response: CompletionResponse) -> str:
+    def _build_no_progress_nudge(
+        self,
+        response: CompletionResponse,
+        task: Optional[Task] = None,
+    ) -> str:
         """Build a targeted reask after an empty or non-terminal assistant turn."""
         content = (response.content or "").strip()
         finish_reason = response.finish_reason or "unknown"
+        if task and self._is_self_modification_task(task):
+            if finish_reason in {"length", "max_tokens", "content_filter"}:
+                return (
+                    f"Your previous self-modification response stopped with "
+                    f"finish_reason={finish_reason}. Continue concisely. Your "
+                    "next response must call the edit tool to modify a Python "
+                    "agent-code file such as agent.py, tools/*.py, or "
+                    "fm_interface/*.py. Do not list more files or write "
+                    "solution.py."
+                )
+            return (
+                "Continue the self-modification task by making a concrete "
+                "Python source edit now. Your next response must call the edit "
+                "tool on agent.py, tools/*.py, or fm_interface/*.py, then finish "
+                "by naming the changed file."
+            )
         if not content or content == "No response generated":
             return (
                 "Your previous response had no usable content or tool calls "
@@ -382,6 +450,67 @@ class Agent:
             "Please continue working on the task. If you have completed it, provide "
             "the final Python code in a markdown block and end with 'Task complete'."
         )
+
+    def _build_self_modification_patch_nudge(
+        self,
+        *,
+        consumed_steps: int,
+        max_steps: int,
+        final_window: bool,
+    ) -> str:
+        """Build a steering message when self-modification has not edited code."""
+        if final_window:
+            return (
+                "SELF-MODIFICATION FINAL PATCH WINDOW: no Python agent-code "
+                f"changes are detected after {consumed_steps}/{max_steps} "
+                "steps. The next response must call the edit tool and change "
+                "agent.py, tools/*.py, fm_interface/*.py, or a provider module. "
+                "Do not call bash or read more files. If you do not make a "
+                "source edit now, this child will be archived as an invalid "
+                "no-op mutation."
+            )
+        return (
+            "SELF-MODIFICATION PATCH REQUIRED: no Python agent-code changes are "
+            f"detected after {consumed_steps}/{max_steps} steps. Stop exploring "
+            "and make one small, valid source edit now. Prefer an edit tool "
+            "modify/write call against agent.py, tools/*.py, fm_interface/*.py, "
+            "or a provider module. Do not write solution.py or continue with "
+            "read-only inspection."
+        )
+
+    @staticmethod
+    def _is_self_modification_task(task: Task) -> bool:
+        metadata = task.metadata or {}
+        return task.task_id.startswith("self_modify") or (
+            "parent_id" in metadata and "generation" in metadata
+        )
+
+    @staticmethod
+    def _is_agent_code_relative_path(relative_path: Path) -> bool:
+        excluded_parts = {".git", "__pycache__", ".dgm_metadata"}
+        if any(part in excluded_parts for part in relative_path.parts):
+            return False
+        if relative_path.suffix != ".py":
+            return False
+        return relative_path.name not in {"solution.py", "solve.py", "main.py"}
+
+    def _snapshot_agent_code_files(self) -> Dict[str, str]:
+        """Return hashes for Python agent-code files in this workspace."""
+        snapshot: Dict[str, str] = {}
+        for path in sorted(self.working_directory.rglob("*.py")):
+            relative_path = path.relative_to(self.working_directory)
+            if not self._is_agent_code_relative_path(relative_path):
+                continue
+            try:
+                content = path.read_bytes()
+            except OSError as exc:
+                logger.debug("Could not snapshot %s: %s", path, exc)
+                continue
+            snapshot[relative_path.as_posix()] = hashlib.sha256(content).hexdigest()
+        return snapshot
+
+    def _has_agent_code_changes(self, before_snapshot: Dict[str, str]) -> bool:
+        return self._snapshot_agent_code_files() != before_snapshot
 
     def _read_workspace_solution(self, task: Optional[Task] = None) -> str:
         """Return solution.py from the working directory when tool use produced one."""
@@ -480,14 +609,30 @@ class Agent:
         Returns:
             System message
         """
+        self_modification_instructions = ""
+        if context.task_id.startswith("self_modify"):
+            self_modification_instructions = """
+SELF-MODIFICATION MODE:
+=======================
+- This task is not a benchmark solution task. Do not create `solution.py`.
+- Your output is only useful if the workspace has a real Python source change
+  in `agent.py`, `tools/*.py`, `fm_interface/*.py`, or a provider module.
+- Read only the files needed to choose a patch. After a few inspection calls,
+  make a small valid edit instead of continuing analysis.
+- If you are unsure what to change, improve the prompt/nudge/tool-use logic in
+  `agent.py` with a minimal, syntactically valid patch.
+- Before finalizing, name the changed source file and end with `Task complete`.
+"""
+
         # Base system instructions
-        base_instructions = """You are a sophisticated coding agent capable of solving programming tasks.
+        base_instructions = f"""You are a sophisticated coding agent capable of solving programming tasks.
 
 Your capabilities:
 - You can execute bash commands to run code, check outputs, and manage files
 - You can edit files to implement solutions
 - You analyze tasks systematically and break them down into steps
 - You test your solutions thoroughly before finalizing them
+{self_modification_instructions}
 
 Your approach should be:
 1. Understand the task requirements completely

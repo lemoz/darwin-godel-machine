@@ -164,7 +164,9 @@ class TestDGMControllerInit:
         assert "Self-modification turn budget: 7" in task.description
         assert "No-op attempts" in task.description
         assert "Do not use shell command chaining" in task.description
-        assert "first source write" in task.description
+        assert "PATCH CONTRACT" in task.description
+        assert "no later than step 4" in task.description
+        assert "safe default" in task.description
 
     def test_parent_selection_non_regression_config_is_wired(self, tmp_path):
         from dgm_controller import DGMController

@@ -562,9 +562,17 @@ Important constraints:
 - Change at least one Python source file that is part of the agent package
   (`agent.py`, `tools/*.py`, `fm_interface/*.py`, or provider modules).
   No-op attempts or benchmark-only solution files will be rejected as invalid.
-- Inspect only the files you need, then make a concrete edit. Do not spend the
-  full turn budget only reading files.
-- Prefer making your first source write by the halfway point of the turn budget.
+- PATCH CONTRACT: inspect at most three source files before your first edit,
+  then make a concrete Python source change. The run will treat read-only
+  exploration as a failed mutation, even if your analysis is good.
+- Make your first source write no later than step 4, or by the halfway point of
+  the turn budget if the budget is smaller. After that point, the next action
+  must be an edit to `agent.py`, `tools/*.py`, `fm_interface/*.py`, or a
+  provider module.
+- If you do not have a better patch by the write deadline, implement the safe default:
+  improve the benchmark/self-modification steering text in `agent.py` so future
+  agents write `solution.py` earlier, recover from tool argument errors, or avoid
+  no-op self-modification loops.
 - Do not use shell command chaining such as `&&` or `;`; use separate tool calls.
 - In your final answer, briefly name the changed source file or files.
 
