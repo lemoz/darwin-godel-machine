@@ -304,7 +304,7 @@ class Agent:
             # Add assistant response to conversation
             assistant_message = Message(
                 role=MessageRole.ASSISTANT,
-                content=response.content.rstrip() if response.content else "",
+                content=self._compact_assistant_content_for_history(response),
                 metadata=assistant_metadata,
             )
             self.conversation_history.append(assistant_message)
@@ -453,6 +453,44 @@ class Agent:
         return (
             "Please continue working on the task. If you have completed it, provide "
             "the final Python code in a markdown block and end with 'Task complete'."
+        )
+
+    @staticmethod
+    def _compact_assistant_content_for_history(
+        response: CompletionResponse,
+    ) -> str:
+        """Avoid carrying huge truncated pseudo-tool text into the next turn."""
+        content = response.content.rstrip() if response.content else ""
+        finish_reason = response.finish_reason or ""
+        if finish_reason not in {"length", "max_tokens", "content_filter"}:
+            return content
+        if response.tool_calls:
+            return content
+        if not content or content == "No response generated":
+            return content
+
+        stripped = content.strip()
+        looks_like_pseudo_tool = any(
+            marker in stripped
+            for marker in (
+                "<tool_call",
+                "</tool_call",
+                "<function=",
+                "<parameter=",
+            )
+        )
+        if not looks_like_pseudo_tool and len(stripped) <= 2000:
+            return content
+
+        preview = (
+            "[pseudo-tool-call text omitted]"
+            if looks_like_pseudo_tool
+            else " ".join(stripped.split())[:300]
+        )
+        return (
+            f"[Assistant response compacted after finish_reason={finish_reason}: "
+            f"{len(content)} characters without a valid tool call. Preview: "
+            f"{preview}]"
         )
 
     def _build_self_modification_patch_nudge(

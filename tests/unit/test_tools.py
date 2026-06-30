@@ -72,6 +72,22 @@ class TestToolRegistry:
         assert result.status == ToolExecutionStatus.INVALID_PARAMS
         assert "Unknown parameter 'arguments'" in (result.error or "")
 
+    async def test_tool_registry_normalizes_edit_stringified_content_lines(self, tmp_path):
+        registry = ToolRegistry()
+        registry.register_tool(EditTool(working_directory=str(tmp_path)))
+
+        result = await registry.execute_tool(
+            "edit",
+            {
+                "action": "write",
+                "file_path": "solution.py",
+                "content_lines": "['print(1)']",
+            },
+        )
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (tmp_path / "solution.py").read_text() == "print(1)\n"
+
 
 # ---------------------------------------------------------------------------
 # BashTool
@@ -403,6 +419,33 @@ class TestEditTool:
             "import sys\nprint(sys.stdin.read().strip())\n"
         )
 
+    async def test_write_python_nested_content_lines_repaired(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content_lines": [
+                ["import sys"],
+                ["print(sys.stdin.read().strip())"],
+            ],
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "solution.py").read_text() == (
+            "import sys\nprint(sys.stdin.read().strip())\n"
+        )
+
+    async def test_write_python_stringified_content_lines_repaired(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content_lines": "['import sys', 'print(sys.stdin.read().strip())']",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "solution.py").read_text() == (
+            "import sys\nprint(sys.stdin.read().strip())\n"
+        )
+
     async def test_write_python_content_lines_must_be_strings(self):
         result = await self.tool.execute({
             "action": "write",
@@ -433,6 +476,18 @@ class TestEditTool:
             "action": "write",
             "file_path": "solution.py",
             "content": "['import sys\\nprint(sys.stdin.read().strip())\\n']",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "solution.py").read_text() == (
+            "import sys\nprint(sys.stdin.read().strip())\n"
+        )
+
+    async def test_write_python_stringified_source_lines_repaired(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content": "['import sys', 'print(sys.stdin.read().strip())']",
         })
 
         assert result.status == ToolExecutionStatus.SUCCESS

@@ -239,6 +239,13 @@ class EditTool(BaseTool):
                 required=False
             )
         ]
+
+    def validate_parameters(self, parameters: Dict[str, Any]) -> ToolResult:
+        """Normalize recoverable edit payload shapes before schema checks."""
+        normalization_error = self._normalize_content_arguments(parameters)
+        if normalization_error is not None:
+            return normalization_error
+        return super().validate_parameters(parameters)
     
     async def execute(self, parameters: Dict[str, Any]) -> ToolResult:
         """
@@ -297,6 +304,7 @@ class EditTool(BaseTool):
                 content, content_error = self._get_content_parameter(
                     parameters,
                     action,
+                    file_path_str,
                 )
                 if content_error is not None:
                     return content_error
@@ -407,6 +415,7 @@ class EditTool(BaseTool):
                 content, content_error = self._get_content_parameter(
                     parameters,
                     action,
+                    file_path_str,
                 )
                 if content_error is not None:
                     return content_error
@@ -445,6 +454,7 @@ class EditTool(BaseTool):
                 content, content_error = self._get_content_parameter(
                     parameters,
                     action,
+                    file_path_str,
                 )
                 if content_error is not None:
                     return content_error
@@ -658,9 +668,67 @@ class EditTool(BaseTool):
             )
 
     @staticmethod
+    def _normalize_content_arguments(
+        parameters: Dict[str, Any],
+    ) -> ToolResult | None:
+        if not isinstance(parameters, dict):
+            return None
+
+        action = parameters.get("action")
+        if action not in {"write", "append", "line_replace"}:
+            return None
+
+        if "content" in parameters and "content_lines" in parameters:
+            return None
+
+        if "content_lines" in parameters:
+            lines, content_error = EditTool._coerce_content_lines_value(
+                parameters["content_lines"],
+                action=action,
+            )
+            if content_error is not None:
+                return content_error
+            parameters["content_lines"] = lines
+            return None
+
+        if "content" not in parameters:
+            return None
+
+        content = parameters["content"]
+        if isinstance(content, str):
+            return None
+
+        if isinstance(content, (list, tuple)):
+            lines, content_error = EditTool._coerce_content_lines_value(
+                content,
+                action=action,
+                parameter_name="content",
+            )
+            if content_error is not None:
+                return content_error
+            parameters["content"] = EditTool._join_content_lines(lines)
+            return None
+
+        if isinstance(content, dict):
+            wrapped_content = EditTool._extract_wrapped_content(content)
+            if wrapped_content is None:
+                return ToolResult(
+                    status=ToolExecutionStatus.ERROR,
+                    output="",
+                    error=(
+                        f"content parameter must be a string or an array of "
+                        f"source lines for {action} action"
+                    ),
+                )
+            parameters["content"] = wrapped_content
+
+        return None
+
+    @staticmethod
     def _get_content_parameter(
         parameters: Dict[str, Any],
         action: str,
+        file_path: str,
     ) -> tuple[str, ToolResult | None]:
         has_content = "content" in parameters
         has_content_lines = "content_lines" in parameters
@@ -694,29 +762,166 @@ class EditTool(BaseTool):
                     output="",
                     error=f"content parameter must be a string for {action} action",
                 )
-            return parameters["content"], None
+            return EditTool._coerce_content_string(
+                file_path,
+                parameters["content"],
+                action=action,
+            )
 
         content_lines = parameters["content_lines"]
-        if not isinstance(content_lines, list):
-            return "", ToolResult(
-                status=ToolExecutionStatus.ERROR,
-                output="",
-                error=f"content_lines parameter must be an array for {action} action",
+        lines, content_error = EditTool._coerce_content_lines_value(
+            content_lines,
+            action=action,
+        )
+        if content_error is not None:
+            return "", content_error
+
+        return EditTool._join_content_lines(lines), None
+
+    @staticmethod
+    def _coerce_content_string(
+        file_path: str,
+        content: str,
+        *,
+        action: str,
+    ) -> tuple[str, ToolResult | None]:
+        if Path(file_path).suffix != ".py":
+            return content, None
+
+        stripped = content.strip()
+        if not stripped or stripped[0] not in "[({":
+            return content, None
+
+        try:
+            parsed = ast.literal_eval(stripped)
+        except (SyntaxError, ValueError):
+            return content, None
+
+        if isinstance(parsed, str):
+            return parsed, None
+
+        if isinstance(parsed, dict):
+            wrapped_content = EditTool._extract_wrapped_content(parsed)
+            if wrapped_content is not None:
+                return wrapped_content, None
+
+        if isinstance(parsed, (list, tuple)):
+            if len(parsed) == 1 and isinstance(parsed[0], str):
+                return parsed[0], None
+            lines, content_error = EditTool._coerce_content_lines_value(
+                parsed,
+                action=action,
+                parameter_name="content",
             )
-        if not all(isinstance(line, str) for line in content_lines):
-            return "", ToolResult(
+            if content_error is None:
+                return EditTool._join_content_lines(lines), None
+
+        return "", ToolResult(
+            status=ToolExecutionStatus.ERROR,
+            output="",
+            error=(
+                f"Rejected {action} for Python file {file_path}: content looks "
+                "like a serialized/list fragment, not raw Python source. "
+                "Retry with content_lines as an array of complete source lines "
+                "or provide the final Python source directly."
+            ),
+        )
+
+    @staticmethod
+    def _coerce_content_lines_value(
+        value: Any,
+        *,
+        action: str,
+        parameter_name: str = "content_lines",
+    ) -> tuple[list[str], ToolResult | None]:
+        parsed = value
+        if isinstance(value, str):
+            stripped = value.strip()
+            if not stripped:
+                parsed = []
+            else:
+                parsed = EditTool._decode_python_or_json_literal(stripped)
+                if parsed is None:
+                    return [], ToolResult(
+                        status=ToolExecutionStatus.ERROR,
+                        output="",
+                        error=(
+                            f"{parameter_name} parameter must be an array for "
+                            f"{action} action, got string"
+                        ),
+                    )
+
+        if not isinstance(parsed, (list, tuple)):
+            return [], ToolResult(
                 status=ToolExecutionStatus.ERROR,
                 output="",
                 error=(
-                    f"content_lines parameter must contain only strings for "
+                    f"{parameter_name} parameter must be an array for "
                     f"{action} action"
                 ),
             )
 
+        lines: list[str] = []
+        invalid_type = EditTool._flatten_content_lines(parsed, lines)
+        if invalid_type is not None:
+            return [], ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error=(
+                    f"{parameter_name} parameter must contain only strings for "
+                    f"{action} action; found {invalid_type}"
+                ),
+            )
+        return lines, None
+
+    @staticmethod
+    def _flatten_content_lines(value: Any, lines: list[str]) -> str | None:
+        if isinstance(value, str):
+            lines.append(value)
+            return None
+        if isinstance(value, (list, tuple)):
+            for item in value:
+                invalid_type = EditTool._flatten_content_lines(item, lines)
+                if invalid_type is not None:
+                    return invalid_type
+            return None
+        return type(value).__name__
+
+    @staticmethod
+    def _join_content_lines(content_lines: list[str]) -> str:
         content = "\n".join(content_lines)
         if content_lines:
             content += "\n"
-        return content, None
+        return content
+
+    @staticmethod
+    def _decode_python_or_json_literal(raw_text: str) -> Any:
+        try:
+            return json.loads(raw_text)
+        except json.JSONDecodeError:
+            pass
+        try:
+            return ast.literal_eval(raw_text)
+        except (SyntaxError, ValueError):
+            return None
+
+    @staticmethod
+    def _extract_wrapped_content(value: dict[Any, Any]) -> str | None:
+        if len(value) != 1:
+            return None
+
+        key, wrapped = next(iter(value.items()))
+        if key in {"content", "source", "code"} and isinstance(wrapped, str):
+            return wrapped
+        if key in {"content_lines", "lines"}:
+            lines, content_error = EditTool._coerce_content_lines_value(
+                wrapped,
+                action="write",
+                parameter_name=str(key),
+            )
+            if content_error is None:
+                return EditTool._join_content_lines(lines)
+        return None
 
     @staticmethod
     def _validate_python_replacement(

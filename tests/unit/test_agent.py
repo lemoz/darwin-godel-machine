@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 from agent.agent import Agent, AgentConfig, Task
 from agent.fm_interface.api_handler import (
-    ApiHandler, CompletionResponse, CompletionRequest, ToolCall
+    ApiHandler, CompletionResponse, CompletionRequest, MessageRole, ToolCall
 )
 from agent.fm_interface.message_formatter import ConversationContext
 from agent.fm_interface.providers.openai_compatible import OpenAICompatibleHandler
@@ -658,6 +658,40 @@ class TestAgentSolveTask:
 
         assert "Do not emit XML-like <tool_call> text" in nudge
         assert "real tool call" in nudge
+
+    @patch(
+        "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
+        new_callable=AsyncMock,
+    )
+    async def test_length_pseudo_tool_text_is_compacted_in_history(self, mock_gc):
+        cfg = _make_config(self.tmp)
+        cfg.max_iterations = 1
+        agent = Agent(cfg)
+        pseudo_tool_text = "<tool_call><function=edit>" + ("x" * 5000)
+        mock_gc.return_value = CompletionResponse(
+            content=pseudo_tool_text,
+            tool_calls=[],
+            finish_reason="length",
+        )
+
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        await agent.solve_task(task)
+
+        assistant_messages = [
+            msg
+            for msg in agent.conversation_history
+            if msg.role == MessageRole.ASSISTANT
+        ]
+        assert len(assistant_messages) == 1
+        compacted = assistant_messages[0].content
+        assert "Assistant response compacted" in compacted
+        assert "pseudo-tool-call text omitted" in compacted
+        assert "<tool_call" not in compacted
+        assert len(compacted) < 300
 
 
 # ---------------------------------------------------------------------------
