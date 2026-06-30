@@ -506,6 +506,17 @@ class TestEditTool:
         assert "syntax error" in (result.error or "").lower()
         assert not (self.tmp / "solution.py").exists()
 
+    async def test_write_python_compile_error_rejected(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content": "continue\n",
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "continue" in (result.error or "").lower()
+        assert not (self.tmp / "solution.py").exists()
+
     async def test_write_python_list_fragment_rejected(self):
         result = await self.tool.execute({
             "action": "write",
@@ -671,6 +682,26 @@ class TestEditTool:
 
         assert result.status == ToolExecutionStatus.ERROR
         assert "syntax error" in (result.error or "").lower()
+        assert (self.tmp / "agent.py").read_text() == original
+
+    async def test_line_replace_python_compile_error_rejected_and_preserves_file(self):
+        original = "class Agent:\n    def run(self):\n        return 1\n"
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "agent.py",
+            "content": original,
+        })
+
+        result = await self.tool.execute({
+            "action": "line_replace",
+            "file_path": "agent.py",
+            "line_number": 3,
+            "line_count": 1,
+            "content_lines": ["        continue"],
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "continue" in (result.error or "").lower()
         assert (self.tmp / "agent.py").read_text() == original
 
     async def test_modify_missing_replace_text_rejected(self):

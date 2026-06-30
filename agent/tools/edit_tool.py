@@ -988,6 +988,7 @@ class EditTool(BaseTool):
 
         try:
             tree = ast.parse(content, filename=file_path)
+            compile(tree, file_path, "exec")
         except SyntaxError as exc:
             return ToolResult(
                 status=ToolExecutionStatus.ERROR,
@@ -1049,6 +1050,7 @@ class EditTool(BaseTool):
 
         try:
             tree = ast.parse(candidate, filename=file_path)
+            compile(tree, file_path, "exec")
         except SyntaxError:
             return content
 
