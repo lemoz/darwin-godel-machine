@@ -673,9 +673,14 @@ class TestAgentSolveTask:
             max_steps=7,
             edit_failure_streak=0,
             seen_bash_success_with_solution=False,
+            has_unresolved_bash_failure=False,
+            seen_unsafe_evidence=False,
             can_send_constraint_nudge=True,
             can_send_finalization_nudge=True,
             can_send_edit_reset_nudge=True,
+            can_send_no_stdin_nudge=True,
+            can_send_failure_repair_nudge=True,
+            can_send_unsafe_nudge=True,
         )
 
         assert nudge is not None
@@ -711,9 +716,14 @@ class TestAgentSolveTask:
             max_steps=7,
             edit_failure_streak=0,
             seen_bash_success_with_solution=True,
+            has_unresolved_bash_failure=False,
+            seen_unsafe_evidence=False,
             can_send_constraint_nudge=True,
             can_send_finalization_nudge=True,
             can_send_edit_reset_nudge=True,
+            can_send_no_stdin_nudge=True,
+            can_send_failure_repair_nudge=True,
+            can_send_unsafe_nudge=True,
         )
 
         assert nudge is not None
@@ -722,6 +732,134 @@ class TestAgentSolveTask:
         assert "BENCHMARK FINALIZATION GUARD" in text
         assert "Do not rewrite solution.py" in text
         assert "Task complete" in text
+
+    def test_benchmark_no_stdin_bash_failure_gets_repair_nudge(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={"command": "python3 solution.py"},
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error="EOFError: EOF when reading a line",
+            ),
+        )
+
+        nudge = self.agent._build_benchmark_control_nudge(
+            tool_events=[event],
+            task=task,
+            consumed_steps=3,
+            max_steps=7,
+            edit_failure_streak=0,
+            seen_bash_success_with_solution=False,
+            has_unresolved_bash_failure=True,
+            seen_unsafe_evidence=False,
+            can_send_constraint_nudge=True,
+            can_send_finalization_nudge=True,
+            can_send_edit_reset_nudge=True,
+            can_send_no_stdin_nudge=True,
+            can_send_failure_repair_nudge=True,
+            can_send_unsafe_nudge=True,
+        )
+
+        assert nudge is not None
+        kind, text = nudge
+        assert kind == "no_stdin_repair"
+        assert "BENCHMARK STDIN REPAIR" in text
+        assert "Do not run python3 solution.py without stdin" in text
+        assert "heredoc or printf pipe" in text
+
+    def test_benchmark_failed_bash_blocks_finalization_guard(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        (self.tmp / "solution.py").write_text("print(1)\n", encoding="utf-8")
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={"command": "python3 solution.py << 'EOF'\n1\nEOF"},
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.SUCCESS,
+                output="1\n",
+            ),
+        )
+
+        nudge = self.agent._build_benchmark_control_nudge(
+            tool_events=[event],
+            task=task,
+            consumed_steps=6,
+            max_steps=7,
+            edit_failure_streak=0,
+            seen_bash_success_with_solution=True,
+            has_unresolved_bash_failure=True,
+            seen_unsafe_evidence=False,
+            can_send_constraint_nudge=True,
+            can_send_finalization_nudge=True,
+            can_send_edit_reset_nudge=True,
+            can_send_no_stdin_nudge=True,
+            can_send_failure_repair_nudge=True,
+            can_send_unsafe_nudge=True,
+        )
+
+        assert nudge is not None
+        kind, text = nudge
+        assert kind == "sample_failure_repair"
+        assert "BENCHMARK FAILURE REPAIR" in text
+        assert "failed sample or runtime check" in text
+        assert "re-run the failing check with explicit stdin" in text
+
+    def test_benchmark_unsafe_evidence_blocks_late_finalization(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        (self.tmp / "solution.py").write_text("print(1)\n", encoding="utf-8")
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={"command": "python3 solution.py << 'EOF'\n1\nEOF"},
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.SUCCESS,
+                output="1\n",
+            ),
+        )
+
+        nudge = self.agent._build_benchmark_control_nudge(
+            tool_events=[event],
+            task=task,
+            consumed_steps=6,
+            max_steps=7,
+            edit_failure_streak=0,
+            seen_bash_success_with_solution=True,
+            has_unresolved_bash_failure=False,
+            seen_unsafe_evidence=True,
+            can_send_constraint_nudge=True,
+            can_send_finalization_nudge=True,
+            can_send_edit_reset_nudge=True,
+            can_send_no_stdin_nudge=True,
+            can_send_failure_repair_nudge=True,
+            can_send_unsafe_nudge=True,
+        )
+
+        assert nudge is not None
+        kind, text = nudge
+        assert kind == "unsafe_verification"
+        assert "BENCHMARK UNSAFE COMPLEXITY BLOCK" in text
+        assert "Do not finalize from public samples alone" in text
 
     def test_benchmark_repeated_edit_failures_get_fresh_source_reset(self):
         task = Task(
@@ -753,9 +891,14 @@ class TestAgentSolveTask:
             max_steps=7,
             edit_failure_streak=2,
             seen_bash_success_with_solution=False,
+            has_unresolved_bash_failure=False,
+            seen_unsafe_evidence=False,
             can_send_constraint_nudge=True,
             can_send_finalization_nudge=True,
             can_send_edit_reset_nudge=True,
+            can_send_no_stdin_nudge=True,
+            can_send_failure_repair_nudge=True,
+            can_send_unsafe_nudge=True,
         )
 
         assert nudge is not None

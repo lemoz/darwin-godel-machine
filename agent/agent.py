@@ -260,9 +260,14 @@ class Agent:
         sent_final_patch_nudge = False
         benchmark_edit_failure_streak = 0
         benchmark_seen_bash_success_with_solution = False
+        benchmark_unresolved_bash_failure = False
+        benchmark_seen_unsafe_evidence = False
         sent_benchmark_constraint_nudge = False
         sent_benchmark_finalization_nudge = False
         sent_benchmark_edit_reset_nudge = False
+        sent_benchmark_no_stdin_nudge = False
+        sent_benchmark_failure_repair_nudge = False
+        sent_benchmark_unsafe_nudge = False
         
         logger.info(f"Starting task solution with up to {max_steps} steps for task {task.task_id}")
         
@@ -297,6 +302,11 @@ class Agent:
                 logger.info(f"=== AGENT RESPONSE (Step {step + 1}) ===")
                 logger.info(response.content)
                 logger.info(f"=== END RESPONSE ===")
+                if (
+                    self._is_benchmark_task(task)
+                    and self._text_has_unsafe_benchmark_evidence(response.content)
+                ):
+                    benchmark_seen_unsafe_evidence = True
             
             # Build metadata for the assistant message so that format_messages
             # can reconstruct proper Anthropic tool_use blocks.
@@ -356,10 +366,20 @@ class Agent:
                         benchmark_edit_failure_streak = 0
 
                     if (
+                        self._events_include_benchmark_bash_failure(tool_events)
+                        and self._benchmark_solution_file_exists()
+                    ):
+                        benchmark_unresolved_bash_failure = True
+
+                    if (
                         self._events_include_successful_bash(tool_events)
                         and self._benchmark_solution_file_exists()
                     ):
                         benchmark_seen_bash_success_with_solution = True
+                        benchmark_unresolved_bash_failure = False
+
+                    if self._events_include_unsafe_benchmark_evidence(tool_events):
+                        benchmark_seen_unsafe_evidence = True
 
                     control_nudge = self._build_benchmark_control_nudge(
                         tool_events=tool_events,
@@ -368,9 +388,14 @@ class Agent:
                         max_steps=max_steps,
                         edit_failure_streak=benchmark_edit_failure_streak,
                         seen_bash_success_with_solution=benchmark_seen_bash_success_with_solution,
+                        has_unresolved_bash_failure=benchmark_unresolved_bash_failure,
+                        seen_unsafe_evidence=benchmark_seen_unsafe_evidence,
                         can_send_constraint_nudge=not sent_benchmark_constraint_nudge,
                         can_send_finalization_nudge=not sent_benchmark_finalization_nudge,
                         can_send_edit_reset_nudge=not sent_benchmark_edit_reset_nudge,
+                        can_send_no_stdin_nudge=not sent_benchmark_no_stdin_nudge,
+                        can_send_failure_repair_nudge=not sent_benchmark_failure_repair_nudge,
+                        can_send_unsafe_nudge=not sent_benchmark_unsafe_nudge,
                     )
                     if control_nudge:
                         nudge_kind, nudge_text = control_nudge
@@ -384,6 +409,12 @@ class Agent:
                             sent_benchmark_finalization_nudge = True
                         elif nudge_kind == "edit_reset":
                             sent_benchmark_edit_reset_nudge = True
+                        elif nudge_kind == "no_stdin_repair":
+                            sent_benchmark_no_stdin_nudge = True
+                        elif nudge_kind == "sample_failure_repair":
+                            sent_benchmark_failure_repair_nudge = True
+                        elif nudge_kind == "unsafe_verification":
+                            sent_benchmark_unsafe_nudge = True
 
                 if is_self_modification:
                     consumed_steps = step + 1
@@ -693,6 +724,138 @@ class Agent:
             for event in events
         )
 
+    @staticmethod
+    def _tool_event_text(event: ToolExecutionEvent) -> str:
+        """Return compact searchable text for a tool call and result."""
+        parts: List[str] = []
+        try:
+            parts.append(json.dumps(event.tool_call.parameters, default=str))
+        except TypeError:
+            parts.append(str(event.tool_call.parameters))
+        if event.result.output:
+            parts.append(event.result.output)
+        if event.result.error:
+            parts.append(event.result.error)
+        return "\n".join(parts)
+
+    @staticmethod
+    def _text_has_unsafe_benchmark_evidence(text: Optional[str]) -> bool:
+        """Return whether text indicates a likely benchmark-scale failure."""
+        if not text:
+            return False
+        lowered = text.lower()
+        unsafe_phrases = (
+            "memoryerror",
+            "timed out",
+            "timeout",
+            "time limit exceeded",
+            "will tle",
+            "would tle",
+            " tles",
+            "too slow",
+            "could be too slow",
+            "too much memory",
+            "memory intensive",
+            "not efficient enough",
+            "asymptotically unsafe",
+            "exceeds memory",
+            "will not pass large",
+            "cannot handle large",
+        )
+        if any(phrase in lowered for phrase in unsafe_phrases):
+            return True
+
+        large_input_markers = (
+            "10^5",
+            "10**5",
+            "100000",
+            "10^6",
+            "10**6",
+            "1000000",
+            "large input",
+        )
+        quadratic_markers = (
+            "o(n^2)",
+            "o(r^2)",
+            "o(m^2)",
+            "quadratic",
+            "nested loop",
+        )
+        return (
+            any(marker in lowered for marker in large_input_markers)
+            and any(marker in lowered for marker in quadratic_markers)
+        )
+
+    @staticmethod
+    def _bash_event_runs_solution_file(event: ToolExecutionEvent) -> bool:
+        command = event.tool_call.parameters.get("command")
+        if not isinstance(command, str):
+            return False
+        lowered = command.lower()
+        solution_names = ("solution.py", "solve.py", "main.py")
+        python_names = ("python3", "python")
+        return any(
+            f"{python_name} {solution_name}" in lowered
+            or f"{python_name} ./{solution_name}" in lowered
+            for python_name in python_names
+            for solution_name in solution_names
+        )
+
+    @classmethod
+    def _events_include_benchmark_bash_failure(
+        cls,
+        events: List[ToolExecutionEvent],
+    ) -> bool:
+        return any(
+            event.tool_call.tool_name == "bash"
+            and event.result.status != ToolExecutionStatus.SUCCESS
+            for event in events
+        )
+
+    @classmethod
+    def _events_include_no_stdin_bash_failure(
+        cls,
+        events: List[ToolExecutionEvent],
+    ) -> bool:
+        for event in events:
+            if (
+                event.tool_call.tool_name != "bash"
+                or event.result.status == ToolExecutionStatus.SUCCESS
+            ):
+                continue
+
+            event_text = cls._tool_event_text(event).lower()
+            if "eoferror" in event_text and "input" in event_text:
+                return True
+            if not cls._bash_event_runs_solution_file(event):
+                continue
+
+            command = event.tool_call.parameters.get("command")
+            command_text = command.lower() if isinstance(command, str) else ""
+            has_stdin_source = any(
+                marker in command_text
+                for marker in ("<", "|", "printf", "echo", "cat <<")
+            )
+            if not has_stdin_source:
+                return True
+        return False
+
+    @classmethod
+    def _events_include_unsafe_benchmark_evidence(
+        cls,
+        events: List[ToolExecutionEvent],
+    ) -> bool:
+        return any(
+            event.tool_call.tool_name == "bash"
+            and (
+                event.result.status == ToolExecutionStatus.TIMEOUT
+                or cls._text_has_unsafe_benchmark_evidence(
+                    cls._tool_event_text(event)
+                )
+            )
+            for event in events
+        )
+
     def _build_benchmark_control_nudge(
         self,
         *,
@@ -702,9 +865,14 @@ class Agent:
         max_steps: int,
         edit_failure_streak: int,
         seen_bash_success_with_solution: bool,
+        has_unresolved_bash_failure: bool,
+        seen_unsafe_evidence: bool,
         can_send_constraint_nudge: bool,
         can_send_finalization_nudge: bool,
         can_send_edit_reset_nudge: bool,
+        can_send_no_stdin_nudge: bool,
+        can_send_failure_repair_nudge: bool,
+        can_send_unsafe_nudge: bool,
     ) -> Optional[tuple[str, str]]:
         """Return a benchmark steering nudge after useful tool evidence."""
         if task is None or not self._is_benchmark_task(task):
@@ -714,9 +882,53 @@ class Agent:
         if remaining_steps <= 0:
             return None
 
+        no_stdin_failure = self._events_include_no_stdin_bash_failure(tool_events)
+        current_bash_failure = self._events_include_benchmark_bash_failure(tool_events)
+        unsafe_evidence = (
+            seen_unsafe_evidence
+            or self._events_include_unsafe_benchmark_evidence(tool_events)
+        )
+
+        if can_send_no_stdin_nudge and no_stdin_failure:
+            return (
+                "no_stdin_repair",
+                "BENCHMARK STDIN REPAIR: the last bash run invoked a Python "
+                "solution without reliable stdin, or hit EOFError from input(). "
+                "Do not run python3 solution.py without stdin. Re-run the "
+                "provided sample using a heredoc or printf pipe with the exact "
+                "sample input, then repair solution.py only if that check fails.",
+            )
+
+        if can_send_unsafe_nudge and unsafe_evidence:
+            return (
+                "unsafe_verification",
+                "BENCHMARK UNSAFE COMPLEXITY BLOCK: recent evidence indicates "
+                "a timeout, MemoryError, too-slow algorithm, or benchmark-scale "
+                "risk. Do not finalize from public samples alone. Either replace "
+                "solution.py with an asymptotically safe approach, or run a "
+                "targeted stress/sanity check that exercises the risky large "
+                "case before declaring Task complete.",
+            )
+
+        if (
+            can_send_failure_repair_nudge
+            and (has_unresolved_bash_failure or current_bash_failure)
+            and self._benchmark_solution_file_exists()
+        ):
+            return (
+                "sample_failure_repair",
+                "BENCHMARK FAILURE REPAIR: a failed sample or runtime check is "
+                "still unresolved for the current solution file. Do not finalize "
+                "or cosmetically rewrite. Inspect the failing input/output or "
+                "traceback, patch solution.py once, and re-run the failing check "
+                "with explicit stdin before ending with Task complete.",
+            )
+
         if (
             can_send_finalization_nudge
             and seen_bash_success_with_solution
+            and not has_unresolved_bash_failure
+            and not seen_unsafe_evidence
             and remaining_steps <= 2
         ):
             return (
@@ -724,9 +936,11 @@ class Agent:
                 "BENCHMARK FINALIZATION GUARD: a non-empty solution file exists "
                 "and a recent bash check succeeded. You are near the step limit. "
                 "Do not rewrite solution.py just to clean up or optimize unless "
-                "a provided sample is known to fail. If the provided samples pass, "
-                "respond now with the current complete Python code in a markdown "
-                "python block and end with Task complete.",
+                "a provided sample is known to fail. Only finalize if no later "
+                "sample/bash check has failed and no timeout, MemoryError, or "
+                "unsafe-complexity evidence is present. If the provided samples "
+                "pass, respond now with the current complete Python code in a "
+                "markdown python block and end with Task complete.",
             )
 
         if (
@@ -755,9 +969,12 @@ class Agent:
                 "compare the current solution against the task constraints. "
                 "State the intended time and memory complexity briefly. Public "
                 "samples are only smoke tests; for D/E or large-input tasks, "
-                "rewrite only if the algorithm is asymptotically unsafe. If the "
-                "algorithm is safe and the provided samples pass, finalize instead "
-                "of doing cosmetic rewrites.",
+                "also run a targeted stress/sanity check when complexity is "
+                "uncertain. Never use a bare no-stdin python3 solution.py check "
+                "as evidence. Rewrite only if the algorithm is asymptotically "
+                "unsafe or an explicit check fails. If the algorithm is safe and "
+                "the provided samples pass, finalize instead of doing cosmetic "
+                "rewrites.",
             )
 
         return None
