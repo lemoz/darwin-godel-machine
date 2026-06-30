@@ -58,6 +58,13 @@ class AgentConfig:
     retain_conversation_history: bool = True
 
 
+@dataclass
+class ToolExecutionEvent:
+    """Tool call plus result captured during one assistant turn."""
+    tool_call: ToolCall
+    result: ToolResult
+
+
 class Agent:
     """
     Main DGM Agent class.
@@ -251,6 +258,11 @@ class Agent:
         final_patch_step = max(1, max_steps - 2)
         sent_patch_due_nudge = False
         sent_final_patch_nudge = False
+        benchmark_edit_failure_streak = 0
+        benchmark_seen_bash_success_with_solution = False
+        sent_benchmark_constraint_nudge = False
+        sent_benchmark_finalization_nudge = False
+        sent_benchmark_edit_reset_nudge = False
         
         logger.info(f"Starting task solution with up to {max_steps} steps for task {task.task_id}")
         
@@ -336,7 +348,43 @@ class Agent:
             # Execute any tool calls
             if response.tool_calls:
                 logger.info(f"Executing {len(response.tool_calls)} tool calls")
-                await self._execute_tool_calls(response.tool_calls, task)
+                tool_events = await self._execute_tool_calls(response.tool_calls, task)
+                if self._is_benchmark_task(task):
+                    if self._events_include_benchmark_edit_failure(tool_events):
+                        benchmark_edit_failure_streak += 1
+                    elif self._events_include_successful_solution_edit(tool_events):
+                        benchmark_edit_failure_streak = 0
+
+                    if (
+                        self._events_include_successful_bash(tool_events)
+                        and self._benchmark_solution_file_exists()
+                    ):
+                        benchmark_seen_bash_success_with_solution = True
+
+                    control_nudge = self._build_benchmark_control_nudge(
+                        tool_events=tool_events,
+                        task=task,
+                        consumed_steps=step + 1,
+                        max_steps=max_steps,
+                        edit_failure_streak=benchmark_edit_failure_streak,
+                        seen_bash_success_with_solution=benchmark_seen_bash_success_with_solution,
+                        can_send_constraint_nudge=not sent_benchmark_constraint_nudge,
+                        can_send_finalization_nudge=not sent_benchmark_finalization_nudge,
+                        can_send_edit_reset_nudge=not sent_benchmark_edit_reset_nudge,
+                    )
+                    if control_nudge:
+                        nudge_kind, nudge_text = control_nudge
+                        logger.info("Injecting benchmark control nudge: %s", nudge_kind)
+                        self.conversation_history.append(
+                            Message(role=MessageRole.USER, content=nudge_text)
+                        )
+                        if nudge_kind == "constraint":
+                            sent_benchmark_constraint_nudge = True
+                        elif nudge_kind == "finalization":
+                            sent_benchmark_finalization_nudge = True
+                        elif nudge_kind == "edit_reset":
+                            sent_benchmark_edit_reset_nudge = True
+
                 if is_self_modification:
                     consumed_steps = step + 1
                     remaining_steps = max_steps - consumed_steps
@@ -594,12 +642,131 @@ class Agent:
         except OSError as exc:
             logger.warning("Could not read tool-written benchmark solution: %s", exc)
         return ""
+
+    def _benchmark_solution_file_exists(self) -> bool:
+        """Return whether a benchmark solution file exists and is non-empty."""
+        for candidate_name in ("solution.py", "solve.py", "main.py"):
+            candidate = self.working_directory / candidate_name
+            try:
+                if candidate.is_file() and candidate.read_text(encoding="utf-8").strip():
+                    return True
+            except OSError:
+                continue
+        return False
+
+    @staticmethod
+    def _tool_event_file_path(event: ToolExecutionEvent) -> str:
+        file_path = event.tool_call.parameters.get("file_path")
+        return file_path if isinstance(file_path, str) else ""
+
+    @staticmethod
+    def _events_include_successful_bash(events: List[ToolExecutionEvent]) -> bool:
+        return any(
+            event.tool_call.tool_name == "bash"
+            and event.result.status == ToolExecutionStatus.SUCCESS
+            for event in events
+        )
+
+    @classmethod
+    def _events_include_successful_solution_edit(
+        cls,
+        events: List[ToolExecutionEvent],
+    ) -> bool:
+        return any(
+            event.tool_call.tool_name == "edit"
+            and event.result.status == ToolExecutionStatus.SUCCESS
+            and Path(cls._tool_event_file_path(event)).name
+            in {"solution.py", "solve.py", "main.py"}
+            for event in events
+        )
+
+    @classmethod
+    def _events_include_benchmark_edit_failure(
+        cls,
+        events: List[ToolExecutionEvent],
+    ) -> bool:
+        return any(
+            event.tool_call.tool_name == "edit"
+            and event.result.status != ToolExecutionStatus.SUCCESS
+            and Path(cls._tool_event_file_path(event)).name
+            in {"solution.py", "solve.py", "main.py"}
+            for event in events
+        )
+
+    def _build_benchmark_control_nudge(
+        self,
+        *,
+        tool_events: List[ToolExecutionEvent],
+        task: Optional[Task],
+        consumed_steps: int,
+        max_steps: int,
+        edit_failure_streak: int,
+        seen_bash_success_with_solution: bool,
+        can_send_constraint_nudge: bool,
+        can_send_finalization_nudge: bool,
+        can_send_edit_reset_nudge: bool,
+    ) -> Optional[tuple[str, str]]:
+        """Return a benchmark steering nudge after useful tool evidence."""
+        if task is None or not self._is_benchmark_task(task):
+            return None
+
+        remaining_steps = max_steps - consumed_steps
+        if remaining_steps <= 0:
+            return None
+
+        if (
+            can_send_finalization_nudge
+            and seen_bash_success_with_solution
+            and remaining_steps <= 2
+        ):
+            return (
+                "finalization",
+                "BENCHMARK FINALIZATION GUARD: a non-empty solution file exists "
+                "and a recent bash check succeeded. You are near the step limit. "
+                "Do not rewrite solution.py just to clean up or optimize unless "
+                "a provided sample is known to fail. If the provided samples pass, "
+                "respond now with the current complete Python code in a markdown "
+                "python block and end with Task complete.",
+            )
+
+        if (
+            can_send_edit_reset_nudge
+            and edit_failure_streak >= 2
+            and self._events_include_benchmark_edit_failure(tool_events)
+        ):
+            return (
+                "edit_reset",
+                "BENCHMARK FRESH SOURCE RESET: repeated edit payloads for the "
+                "solution file failed. Stop sending fragments, nested arrays, or "
+                "serialized lists. Your next response must either call the edit "
+                "tool with action='write' and content_lines as a flat JSON array "
+                "of complete Python source lines for the whole solution.py, or "
+                "provide the whole final Python program in a markdown python "
+                "block ending with Task complete.",
+            )
+
+        if (
+            can_send_constraint_nudge
+            and self._events_include_successful_solution_edit(tool_events)
+        ):
+            return (
+                "constraint",
+                "BENCHMARK VERIFICATION CHECK: before trusting sample results, "
+                "compare the current solution against the task constraints. "
+                "State the intended time and memory complexity briefly. Public "
+                "samples are only smoke tests; for D/E or large-input tasks, "
+                "rewrite only if the algorithm is asymptotically unsafe. If the "
+                "algorithm is safe and the provided samples pass, finalize instead "
+                "of doing cosmetic rewrites.",
+            )
+
+        return None
     
     async def _execute_tool_calls(
         self,
         tool_calls: List[ToolCall],
         task: Optional[Task] = None,
-    ) -> None:
+    ) -> List[ToolExecutionEvent]:
         """
         Execute tool calls and add results to conversation.
 
@@ -616,6 +783,7 @@ class Agent:
             tool_calls: List of tool calls to execute
             task: Current task, used for self-modification-specific repair nudges
         """
+        events: List[ToolExecutionEvent] = []
         for i, tool_call in enumerate(tool_calls):
             try:
                 logger.info(f"=== TOOL CALL {i+1} ===")
@@ -656,8 +824,14 @@ class Agent:
                     self.conversation_history.append(
                         Message(role=MessageRole.USER, content=repair_nudge)
                     )
+                events.append(ToolExecutionEvent(tool_call=tool_call, result=result))
 
             except Exception as e:
+                result = ToolResult(
+                    status=ToolExecutionStatus.ERROR,
+                    output="",
+                    error=str(e),
+                )
                 error_message = Message(
                     role=MessageRole.TOOL,
                     content=f"Tool execution failed: {str(e)}",
@@ -668,6 +842,8 @@ class Agent:
                     ),
                 )
                 self.conversation_history.append(error_message)
+                events.append(ToolExecutionEvent(tool_call=tool_call, result=result))
+        return events
 
     def _build_edit_repair_nudge(
         self,
@@ -855,8 +1031,10 @@ SELF-MODIFICATION MODE:
 - This task is not a benchmark solution task. Do not create `solution.py`.
 - Your output is only useful if the workspace has a real Python source change
   in `agent.py`, `tools/*.py`, `fm_interface/*.py`, or a provider module.
-- Read only the files needed to choose a patch. After a few inspection calls,
-  make a small valid edit instead of continuing analysis.
+- Read only the files needed to choose a patch. Prefer narrow reads with
+  `line_number` and `line_count`; do not read entire large files such as
+  `agent.py` unless the exact target cannot be found another way. After a few
+  inspection calls, make a small valid edit instead of continuing analysis.
 - For source edits, prefer the edit tool action `line_replace` after reading a
   narrow line range. Provide `line_number`, `line_count`, and `content_lines`
   with one complete Python source line per string. Use this instead of long
@@ -865,6 +1043,11 @@ SELF-MODIFICATION MODE:
   such as SELF-MODIFICATION MODE or BENCHMARK SOLUTION FILE. Do not edit
   incidental examples, sample workflow text, markdown fences, or comments unless
   the task specifically asks for documentation-only changes.
+- Prefer changes that improve benchmark solver control policy, verification
+  discipline, malformed-tool recovery, timeout handling, or token-efficient
+  reads. Avoid changing `_is_task_complete` or completion phrase detection
+  unless the task explicitly asks for completion signaling; that rarely improves
+  benchmark score.
 - If you are unsure what to change, improve prompt/nudge/tool-use logic in
   `agent.py` with a minimal, syntactically valid patch against the named
   instruction block or method body you intend to improve.
@@ -912,9 +1095,15 @@ TESTING GUIDELINES:
 - If you are on the final available step and `solution.py` exists, do not run
   more exploratory tests or attempt a risky rewrite. Finalize with the current
   complete solution code unless a provided sample is known to fail.
+- Before finalizing a sample-passing solution, compare the algorithm against the
+  input constraints. Public samples are only smoke tests; hidden tests often
+  fail slow or partial D/E-task approaches.
 - For stdin/stdout programs, prefer testing with a quoted heredoc, for example:
   `python3 solution.py << 'EOF'`
   then the sample input, then `EOF` on its own line.
+- Do not use `echo -e` for sample tests. Shell behavior differs across
+  environments; use heredocs or `printf` instead.
+- Do not run `python3 solution.py` with no stdin for an input-reading program.
 - Avoid shell pipelines and semicolon-packed one-liners when testing; the bash
   tool intentionally blocks broad shell composition for safety.
 

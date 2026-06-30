@@ -8,7 +8,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch, MagicMock
 
-from agent.agent import Agent, AgentConfig, Task
+from agent.agent import Agent, AgentConfig, Task, ToolExecutionEvent
 from agent.fm_interface.api_handler import (
     ApiHandler, CompletionResponse, CompletionRequest, MessageRole, ToolCall
 )
@@ -443,6 +443,8 @@ class TestAgentSolveTask:
         assert "line_replace" in system_message.content
         assert "line_number" in system_message.content
         assert "incidental examples" in system_message.content
+        assert "token-efficient" in system_message.content
+        assert "Avoid changing `_is_task_complete`" in system_message.content
 
     @patch(
         "agent.fm_interface.providers.anthropic.AnthropicHandler.get_completion",
@@ -641,6 +643,140 @@ class TestAgentSolveTask:
         assert nudge is not None
         assert "BENCHMARK EDIT REPAIR" in nudge
         assert "complete solution.py" in nudge
+
+    def test_benchmark_solution_write_gets_constraint_verification_nudge(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="edit",
+                parameters={
+                    "action": "write",
+                    "file_path": "solution.py",
+                    "content_lines": ["print(1)"],
+                },
+                call_id="toolu_edit",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.SUCCESS,
+                output="Successfully wrote solution.py",
+            ),
+        )
+
+        nudge = self.agent._build_benchmark_control_nudge(
+            tool_events=[event],
+            task=task,
+            consumed_steps=1,
+            max_steps=7,
+            edit_failure_streak=0,
+            seen_bash_success_with_solution=False,
+            can_send_constraint_nudge=True,
+            can_send_finalization_nudge=True,
+            can_send_edit_reset_nudge=True,
+        )
+
+        assert nudge is not None
+        kind, text = nudge
+        assert kind == "constraint"
+        assert "BENCHMARK VERIFICATION CHECK" in text
+        assert "time and memory complexity" in text
+        assert "Public samples are only smoke tests" in text
+
+    def test_benchmark_late_bash_success_gets_finalization_guard(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        (self.tmp / "solution.py").write_text("print(1)\n", encoding="utf-8")
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={"command": "python3 solution.py << 'EOF'\n1\nEOF"},
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.SUCCESS,
+                output="1\n",
+            ),
+        )
+
+        nudge = self.agent._build_benchmark_control_nudge(
+            tool_events=[event],
+            task=task,
+            consumed_steps=6,
+            max_steps=7,
+            edit_failure_streak=0,
+            seen_bash_success_with_solution=True,
+            can_send_constraint_nudge=True,
+            can_send_finalization_nudge=True,
+            can_send_edit_reset_nudge=True,
+        )
+
+        assert nudge is not None
+        kind, text = nudge
+        assert kind == "finalization"
+        assert "BENCHMARK FINALIZATION GUARD" in text
+        assert "Do not rewrite solution.py" in text
+        assert "Task complete" in text
+
+    def test_benchmark_repeated_edit_failures_get_fresh_source_reset(self):
+        task = Task(
+            task_id="benchmark_livecodebench_example",
+            description="Solve a benchmark",
+            metadata={"benchmark": "livecodebench_example"},
+        )
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="edit",
+                parameters={
+                    "action": "write",
+                    "file_path": "solution.py",
+                    "content_lines": [["print(1)"]],
+                },
+                call_id="toolu_edit",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.ERROR,
+                output="",
+                error="content_lines parameter must contain only strings",
+            ),
+        )
+
+        nudge = self.agent._build_benchmark_control_nudge(
+            tool_events=[event],
+            task=task,
+            consumed_steps=3,
+            max_steps=7,
+            edit_failure_streak=2,
+            seen_bash_success_with_solution=False,
+            can_send_constraint_nudge=True,
+            can_send_finalization_nudge=True,
+            can_send_edit_reset_nudge=True,
+        )
+
+        assert nudge is not None
+        kind, text = nudge
+        assert kind == "edit_reset"
+        assert "BENCHMARK FRESH SOURCE RESET" in text
+        assert "flat JSON array" in text
+        assert "whole solution.py" in text
+
+    def test_benchmark_system_message_rejects_brittle_shell_testing(self):
+        system_message = self.agent._build_system_message(
+            ConversationContext(
+                task_id="benchmark_livecodebench_example",
+                agent_id="agent_001",
+                benchmark_name="livecodebench_example",
+            )
+        )
+
+        assert "Public samples are only smoke tests" in system_message.content
+        assert "Do not use `echo -e`" in system_message.content
+        assert "Do not run `python3 solution.py` with no stdin" in system_message.content
 
     def test_length_nudge_rejects_pseudo_tool_call_text(self):
         response = CompletionResponse(
