@@ -208,8 +208,9 @@ class EditTool(BaseTool):
                 name="line_number",
                 type="integer",
                 description=(
-                    "1-based start line for line_replace actions. Prefer this over "
-                    "modify when exact search_text is unreliable."
+                    "1-based start line for read/line_replace actions. Read returns "
+                    "numbered context; prefer line_replace over modify when exact "
+                    "search_text is unreliable."
                 ),
                 required=False
             ),
@@ -217,8 +218,8 @@ class EditTool(BaseTool):
                 name="line_count",
                 type="integer",
                 description=(
-                    "Number of existing lines to replace for line_replace actions. "
-                    "Defaults to 1."
+                    "Number of existing lines to read or replace for line_replace "
+                    "actions. Defaults to 80 for ranged reads and 1 for line_replace."
                 ),
                 required=False
             ),
@@ -335,6 +336,67 @@ class EditTool(BaseTool):
                         error=f"File not found: {file_path_str}",
                     )
                 content = full_path.read_text(encoding="utf-8")
+                line_number = parameters.get("line_number")
+                if line_number is not None:
+                    if not isinstance(line_number, int):
+                        return ToolResult(
+                            status=ToolExecutionStatus.ERROR,
+                            output="",
+                            error="line_number must be an integer for read action",
+                        )
+                    if line_number < 1:
+                        return ToolResult(
+                            status=ToolExecutionStatus.ERROR,
+                            output="",
+                            error="line_number must be >= 1 for read action",
+                        )
+
+                    line_count = parameters.get("line_count", 80)
+                    if not isinstance(line_count, int):
+                        return ToolResult(
+                            status=ToolExecutionStatus.ERROR,
+                            output="",
+                            error="line_count must be an integer for read action",
+                        )
+                    if line_count < 1:
+                        return ToolResult(
+                            status=ToolExecutionStatus.ERROR,
+                            output="",
+                            error="line_count must be >= 1 for read action",
+                        )
+
+                    lines = content.splitlines()
+                    total_lines = len(lines)
+                    start_index = line_number - 1
+                    if start_index >= total_lines:
+                        return ToolResult(
+                            status=ToolExecutionStatus.ERROR,
+                            output="",
+                            error=(
+                                f"line_number {line_number} is past end of "
+                                f"{file_path_str} ({total_lines} lines)"
+                            ),
+                        )
+                    end_index = min(start_index + line_count, total_lines)
+                    numbered_lines = [
+                        f"{idx + 1}: {line}"
+                        for idx, line in enumerate(
+                            lines[start_index:end_index],
+                            start=start_index,
+                        )
+                    ]
+                    output = (
+                        f"Lines {line_number}-{end_index} of {file_path_str} "
+                        f"({total_lines} total):\n"
+                        + "\n".join(numbered_lines)
+                    )
+                    if numbered_lines:
+                        output += "\n"
+                    return ToolResult(
+                        status=ToolExecutionStatus.SUCCESS,
+                        output=output,
+                        error="",
+                    )
                 return ToolResult(
                     status=ToolExecutionStatus.SUCCESS,
                     output=content,

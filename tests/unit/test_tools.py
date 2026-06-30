@@ -327,6 +327,44 @@ class TestEditTool:
         assert result2.status == ToolExecutionStatus.SUCCESS
         assert result2.output == "hello world"
 
+    async def test_read_line_range_returns_numbered_context(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "notes.txt",
+            "content": "line one\nline two\nline three\nline four\n",
+        })
+
+        result = await self.tool.execute({
+            "action": "read",
+            "file_path": "notes.txt",
+            "line_number": 2,
+            "line_count": 2,
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert result.output == (
+            "Lines 2-3 of notes.txt (4 total):\n"
+            "2: line two\n"
+            "3: line three\n"
+        )
+
+    async def test_read_line_range_past_end_rejected(self):
+        await self.tool.execute({
+            "action": "write",
+            "file_path": "notes.txt",
+            "content": "line one\nline two\n",
+        })
+
+        result = await self.tool.execute({
+            "action": "read",
+            "file_path": "notes.txt",
+            "line_number": 3,
+            "line_count": 1,
+        })
+
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "past end" in (result.error or "")
+
     async def test_write_missing_content_rejected(self):
         result = await self.tool.execute({
             "action": "write",
