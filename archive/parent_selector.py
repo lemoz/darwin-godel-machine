@@ -31,6 +31,11 @@ class ParentSelector:
         elite_selection_probability: optional probability of selecting the
             highest-scoring eligible parent for single-parent draws before
             falling back to the paper's stochastic formula.
+        focus_agent_ids: optional list of agent IDs to exploit before falling
+            back to the paper's stochastic formula.
+        focus_selection_probability: probability of selecting from
+            focus_agent_ids for single-parent draws when any focused agent is
+            eligible.
     """
 
     def __init__(
@@ -41,6 +46,8 @@ class ParentSelector:
         regression_tolerance: float = 0.0,
         reject_score_ties: bool = False,
         elite_selection_probability: float = 0.0,
+        focus_agent_ids: Optional[List[str]] = None,
+        focus_selection_probability: float = 0.0,
     ):
         self.lam = lam
         self.alpha_0 = alpha_0
@@ -50,6 +57,11 @@ class ParentSelector:
         self.elite_selection_probability = max(
             0.0,
             min(1.0, elite_selection_probability),
+        )
+        self.focus_agent_ids = set(focus_agent_ids or [])
+        self.focus_selection_probability = max(
+            0.0,
+            min(1.0, focus_selection_probability),
         )
 
     # ------------------------------------------------------------------
@@ -81,16 +93,38 @@ class ParentSelector:
         if not eligible:
             return []
 
-        k = min(n_parents, len(eligible))
-        if k == 1 and self.elite_selection_probability > 0:
-            if random.random() < self.elite_selection_probability:
-                return [max(eligible, key=lambda a: (a.average_score, -a.generation))]
-
         # Build child-count map: count VALID children per agent
         child_counts: dict = {a.agent_id: 0 for a in eligible}
         for a in archive.agents.values():
             if a.is_valid and a.parent_id and a.parent_id in child_counts:
                 child_counts[a.parent_id] += 1
+
+        k = min(n_parents, len(eligible))
+        if (
+            k == 1
+            and self.focus_agent_ids
+            and self.focus_selection_probability > 0
+        ):
+            focused = [
+                a
+                for a in eligible
+                if a.agent_id in self.focus_agent_ids
+            ]
+            if focused and random.random() < self.focus_selection_probability:
+                return [
+                    max(
+                        focused,
+                        key=lambda a: (
+                            a.average_score,
+                            -child_counts.get(a.agent_id, 0),
+                            -a.generation,
+                        ),
+                    )
+                ]
+
+        if k == 1 and self.elite_selection_probability > 0:
+            if random.random() < self.elite_selection_probability:
+                return [max(eligible, key=lambda a: (a.average_score, -a.generation))]
 
         # Compute weights
         weights = []

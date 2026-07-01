@@ -84,6 +84,8 @@ class DGMController:
             regression_tolerance=ps_cfg.get('regression_tolerance', 0.0),
             reject_score_ties=ps_cfg.get('reject_score_ties', False),
             elite_selection_probability=ps_cfg.get('elite_selection_probability', 0.0),
+            focus_agent_ids=ps_cfg.get('focus_agent_ids'),
+            focus_selection_probability=ps_cfg.get('focus_selection_probability', 0.0),
         )
 
         evaluation_config = self.config.get('evaluation', {})

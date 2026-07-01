@@ -176,6 +176,8 @@ class TestDGMControllerInit:
         cfg["parent_selection"]["regression_tolerance"] = 0.01
         cfg["parent_selection"]["reject_score_ties"] = True
         cfg["parent_selection"]["elite_selection_probability"] = 0.25
+        cfg["parent_selection"]["focus_agent_ids"] = ["agent-a", "agent-b"]
+        cfg["parent_selection"]["focus_selection_probability"] = 0.75
 
         ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
 
@@ -183,6 +185,8 @@ class TestDGMControllerInit:
         assert ctrl.parent_selector.regression_tolerance == pytest.approx(0.01)
         assert ctrl.parent_selector.reject_score_ties is True
         assert ctrl.parent_selector.elite_selection_probability == pytest.approx(0.25)
+        assert ctrl.parent_selector.focus_agent_ids == {"agent-a", "agent-b"}
+        assert ctrl.parent_selector.focus_selection_probability == pytest.approx(0.75)
 
     def test_build_score_delta_metadata_marks_regressions(self, tmp_path):
         from archive.agent_archive import ArchivedAgent

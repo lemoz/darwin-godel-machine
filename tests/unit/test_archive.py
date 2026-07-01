@@ -515,3 +515,52 @@ class TestParentSelector:
         selected = selector.select_parents(archive, n_parents=1)
 
         assert selected == [parent]
+
+    def test_focus_selection_probability_selects_focused_agent(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        high = archive.add_agent(
+            str(_make_agent_file(tmp_path, "high.py")),
+            benchmark_scores={"b": 0.9},
+            is_valid=True,
+        )
+        focused = archive.add_agent(
+            str(_make_agent_file(tmp_path, "focused.py")),
+            benchmark_scores={"b": 0.7},
+            is_valid=True,
+        )
+
+        selector = ParentSelector(
+            focus_agent_ids=[focused.agent_id],
+            focus_selection_probability=1.0,
+        )
+        selected = selector.select_parents(archive, n_parents=1)
+
+        assert selected == [focused]
+        assert selected != [high]
+
+    def test_focus_selection_prefers_focused_agent_with_fewer_children(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        busy = archive.add_agent(
+            str(_make_agent_file(tmp_path, "busy.py")),
+            benchmark_scores={"b": 0.8},
+            is_valid=True,
+        )
+        fresh = archive.add_agent(
+            str(_make_agent_file(tmp_path, "fresh.py")),
+            benchmark_scores={"b": 0.8},
+            is_valid=True,
+        )
+        archive.add_agent(
+            str(_make_agent_file(tmp_path, "child.py")),
+            parent_id=busy.agent_id,
+            benchmark_scores={"b": 0.8},
+            is_valid=True,
+        )
+
+        selector = ParentSelector(
+            focus_agent_ids=[busy.agent_id, fresh.agent_id],
+            focus_selection_probability=1.0,
+        )
+        selected = selector.select_parents(archive, n_parents=1)
+
+        assert selected == [fresh]
