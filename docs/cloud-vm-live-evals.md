@@ -31,6 +31,47 @@ The startup script runs:
 8. continuously rsync artifacts to GCS when `--gcs-artifact-uri` is set
 9. write an `exit_code` artifact and exit with the DGM process status
 
+## Canonical 50-loop LiveCodeBench lane
+
+The current proof run is
+[`docs/live-runs/lcb50-qwen3-hardened-20260630-1/`](live-runs/lcb50-qwen3-hardened-20260630-1/).
+To reproduce the same lane from the current checkout, generate and review a
+non-secret plan first:
+
+```bash
+RUN_ID="lcb50-qwen3-hardened-$(date -u +%Y%m%d-%H%M%S)"
+
+python scripts/run_live_eval_on_cloud_vm.py \
+  --project "$GCP_PROJECT" \
+  --zone us-central1-a \
+  --machine-type n2-standard-8 \
+  --boot-disk-size-gb 100 \
+  --run-id "$RUN_ID" \
+  --repo-url https://github.com/lemoz/darwin-godel-machine.git \
+  --commit "$(git rev-parse HEAD)" \
+  --config config/livecodebench_openrouter_loop50_qwen3_coder_selfmod_recovery.yaml \
+  --generations 50 \
+  --secret OPENROUTER_API_KEY=openrouter-api-key \
+  --artifact-dir ".dgm-cloud-runs/$RUN_ID/artifacts" \
+  --startup-script-path ".dgm-cloud-runs/$RUN_ID/startup.sh" \
+  --output ".dgm-cloud-runs/$RUN_ID/plan.json" \
+  --gcs-artifact-uri "gs://dgm-live-runs-$GCP_PROJECT/$RUN_ID" \
+  --fm-provider openrouter \
+  --model qwen/qwen3-coder \
+  --input-price-per-mtok 0.22 \
+  --output-price-per-mtok 1.80
+```
+
+After reviewing `.dgm-cloud-runs/$RUN_ID/plan.json`, rerun the same command with
+`--execute` appended. The generated plan includes the exact `gcloud` create,
+log-stream, artifact-sync, and teardown commands.
+
+The canonical config runs these preflights on the VM before any live DGM loop:
+
+- prepare the fixed LiveCodeBench segment
+- require the Docker sandbox image to build and run
+- pass the configured cost gate before model calls
+
 ## Telemetry
 
 `scripts/summarize_live_run_telemetry.py` converts durable run artifacts into a

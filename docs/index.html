@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Darwin Gödel Machine Proof</title>
+    <meta
+      name="description"
+      content="Live DGM proof bundle: 50-loop cloud run, LiveCodeBench segment, and committed artifacts."
+    >
+    <link rel="stylesheet" href="assets/dgm-site.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="https://github.com/lemoz/darwin-godel-machine#readme">Darwin Gödel Machine</a>
+      <nav aria-label="Project links">
+        <a href="https://github.com/lemoz/darwin-godel-machine/blob/main/ROADMAP.md">Roadmap</a>
+        <a href="live-runs/lcb50-qwen3-hardened-20260630-1/">Proof</a>
+        <a href="cloud-vm-live-evals.md">Cloud VM</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Committed live-run evidence</p>
+          <h1>Darwin Gödel Machine</h1>
+          <p class="lede">
+            A self-modifying coding agent produced real score movement on a
+            known LiveCodeBench segment: <code>5/12</code> to <code>8/12</code> across a 50-loop
+            cloud run.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="live-runs/lcb50-qwen3-hardened-20260630-1/">Open Proof Bundle</a>
+            <a class="button secondary" href="https://github.com/lemoz/darwin-godel-machine/blob/main/ROADMAP.md">Project Roadmap</a>
+          </div>
+        </div>
+
+        <section class="score-panel" aria-labelledby="score-title">
+          <div class="score-panel-header">
+            <div>
+              <p class="eyebrow">LiveCodeBench lite</p>
+              <h2 id="score-title">Score Movement</h2>
+            </div>
+            <p class="score-total"><span id="best-score">8</span><span>/12</span></p>
+          </div>
+          <div id="score-chart" class="score-chart" role="img" aria-label="Breakthrough score path from five solved problems to eight solved problems"></div>
+        </section>
+      </section>
+
+      <section class="metrics-band" aria-label="Run metrics">
+        <div class="metric">
+          <span>Loop iterations</span>
+          <strong>50</strong>
+        </div>
+        <div class="metric">
+          <span>Valid agents</span>
+          <strong>37</strong>
+        </div>
+        <div class="metric">
+          <span>Code-change mutations</span>
+          <strong>36</strong>
+        </div>
+        <div class="metric">
+          <span>Estimated cost</span>
+          <strong>$8.95</strong>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <div class="section-copy">
+          <p class="eyebrow">Current state</p>
+          <h2>What The Run Proves</h2>
+          <p>
+            The repository can launch DGM on a disposable cloud VM, prepare a
+            real benchmark segment, run live model-backed self-modification,
+            collect durable artifacts, and tear the worker down after sync.
+          </p>
+        </div>
+        <div class="proof-grid" id="proof-grid"></div>
+      </section>
+
+      <section class="content-section muted">
+        <div class="section-copy">
+          <p class="eyebrow">Next gate</p>
+          <h2>What Still Blocks WDSLL</h2>
+          <p>
+            The first proof works. The next bar is sustained search: exploit the
+            best <code>8/12</code> parents, stabilize tool-call repair, add model fallback,
+            and explain no-op or regression clusters automatically.
+          </p>
+        </div>
+        <ol class="roadmap-list">
+          <li>Exploit-best LiveCodeBench lane targeting <code>9/12+</code>.</li>
+          <li>Model fallback or matrix runs on the same segment.</li>
+          <li>No-op, timeout, malformed-edit, and regression summaries.</li>
+          <li>Repeatable cloud worker fleet with promotion criteria.</li>
+        </ol>
+      </section>
+
+      <section class="artifact-section">
+        <div>
+          <p class="eyebrow">Evidence bundle</p>
+          <h2>Artifacts On Main</h2>
+        </div>
+        <div class="artifact-links">
+          <a href="live-runs/lcb50-qwen3-hardened-20260630-1/scorecard.json">Scorecard JSON</a>
+          <a href="live-runs/lcb50-qwen3-hardened-20260630-1/telemetry.json">Telemetry JSON</a>
+          <a href="live-runs/lcb50-qwen3-hardened-20260630-1/artifact_hashes.sha256">Checksums</a>
+          <a href="live-runs/lcb50-qwen3-hardened-20260630-1/archive.tar.gz">Archive Bundle</a>
+        </div>
+      </section>
+    </main>
+
+    <script src="assets/dgm-site.js"></script>
+  </body>
+</html>

@@ -8,6 +8,31 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-beta-orange.svg)
 
+## Current Proof On Main
+
+This repository now includes a committed, reproducible proof bundle for a full
+live DGM run:
+
+- **Run**: `lcb50-qwen3-hardened-20260630-1`
+- **Execution**: 50 DGM loop iterations on a disposable GCP VM
+- **Benchmark**: 12-problem LiveCodeBench code-generation-lite segment with
+  private scored tests
+- **Model path**: OpenRouter `qwen/qwen3-coder`
+- **Result**: score moved from `5/12` to `8/12`
+- **Evidence**: plan, logs, telemetry, archive, scorecard, checksums, and VM
+  teardown proof are committed under
+  [`docs/live-runs/lcb50-qwen3-hardened-20260630-1/`](docs/live-runs/lcb50-qwen3-hardened-20260630-1/)
+
+Use these entry points first:
+
+- [Project roadmap](ROADMAP.md) for what is done, what is next, and what still
+  blocks WDSLL-scale search.
+- [Live run index](docs/live-runs/README.md) for the proof bundle catalog.
+- [Cloud VM runbook](docs/cloud-vm-live-evals.md) for the canonical
+  disposable-worker execution path.
+- [Static project site](docs/index.html) for a proof-oriented GitHub Pages
+  landing page.
+
 ## 🧬 Overview
 
 The Darwin Gödel Machine (DGM) is an innovative implementation of self-improving AI agents that iteratively modify their own Python codebase to enhance their coding capabilities. Unlike traditional approaches that rely on formal proofs, DGM uses empirical validation through coding benchmarks to drive evolutionary improvement.
@@ -59,16 +84,32 @@ checks that the full-process sandbox runner exposes the explicit network,
 secret pass-through, discard-changes, and optional audit-artifact flags used for
 safer local runs.
 
-4. **Configure API keys:**
+4. **Inspect the committed live proof:**
+```bash
+python -m json.tool docs/live-runs/lcb50-qwen3-hardened-20260630-1/telemetry.json | sed -n '1,120p'
+shasum -a 256 -c docs/live-runs/lcb50-qwen3-hardened-20260630-1/artifact_hashes.sha256
+```
+
+For most readers, the shorter path is to open
+[`docs/live-runs/lcb50-qwen3-hardened-20260630-1/README.md`](docs/live-runs/lcb50-qwen3-hardened-20260630-1/README.md).
+The raw telemetry and scorecard are already committed; the command above is a
+quick sanity check for the current proof bundle.
+
+5. **Configure API keys:**
 ```bash
 cp .env.example .env
 # Edit .env with your API keys
 ```
 
-5. **Run the system:**
+6. **Run the system locally:**
 ```bash
 python run_dgm.py
 ```
+
+For serious live evaluations, use a disposable cloud VM instead of the
+maintainer laptop. Start from
+[`docs/cloud-vm-live-evals.md`](docs/cloud-vm-live-evals.md) and keep the local
+machine as the control plane.
 
 ## 🔧 Configuration
 
