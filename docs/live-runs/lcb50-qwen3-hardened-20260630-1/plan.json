@@ -1,0 +1,120 @@
+{
+  "artifacts": {
+    "controller_log": "/var/tmp/dgm-live-runs/lcb50-qwen3-hardened-20260630-1/artifacts/controller.log",
+    "exit_code": "/var/tmp/dgm-live-runs/lcb50-qwen3-hardened-20260630-1/artifacts/exit_code",
+    "gcs_uri": "gs://dgm-live-runs-doittogether-prod/lcb50-qwen3-hardened-20260630-1",
+    "local_dir": ".dgm-cloud-runs/lcb50-qwen3-hardened-20260630-1/artifacts",
+    "remote_dir": "/var/tmp/dgm-live-runs/lcb50-qwen3-hardened-20260630-1/artifacts",
+    "scorecard": "/var/tmp/dgm-live-runs/lcb50-qwen3-hardened-20260630-1/artifacts/scorecard.json",
+    "startup_log": "/var/tmp/dgm-live-runs/lcb50-qwen3-hardened-20260630-1/artifacts/startup.log",
+    "telemetry": "/var/tmp/dgm-live-runs/lcb50-qwen3-hardened-20260630-1/artifacts/telemetry.json"
+  },
+  "commands": {
+    "create": [
+      "gcloud",
+      "compute",
+      "instances",
+      "create",
+      "dgm-lcb50-qwen3-hardened-20260630-1",
+      "--project",
+      "doittogether-prod",
+      "--zone",
+      "us-central1-a",
+      "--machine-type",
+      "n2-standard-8",
+      "--boot-disk-size",
+      "100GB",
+      "--image-family",
+      "debian-12",
+      "--image-project",
+      "debian-cloud",
+      "--scopes",
+      "cloud-platform",
+      "--labels",
+      "dgm-run-id=lcb50-qwen3-hardened-20260630-1,dgm-commit=215e81d2c4d35b0c93159bc9ce42b0d182dcc1eb,purpose=live-eval",
+      "--metadata",
+      "dgm-run-id=lcb50-qwen3-hardened-20260630-1,dgm-commit=215e81d2c4d35b0c93159bc9ce42b0d182dcc1eb,dgm-config=config/livecodebench_openrouter_loop50_qwen3_coder_selfmod_recovery.yaml",
+      "--metadata-from-file",
+      "startup-script=.dgm-cloud-runs/lcb50-qwen3-hardened-20260630-1/startup.sh"
+    ],
+    "stream_logs": [
+      "gcloud",
+      "compute",
+      "ssh",
+      "dgm-lcb50-qwen3-hardened-20260630-1",
+      "--project",
+      "doittogether-prod",
+      "--zone",
+      "us-central1-a",
+      "--command",
+      "sudo bash -lc 'set -e\nSTARTUP_LOG=/var/tmp/dgm-live-runs/lcb50-qwen3-hardened-20260630-1/artifacts/startup.log\nEXIT_CODE=/var/tmp/dgm-live-runs/lcb50-qwen3-hardened-20260630-1/artifacts/exit_code\nwhile [ ! -f \"$STARTUP_LOG\" ] && [ ! -f \"$EXIT_CODE\" ]; do\n  journalctl -u google-startup-scripts.service -n 80 --no-pager || true\n  sleep 10\ndone\nif [ -f \"$STARTUP_LOG\" ]; then\n  tail -n +1 -F \"$STARTUP_LOG\" &\n  TAIL_PID=$!\nfi\nwhile [ ! -f \"$EXIT_CODE\" ]; do\n  sleep 10\ndone\nif [ -n \"${TAIL_PID:-}\" ]; then\n  kill \"$TAIL_PID\" >/dev/null 2>&1 || true\nfi\ncat \"$EXIT_CODE\"'"
+    ],
+    "sync_artifacts": [
+      "gcloud",
+      "compute",
+      "scp",
+      "--recurse",
+      "dgm-lcb50-qwen3-hardened-20260630-1:/var/tmp/dgm-live-runs/lcb50-qwen3-hardened-20260630-1/artifacts/.",
+      ".dgm-cloud-runs/lcb50-qwen3-hardened-20260630-1/artifacts",
+      "--project",
+      "doittogether-prod",
+      "--zone",
+      "us-central1-a"
+    ],
+    "teardown": [
+      "gcloud",
+      "compute",
+      "instances",
+      "delete",
+      "dgm-lcb50-qwen3-hardened-20260630-1",
+      "--project",
+      "doittogether-prod",
+      "--zone",
+      "us-central1-a",
+      "--quiet"
+    ]
+  },
+  "name": "dgm_live_eval_cloud_vm_plan",
+  "provider": "gcloud",
+  "run_order": [
+    "write_startup_script",
+    "create",
+    "stream_logs",
+    "sync_artifacts",
+    "teardown"
+  ],
+  "schema_version": 1,
+  "secrets": {
+    "env_names": [
+      "OPENROUTER_API_KEY"
+    ],
+    "env_values": "hidden",
+    "secret_manager_env_names": [
+      "OPENROUTER_API_KEY"
+    ],
+    "secret_manager_secret_names": [
+      "openrouter-api-key"
+    ]
+  },
+  "source": {
+    "commit": "215e81d2c4d35b0c93159bc9ce42b0d182dcc1eb",
+    "config": "config/livecodebench_openrouter_loop50_qwen3_coder_selfmod_recovery.yaml",
+    "fm_provider": "openrouter",
+    "generations": 50,
+    "model": "qwen/qwen3-coder",
+    "repo_url": "https://github.com/lemoz/darwin-godel-machine.git"
+  },
+  "startup_script": "[written to startup_script_path]",
+  "startup_script_path": ".dgm-cloud-runs/lcb50-qwen3-hardened-20260630-1/startup.sh",
+  "status": "planned",
+  "vm": {
+    "boot_disk_size_gb": 100,
+    "ephemeral": true,
+    "image_family": "debian-12",
+    "image_project": "debian-cloud",
+    "machine_type": "n2-standard-8",
+    "name": "dgm-lcb50-qwen3-hardened-20260630-1",
+    "project": "doittogether-prod",
+    "zone": "us-central1-a"
+  }
+}
