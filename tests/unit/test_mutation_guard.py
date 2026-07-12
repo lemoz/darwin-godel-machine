@@ -88,3 +88,60 @@ def test_constrained_lane_tags_import_only_change_as_noop():
     assert decision.admitted is False
     assert decision.failure_mode == "no-op"
     assert "only changed imports" in decision.reasons[0]
+
+
+PROMPT_PARENT = b'''class Agent:
+    def _build_system_message(self, context):
+        self_modification_instructions = "self modify"
+        if context.task_id.startswith("self_modify"):
+            self_modification_instructions = "mutate"
+        base_instructions = f"""solution.py
+Public samples are only smoke tests
+CRITICAL COMPLETION REQUIREMENT
+Task complete
+Solution implemented
+{self_modification_instructions}
+"""
+        return base_instructions
+'''
+
+
+def test_constrained_lane_allows_prompt_only_addition_with_protocol_markers():
+    child = PROMPT_PARENT.replace(
+        b"Public samples are only smoke tests",
+        b"Estimate complexity before coding\nPublic samples are only smoke tests",
+    )
+    decision = ConstrainedMutationGuard(enabled=True).inspect(
+        before_snapshot={"agent.py": PROMPT_PARENT},
+        after_snapshot={"agent.py": child},
+        changed_code_files=["agent.py"],
+    )
+
+    assert decision.admitted is True
+
+
+def test_constrained_lane_rejects_prompt_change_removing_protocol_marker():
+    child = PROMPT_PARENT.replace(b"Task complete", b"Finished")
+    decision = ConstrainedMutationGuard(enabled=True).inspect(
+        before_snapshot={"agent.py": PROMPT_PARENT},
+        after_snapshot={"agent.py": child},
+        changed_code_files=["agent.py"],
+    )
+
+    assert decision.admitted is False
+    assert decision.failure_mode == "completion/protocol failure"
+
+
+def test_constrained_lane_rejects_prompt_method_control_flow_change():
+    child = PROMPT_PARENT.replace(
+        b'context.task_id.startswith("self_modify")',
+        b"True",
+    )
+    decision = ConstrainedMutationGuard(enabled=True).inspect(
+        before_snapshot={"agent.py": PROMPT_PARENT},
+        after_snapshot={"agent.py": child},
+        changed_code_files=["agent.py"],
+    )
+
+    assert decision.admitted is False
+    assert decision.failure_mode == "completion/protocol failure"

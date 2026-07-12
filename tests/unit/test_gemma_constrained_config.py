@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 import yaml
 
 
@@ -14,6 +15,52 @@ PARALLEL_CONFIG_PATH = (
     / "config"
     / "livecodebench_openrouter_gemma3_27b_parallel50.yaml"
 )
+
+
+@pytest.mark.parametrize(
+    ("filename", "provider_key", "model", "input_price", "output_price"),
+    [
+        (
+            "livecodebench_sol_mutator_gemma3_parallel16.yaml",
+            "sol_mutator",
+            "openai/gpt-5.6-sol",
+            5,
+            30,
+        ),
+        (
+            "livecodebench_fable5_mutator_gemma3_parallel16.yaml",
+            "fable5_mutator",
+            "anthropic/claude-fable-5",
+            10,
+            50,
+        ),
+    ],
+)
+def test_frontier_mutator_configs_keep_gemma_as_solver(
+    filename,
+    provider_key,
+    model,
+    input_price,
+    output_price,
+):
+    config = yaml.safe_load((PROJECT_ROOT / "config" / filename).read_text())
+
+    assert config["fm_providers"]["primary"] == "gemma_solver"
+    assert config["fm_providers"]["gemma_solver"]["model"] == (
+        "google/gemma-3-27b-it"
+    )
+    assert config["self_modification"]["fm_provider"] == provider_key
+    assert config["fm_providers"][provider_key]["handler"] == "openai_compatible"
+    assert config["fm_providers"][provider_key]["model"] == model
+    assert config["self_modification"]["max_steps"] == 3
+    assert config["live_run"]["recommended_generations"] == 16
+    assert config["live_run"]["parallel"]["workers"] == 4
+    assert config["live_run"]["cost_gate"][
+        "mutation_input_price_per_mtok"
+    ] == input_price
+    assert config["live_run"]["cost_gate"][
+        "mutation_output_price_per_mtok"
+    ] == output_price
 
 
 def test_gemma_constrained_pilot_is_small_and_cost_gated():

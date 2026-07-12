@@ -13,6 +13,7 @@ from scripts.run_parallel_cloud_dgm import (
     aggregate_parallel_artifacts,
     build_parallel_cloud_plan,
     execute_parallel_cloud_plan,
+    recover_missing_gcs_artifacts,
 )
 
 
@@ -119,6 +120,30 @@ def test_parallel_aggregate_subtracts_seed_counts(tmp_path):
     assert aggregate["fresh_noop_count"] == 3
     assert aggregate["total_model_cost_usd_from_telemetry"] == pytest.approx(0.3)
     assert aggregate["total_tokens"] == 300
+
+
+def test_parallel_artifact_recovery_uses_single_process_gcloud(tmp_path):
+    plan = _plan(tmp_path)
+    calls = []
+
+    def fake_runner(command, **kwargs):
+        calls.append((command, kwargs))
+        run_id = command[-2].rstrip("/").split("/")[-1]
+        artifact_dir = tmp_path / "artifacts" / run_id
+        artifact_dir.mkdir(parents=True)
+        (artifact_dir / "scorecard.json").write_text("{}", encoding="utf-8")
+        return SimpleNamespace(returncode=0, stderr="")
+
+    from types import SimpleNamespace
+
+    recovered = recover_missing_gcs_artifacts(plan, runner=fake_runner)
+
+    assert recovered == ["gemma-test-w01", "gemma-test-w02"]
+    assert len(calls) == 2
+    assert all(
+        kwargs["env"]["CLOUDSDK_STORAGE_PROCESS_COUNT"] == "1"
+        for _, kwargs in calls
+    )
 
 
 async def test_parallel_executor_honors_concurrency(tmp_path):

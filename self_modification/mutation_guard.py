@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import copy
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Mapping, Optional, Sequence
 
@@ -26,6 +27,14 @@ DEFAULT_PROTECTED_SYMBOLS: Dict[str, Sequence[str]] = {
         "Agent._benchmark_completion_block_reason",
     ),
 }
+
+PROMPT_PROTOCOL_MARKERS = (
+    "Task complete",
+    "Solution implemented",
+    "solution.py",
+    "CRITICAL COMPLETION REQUIREMENT",
+    "Public samples are only smoke tests",
+)
 
 
 @dataclass(frozen=True)
@@ -144,6 +153,12 @@ class ConstrainedMutationGuard:
                 before_node = self._find_symbol(before_tree, symbol)
                 after_node = self._find_symbol(after_tree, symbol)
                 if self._node_fingerprint(before_node) != self._node_fingerprint(after_node):
+                    if self._is_safe_prompt_only_change(
+                        symbol=symbol,
+                        before_node=before_node,
+                        after_node=after_node,
+                    ):
+                        continue
                     protected_changes.append(f"{relative_path}:{symbol}")
 
         if protected_changes:
@@ -192,6 +207,58 @@ class ConstrainedMutationGuard:
         if node is None:
             return None
         return ast.dump(node, annotate_fields=True, include_attributes=False)
+
+    @classmethod
+    def _is_safe_prompt_only_change(
+        cls,
+        *,
+        symbol: str,
+        before_node: Optional[ast.AST],
+        after_node: Optional[ast.AST],
+    ) -> bool:
+        """Allow prompt text additions without weakening completion structure."""
+        if symbol != "Agent._build_system_message":
+            return False
+        if before_node is None or after_node is None:
+            return False
+        if cls._prompt_string_insensitive_fingerprint(
+            before_node
+        ) != cls._prompt_string_insensitive_fingerprint(after_node):
+            return False
+        after_text = "\n".join(
+            node.value
+            for node in ast.walk(after_node)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        )
+        return all(marker in after_text for marker in PROMPT_PROTOCOL_MARKERS)
+
+    @staticmethod
+    def _prompt_string_insensitive_fingerprint(node: ast.AST) -> str:
+        """Fingerprint code while ignoring only named prompt variable text."""
+
+        class PromptTextNormalizer(ast.NodeTransformer):
+            def visit_Assign(self, assignment: ast.Assign) -> ast.AST:
+                assignment = self.generic_visit(assignment)
+                prompt_target = any(
+                    isinstance(target, ast.Name)
+                    and target.id in {"base_instructions", "self_modification_instructions"}
+                    for target in assignment.targets
+                )
+                if prompt_target:
+                    assignment.value = PromptLiteralNormalizer().visit(
+                        assignment.value
+                    )
+                return assignment
+
+        class PromptLiteralNormalizer(ast.NodeTransformer):
+            def visit_Constant(self, constant: ast.Constant) -> ast.AST:
+                if isinstance(constant.value, str):
+                    return ast.copy_location(ast.Constant(value="<PROMPT_TEXT>"), constant)
+                return constant
+
+        normalized = PromptTextNormalizer().visit(copy.deepcopy(node))
+        ast.fix_missing_locations(normalized)
+        return ast.dump(normalized, annotate_fields=True, include_attributes=False)
 
     @classmethod
     def _is_import_only_change(

@@ -111,6 +111,9 @@ def build_startup_script(
     model: str,
     input_price_per_mtok: float,
     output_price_per_mtok: float,
+    mutation_model: str | None = None,
+    mutation_input_price_per_mtok: float | None = None,
+    mutation_output_price_per_mtok: float | None = None,
     gcs_artifact_uri: str | None = None,
 ) -> str:
     """Build the startup script that runs on the ephemeral VM."""
@@ -131,6 +134,9 @@ PROVIDER={shlex.quote(provider)}
 MODEL={shlex.quote(model)}
 INPUT_PRICE_PER_MTOK={input_price_per_mtok}
 OUTPUT_PRICE_PER_MTOK={output_price_per_mtok}
+MUTATION_MODEL={shlex.quote(mutation_model or "")}
+MUTATION_INPUT_PRICE_PER_MTOK={mutation_input_price_per_mtok or 0.0}
+MUTATION_OUTPUT_PRICE_PER_MTOK={mutation_output_price_per_mtok or 0.0}
 GCS_ARTIFACT_URI={shlex.quote(gcs_artifact_uri or "")}
 SECRET_SPECS=({secret_specs_text})
 REQUIRED_ENV=({required_env_text})
@@ -283,6 +289,10 @@ if results_dir:
 PY
 )"
 TELEMETRY_ARGS=(--controller-log "${{CONTROLLER_LOG}}" --provider "${{PROVIDER}}" --model "${{MODEL}}" --input-price-per-mtok "${{INPUT_PRICE_PER_MTOK}}" --output-price-per-mtok "${{OUTPUT_PRICE_PER_MTOK}}" --output "${{TELEMETRY_PATH}}")
+TELEMETRY_ARGS+=(--model-price "${{MODEL}}=${{INPUT_PRICE_PER_MTOK}},${{OUTPUT_PRICE_PER_MTOK}}")
+if [ -n "${{MUTATION_MODEL}}" ]; then
+  TELEMETRY_ARGS+=(--model-price "${{MUTATION_MODEL}}=${{MUTATION_INPUT_PRICE_PER_MTOK}},${{MUTATION_OUTPUT_PRICE_PER_MTOK}}")
+fi
 if [ -f "${{SCORECARD_PATH}}" ]; then
   TELEMETRY_ARGS+=(--scorecard "${{SCORECARD_PATH}}")
 fi
@@ -321,6 +331,9 @@ def build_cloud_vm_plan(
     model: str,
     input_price_per_mtok: float,
     output_price_per_mtok: float,
+    mutation_model: str | None = None,
+    mutation_input_price_per_mtok: float | None = None,
+    mutation_output_price_per_mtok: float | None = None,
     gcs_artifact_uri: str | None = None,
 ) -> dict[str, Any]:
     """Build a non-secret, executable cloud VM run plan."""
@@ -349,6 +362,9 @@ def build_cloud_vm_plan(
         model=model,
         input_price_per_mtok=input_price_per_mtok,
         output_price_per_mtok=output_price_per_mtok,
+        mutation_model=mutation_model,
+        mutation_input_price_per_mtok=mutation_input_price_per_mtok,
+        mutation_output_price_per_mtok=mutation_output_price_per_mtok,
         gcs_artifact_uri=gcs_artifact_uri,
     )
 
@@ -454,6 +470,7 @@ def build_cloud_vm_plan(
             "generations": generations,
             "fm_provider": fm_provider,
             "model": model,
+            "mutation_model": mutation_model,
         },
         "secrets": {
             "env_names": all_env_names,

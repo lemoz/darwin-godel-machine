@@ -8,7 +8,7 @@ import ast
 import json
 import re
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -97,9 +97,11 @@ def parse_controller_log(log_path: Path) -> dict[str, Any]:
     prompt_tokens = 0
     completion_tokens = 0
     total_tokens = 0
+    tokens_by_model: dict[str, Counter[str]] = defaultdict(Counter)
     finish_reasons: Counter[str] = Counter()
     completion_seconds: list[float] = []
     model = None
+    active_model = None
     base_url = None
     configured_timeout = None
     completed = False
@@ -124,10 +126,14 @@ def parse_controller_log(log_path: Path) -> dict[str, Any]:
             prompt_tokens += usage["prompt_tokens"]
             completion_tokens += usage["completion_tokens"]
             total_tokens += usage["total_tokens"]
+            model_tokens = tokens_by_model[active_model or "unknown"]
+            model_tokens["usage_events"] += 1
+            model_tokens.update(usage)
 
         request_match = REQUEST_RE.search(line)
         if request_match:
             model = request_match.group("model").strip()
+            active_model = model
             base_url = request_match.group("base_url").strip()
             configured_timeout = float(request_match.group("timeout"))
 
@@ -191,6 +197,15 @@ def parse_controller_log(log_path: Path) -> dict[str, Any]:
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
             "total_tokens": total_tokens,
+            "by_model": {
+                model_name: {
+                    "usage_events": int(counts.get("usage_events", 0)),
+                    "prompt_tokens": int(counts.get("prompt_tokens", 0)),
+                    "completion_tokens": int(counts.get("completion_tokens", 0)),
+                    "total_tokens": int(counts.get("total_tokens", 0)),
+                }
+                for model_name, counts in sorted(tokens_by_model.items())
+            },
         },
         "failure_signals": {
             "error_count": error_count,
@@ -378,6 +393,7 @@ def summarize_live_run_telemetry(
     model: str | None = None,
     input_price_per_mtok: float = 0.0,
     output_price_per_mtok: float = 0.0,
+    model_prices: dict[str, tuple[float, float]] | None = None,
 ) -> dict[str, Any]:
     """Build a structured telemetry report from live-run artifacts."""
     log_summary = parse_controller_log(controller_log)
@@ -386,16 +402,41 @@ def summarize_live_run_telemetry(
     archive_metadata = _optional_json(archive_metadata_path, label="archive metadata")
 
     tokens = dict(log_summary["tokens"])
+    per_model_tokens = {}
+    for model_name, raw_tokens in (tokens.get("by_model") or {}).items():
+        prices = (model_prices or {}).get(model_name)
+        if prices is None:
+            prices = (input_price_per_mtok, output_price_per_mtok)
+        per_model_tokens[model_name] = {
+            **raw_tokens,
+            "input_price_per_mtok": prices[0],
+            "output_price_per_mtok": prices[1],
+            "estimated_cost_usd": _estimate_cost(
+                prompt_tokens=int(raw_tokens["prompt_tokens"]),
+                completion_tokens=int(raw_tokens["completion_tokens"]),
+                input_price_per_mtok=prices[0],
+                output_price_per_mtok=prices[1],
+            ),
+        }
+    estimated_cost = (
+        round(
+            sum(item["estimated_cost_usd"] for item in per_model_tokens.values()),
+            6,
+        )
+        if per_model_tokens
+        else _estimate_cost(
+            prompt_tokens=int(tokens["prompt_tokens"]),
+            completion_tokens=int(tokens["completion_tokens"]),
+            input_price_per_mtok=input_price_per_mtok,
+            output_price_per_mtok=output_price_per_mtok,
+        )
+    )
     tokens.update(
         {
             "input_price_per_mtok": input_price_per_mtok,
             "output_price_per_mtok": output_price_per_mtok,
-            "estimated_cost_usd": _estimate_cost(
-                prompt_tokens=int(tokens["prompt_tokens"]),
-                completion_tokens=int(tokens["completion_tokens"]),
-                input_price_per_mtok=input_price_per_mtok,
-                output_price_per_mtok=output_price_per_mtok,
-            ),
+            "estimated_cost_usd": estimated_cost,
+            "by_model": per_model_tokens,
         }
     )
 
@@ -454,6 +495,13 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model", help="Model label when the log does not expose it.")
     parser.add_argument("--input-price-per-mtok", type=float, default=0.0)
     parser.add_argument("--output-price-per-mtok", type=float, default=0.0)
+    parser.add_argument(
+        "--model-price",
+        action="append",
+        default=[],
+        metavar="MODEL=INPUT,OUTPUT",
+        help="Per-model USD/M-token pricing for mixed-model runs. Repeat as needed.",
+    )
     parser.add_argument("--output", help="Optional path to write telemetry JSON.")
     return parser
 
@@ -468,6 +516,15 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
 
 def _main(args: argparse.Namespace) -> int:
     try:
+        model_prices = {}
+        for raw in args.model_price:
+            model_name, separator, prices = raw.partition("=")
+            input_price, comma, output_price = prices.partition(",")
+            if not separator or not comma or not model_name:
+                raise TelemetryError(
+                    "model-price must use MODEL=INPUT,OUTPUT"
+                )
+            model_prices[model_name] = (float(input_price), float(output_price))
         telemetry = summarize_live_run_telemetry(
             controller_log=Path(args.controller_log),
             scorecard_path=Path(args.scorecard) if args.scorecard else None,
@@ -477,6 +534,7 @@ def _main(args: argparse.Namespace) -> int:
             model=args.model,
             input_price_per_mtok=args.input_price_per_mtok,
             output_price_per_mtok=args.output_price_per_mtok,
+            model_prices=model_prices,
         )
         if args.output:
             _write_json(Path(args.output), telemetry)

@@ -167,6 +167,28 @@ class TestDGMControllerInit:
         assert "PATCH CONTRACT" in task.description
         assert "no later than step 4" in task.description
         assert "safe default" in task.description
+        assert "benchmark-directed behavioral change" in task.description
+        assert "Do not add unused imports" in task.description
+
+    def test_resolve_named_mutation_provider(self, tmp_path):
+        from dgm_controller import DGMController
+
+        cfg = _minimal_config(tmp_path)
+        cfg["fm_providers"]["sol_mutator"] = {
+            "handler": "openai_compatible",
+            "model": "openai/gpt-5.6-sol",
+            "api_key": "test-dummy",
+        }
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        handler, provider_config, provider_key = ctrl._resolve_fm_provider(
+            "sol_mutator"
+        )
+
+        assert handler == "openai_compatible"
+        assert provider_key == "sol_mutator"
+        assert provider_config["model"] == "openai/gpt-5.6-sol"
+        assert "handler" not in provider_config
 
     def test_parent_selection_non_regression_config_is_wired(self, tmp_path):
         from dgm_controller import DGMController
@@ -549,6 +571,8 @@ class TestDGMControllerInit:
         class CapturingAgent:
             def __init__(self, config):
                 captured["max_iterations"] = config.max_iterations
+                captured["fm_provider"] = config.fm_provider
+                captured["model"] = config.fm_config["model"]
 
             async def solve_task(self, task):
                 return {"success": True, "solution": ""}
@@ -557,7 +581,15 @@ class TestDGMControllerInit:
 
         cfg = _minimal_config(tmp_path)
         cfg["agents"]["max_steps"] = 1
-        cfg["self_modification"] = {"max_steps": 7}
+        cfg["fm_providers"]["sol_mutator"] = {
+            "handler": "openai_compatible",
+            "model": "openai/gpt-5.6-sol",
+            "api_key": "test-dummy",
+        }
+        cfg["self_modification"] = {
+            "max_steps": 7,
+            "fm_provider": "sol_mutator",
+        }
         ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
 
         parent_dir = tmp_path / "parent_agent"
@@ -587,6 +619,8 @@ class TestDGMControllerInit:
 
         assert result_path is not None
         assert captured["max_iterations"] == 7
+        assert captured["fm_provider"] == "openai_compatible"
+        assert captured["model"] == "openai/gpt-5.6-sol"
 
     async def test_run_generation_archives_noop_without_evaluation(
         self,

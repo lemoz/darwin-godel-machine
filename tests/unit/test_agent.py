@@ -201,6 +201,29 @@ class TestAgentInit:
         )
 
         assert agent._self_modification_read_observed is True
+        write_schemas = agent._tool_schemas_for_step(is_self_modification=True)
+        assert [schema["name"] for schema in write_schemas] == ["edit"]
+        assert write_schemas[0]["parameters"]["properties"]["action"]["enum"] == [
+            "line_replace",
+            "modify",
+            "write",
+        ]
+
+        await agent._execute_tool_calls(
+            [ToolCall(
+                tool_name="edit",
+                parameters={
+                    "action": "line_replace",
+                    "file_path": "agent.py",
+                    "line_number": 2,
+                    "line_count": 1,
+                    "content_lines": ["    changed = True"],
+                },
+            )],
+            task,
+        )
+
+        assert agent._self_modification_write_observed is True
         assert len(agent._tool_schemas_for_step(is_self_modification=True)) == 2
 
     async def test_close_releases_provider_client(self, tmp_path):

@@ -81,6 +81,9 @@ def build_parallel_cloud_plan(
     model: str,
     input_price_per_mtok: float,
     output_price_per_mtok: float,
+    mutation_model: str | None = None,
+    mutation_input_price_per_mtok: float | None = None,
+    mutation_output_price_per_mtok: float | None = None,
     assumed_input_tokens_per_call: int,
     max_budget_usd: float,
 ) -> dict[str, Any]:
@@ -102,6 +105,8 @@ def build_parallel_cloud_plan(
         input_price_per_mtok=input_price_per_mtok,
         output_price_per_mtok=output_price_per_mtok,
         assumed_input_tokens_per_call=assumed_input_tokens_per_call,
+        mutation_input_price_per_mtok=mutation_input_price_per_mtok,
+        mutation_output_price_per_mtok=mutation_output_price_per_mtok,
     )
     shared_estimate = estimate["estimated_total_cost_usd"] * workers
     parallel_config = config.get("live_run", {}).get("parallel", {})
@@ -145,6 +150,9 @@ def build_parallel_cloud_plan(
             model=model,
             input_price_per_mtok=input_price_per_mtok,
             output_price_per_mtok=output_price_per_mtok,
+            mutation_model=mutation_model,
+            mutation_input_price_per_mtok=mutation_input_price_per_mtok,
+            mutation_output_price_per_mtok=mutation_output_price_per_mtok,
             gcs_artifact_uri=gcs_uri,
         )
         worker_plans.append(
@@ -175,6 +183,7 @@ def build_parallel_cloud_plan(
             "commit": commit,
             "config": config_label,
             "model": model,
+            "mutation_model": mutation_model or model,
         },
         "budget": {
             "max_budget_usd": max_budget_usd,
@@ -299,6 +308,49 @@ def aggregate_parallel_artifacts(plan: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def recover_missing_gcs_artifacts(
+    plan: dict[str, Any],
+    *,
+    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> list[str]:
+    """Recover durable GCS artifacts when VM teardown beats local syncing."""
+    recovered: list[str] = []
+    for worker in plan.get("worker_plans", []):
+        artifact_dir = Path(worker["artifact_dir"])
+        if (artifact_dir / "scorecard.json").exists():
+            continue
+        gcs_uri = worker.get("gcs_uri")
+        if not gcs_uri:
+            continue
+        artifact_dir.parent.mkdir(parents=True, exist_ok=True)
+        env = os.environ.copy()
+        env["CLOUDSDK_STORAGE_PROCESS_COUNT"] = "1"
+        env["CLOUDSDK_STORAGE_THREAD_COUNT"] = "1"
+        result = runner(
+            [
+                "gcloud",
+                "storage",
+                "cp",
+                "--recursive",
+                gcs_uri,
+                str(artifact_dir.parent),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if result.returncode == 0 and (artifact_dir / "scorecard.json").exists():
+            recovered.append(worker["run_id"])
+        else:
+            print(
+                f"[artifact] recovery failed for {worker['run_id']}: "
+                f"{result.stderr.strip()}",
+                file=sys.stderr,
+            )
+    return recovered
+
+
 async def execute_parallel_cloud_plan(
     plan: dict[str, Any],
     *,
@@ -358,6 +410,7 @@ async def execute_parallel_cloud_plan(
         await watchdog
 
     final_usage = await asyncio.to_thread(usage_reader, budget_api_key)
+    recovered_workers = await asyncio.to_thread(recover_missing_gcs_artifacts, plan)
     aggregate = aggregate_parallel_artifacts(plan)
     aggregate.update(
         {
@@ -367,6 +420,7 @@ async def execute_parallel_cloud_plan(
             "openrouter_usage_end_usd": final_usage,
             "openrouter_usage_delta_usd": max(0.0, final_usage - start_usage),
             "budget_exceeded": budget_exceeded,
+            "gcs_recovered_workers": recovered_workers,
         }
     )
     return aggregate
@@ -392,6 +446,9 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model", required=True)
     parser.add_argument("--input-price-per-mtok", type=float, required=True)
     parser.add_argument("--output-price-per-mtok", type=float, required=True)
+    parser.add_argument("--mutation-model")
+    parser.add_argument("--mutation-input-price-per-mtok", type=float)
+    parser.add_argument("--mutation-output-price-per-mtok", type=float)
     parser.add_argument("--assumed-input-tokens-per-call", type=int, default=12_000)
     parser.add_argument("--max-budget", type=float, default=100.0)
     parser.add_argument("--budget-env", default="OPENROUTER_API_KEY")
@@ -427,6 +484,9 @@ async def _main_async(args: argparse.Namespace) -> int:
             model=args.model,
             input_price_per_mtok=args.input_price_per_mtok,
             output_price_per_mtok=args.output_price_per_mtok,
+            mutation_model=args.mutation_model,
+            mutation_input_price_per_mtok=args.mutation_input_price_per_mtok,
+            mutation_output_price_per_mtok=args.mutation_output_price_per_mtok,
             assumed_input_tokens_per_call=args.assumed_input_tokens_per_call,
             max_budget_usd=args.max_budget,
         )

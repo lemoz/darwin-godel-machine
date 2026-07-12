@@ -53,6 +53,8 @@ def estimate_live_run_cost(
     assumed_input_tokens_per_call: int,
     max_budget: float | None = None,
     allow_zero_pricing: bool = False,
+    mutation_input_price_per_mtok: float | None = None,
+    mutation_output_price_per_mtok: float | None = None,
 ) -> dict[str, Any]:
     """Estimate the bounded cost ceiling for a planned live DGM run.
 
@@ -92,48 +94,139 @@ def estimate_live_run_cost(
     self_modification_max_steps = int(
         config.get("self_modification", {}).get("max_steps", benchmark_max_steps)
     )
+    mutation_provider_key = config.get("self_modification", {}).get(
+        "fm_provider",
+        primary,
+    )
+    mutation_provider = config.get("fm_providers", {}).get(
+        mutation_provider_key,
+        {},
+    )
+    if not mutation_provider:
+        raise CostEstimateError(
+            "Config self_modification.fm_provider must name provider settings"
+        )
+    if mutation_provider_key != primary:
+        if mutation_input_price_per_mtok is None or mutation_output_price_per_mtok is None:
+            raise CostEstimateError(
+                "Distinct mutation provider requires mutation input and output prices"
+            )
+    mutation_input_price = (
+        input_price_per_mtok
+        if mutation_input_price_per_mtok is None
+        else mutation_input_price_per_mtok
+    )
+    mutation_output_price = (
+        output_price_per_mtok
+        if mutation_output_price_per_mtok is None
+        else mutation_output_price_per_mtok
+    )
+    _require_price(
+        "mutation_input_price_per_mtok",
+        mutation_input_price,
+        allow_zero_pricing=allow_zero_pricing,
+    )
+    _require_price(
+        "mutation_output_price_per_mtok",
+        mutation_output_price,
+        allow_zero_pricing=allow_zero_pricing,
+    )
+
     output_tokens_per_call = int(provider.get("max_tokens", 0))
+    mutation_output_tokens_per_call = int(mutation_provider.get("max_tokens", 0))
     timeout_retry_multiplier = max(1, int(provider.get("timeout_retries", 0) or 0) + 1)
+    mutation_timeout_retry_multiplier = max(
+        1,
+        int(mutation_provider.get("timeout_retries", 0) or 0) + 1,
+    )
     benchmark_count = len(enabled_benchmarks)
     _require_positive("recommended_generations", int(generations))
     _require_positive("agents.max_steps", benchmark_max_steps)
     _require_positive("self_modification.max_steps", self_modification_max_steps)
     _require_positive("provider.max_tokens", output_tokens_per_call)
+    _require_positive(
+        "mutation_provider.max_tokens",
+        mutation_output_tokens_per_call,
+    )
 
     base_evaluation_requests = benchmark_count * benchmark_max_steps
-    requests_per_generation = self_modification_max_steps + (
-        benchmark_count * benchmark_max_steps
+    evaluation_requests_per_generation = benchmark_count * benchmark_max_steps
+    evaluation_request_ceiling_without_retries = base_evaluation_requests + (
+        int(generations) * evaluation_requests_per_generation
     )
-    request_ceiling_without_retries = base_evaluation_requests + (
-        int(generations) * requests_per_generation
+    mutation_request_ceiling_without_retries = (
+        int(generations) * self_modification_max_steps
     )
-    request_ceiling = request_ceiling_without_retries * timeout_retry_multiplier
-    input_token_ceiling = request_ceiling * assumed_input_tokens_per_call
-    output_token_ceiling = request_ceiling * output_tokens_per_call
-    input_cost = input_token_ceiling / 1_000_000 * input_price_per_mtok
-    output_cost = output_token_ceiling / 1_000_000 * output_price_per_mtok
+    evaluation_request_ceiling = (
+        evaluation_request_ceiling_without_retries * timeout_retry_multiplier
+    )
+    mutation_request_ceiling = (
+        mutation_request_ceiling_without_retries
+        * mutation_timeout_retry_multiplier
+    )
+    request_ceiling_without_retries = (
+        evaluation_request_ceiling_without_retries
+        + mutation_request_ceiling_without_retries
+    )
+    request_ceiling = evaluation_request_ceiling + mutation_request_ceiling
+    evaluation_input_token_ceiling = (
+        evaluation_request_ceiling * assumed_input_tokens_per_call
+    )
+    mutation_input_token_ceiling = (
+        mutation_request_ceiling * assumed_input_tokens_per_call
+    )
+    evaluation_output_token_ceiling = (
+        evaluation_request_ceiling * output_tokens_per_call
+    )
+    mutation_output_token_ceiling = (
+        mutation_request_ceiling * mutation_output_tokens_per_call
+    )
+    input_token_ceiling = (
+        evaluation_input_token_ceiling + mutation_input_token_ceiling
+    )
+    output_token_ceiling = (
+        evaluation_output_token_ceiling + mutation_output_token_ceiling
+    )
+    input_cost = (
+        evaluation_input_token_ceiling / 1_000_000 * input_price_per_mtok
+        + mutation_input_token_ceiling / 1_000_000 * mutation_input_price
+    )
+    output_cost = (
+        evaluation_output_token_ceiling / 1_000_000 * output_price_per_mtok
+        + mutation_output_token_ceiling / 1_000_000 * mutation_output_price
+    )
     total_cost = input_cost + output_cost
 
     return {
         "config": str(config_path),
         "model": provider.get("model"),
         "provider": primary,
+        "mutation_model": mutation_provider.get("model"),
+        "mutation_provider": mutation_provider_key,
         "enabled_benchmarks": list(enabled_benchmarks),
         "benchmark_count": benchmark_count,
         "generations": int(generations),
         "max_agent_steps": benchmark_max_steps,
         "max_self_modification_steps": self_modification_max_steps,
         "timeout_retry_multiplier": timeout_retry_multiplier,
+        "mutation_timeout_retry_multiplier": mutation_timeout_retry_multiplier,
         "request_ceiling": request_ceiling,
         "request_ceiling_without_retries": request_ceiling_without_retries,
         "base_evaluation_request_ceiling": base_evaluation_requests,
-        "requests_per_generation_ceiling": requests_per_generation,
+        "requests_per_generation_ceiling": (
+            evaluation_requests_per_generation + self_modification_max_steps
+        ),
+        "evaluation_request_ceiling": evaluation_request_ceiling,
+        "mutation_request_ceiling": mutation_request_ceiling,
         "assumed_input_tokens_per_call": assumed_input_tokens_per_call,
         "max_output_tokens_per_call": output_tokens_per_call,
+        "mutation_max_output_tokens_per_call": mutation_output_tokens_per_call,
         "input_token_ceiling": input_token_ceiling,
         "output_token_ceiling": output_token_ceiling,
         "input_price_per_mtok": input_price_per_mtok,
         "output_price_per_mtok": output_price_per_mtok,
+        "mutation_input_price_per_mtok": mutation_input_price,
+        "mutation_output_price_per_mtok": mutation_output_price,
         "estimated_input_cost_usd": input_cost,
         "estimated_output_cost_usd": output_cost,
         "estimated_total_cost_usd": total_cost,
@@ -161,6 +254,16 @@ def _build_parser() -> argparse.ArgumentParser:
         type=float,
         required=True,
         help="Current provider output price in USD per million tokens.",
+    )
+    parser.add_argument(
+        "--mutation-input-price-per-mtok",
+        type=float,
+        help="Mutation-provider input price; required when it differs from primary.",
+    )
+    parser.add_argument(
+        "--mutation-output-price-per-mtok",
+        type=float,
+        help="Mutation-provider output price; required when it differs from primary.",
     )
     parser.add_argument(
         "--assumed-input-tokens-per-call",
@@ -195,6 +298,8 @@ def _main(args: argparse.Namespace) -> int:
             assumed_input_tokens_per_call=args.assumed_input_tokens_per_call,
             max_budget=args.max_budget,
             allow_zero_pricing=args.allow_zero_pricing,
+            mutation_input_price_per_mtok=args.mutation_input_price_per_mtok,
+            mutation_output_price_per_mtok=args.mutation_output_price_per_mtok,
         )
     except CostEstimateError as exc:
         if args.json:

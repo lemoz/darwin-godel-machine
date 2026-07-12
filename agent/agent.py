@@ -105,6 +105,7 @@ class Agent:
         self.conversation_history: List[Message] = []
         self.current_task: Optional[Task] = None
         self._self_modification_read_observed = False
+        self._self_modification_write_observed = False
         
         # Agent metadata
         self.generation = 0  # Which generation this agent is (0 = seed)
@@ -184,6 +185,7 @@ class Agent:
         self.current_task = task
         self._failure_mode_counts: Dict[str, int] = {}
         self._self_modification_read_observed = False
+        self._self_modification_write_observed = False
         
         # Clear conversation history for new task
         self.conversation_history = []
@@ -577,11 +579,7 @@ class Agent:
         """Expose a narrow read-only discovery call before Gemma may mutate."""
         schemas = self.tool_registry.get_tool_schemas()
         policy = self.config.fm_config.get("tool_choice_policy")
-        if (
-            policy != "required_read_then_workspace_change"
-            or not is_self_modification
-            or self._self_modification_read_observed
-        ):
+        if policy != "required_read_then_workspace_change" or not is_self_modification:
             return schemas
 
         edit_schema = next(
@@ -593,6 +591,22 @@ class Agent:
 
         parameters = edit_schema["parameters"]
         properties = parameters["properties"]
+        if self._self_modification_read_observed:
+            if self._self_modification_write_observed:
+                return schemas
+            parameters["properties"]["action"]["enum"] = [
+                "line_replace",
+                "modify",
+                "write",
+            ]
+            parameters["required"] = ["action", "file_path"]
+            edit_schema["description"] = (
+                "Required mutation step after source discovery. Make one concrete "
+                "Python source edit now; Bash and additional reads are unavailable "
+                "until a write succeeds. Prefer line_replace."
+            )
+            return [edit_schema]
+
         parameters["properties"] = {
             name: properties[name]
             for name in ("action", "file_path", "line_number", "line_count")
@@ -1365,6 +1379,14 @@ class Agent:
                     and result.status == ToolExecutionStatus.SUCCESS
                 ):
                     self._self_modification_read_observed = True
+                if (
+                    task is not None
+                    and self._is_self_modification_task(task)
+                    and tool_call.tool_name == "edit"
+                    and tool_call.parameters.get("action") != "read"
+                    and result.status == ToolExecutionStatus.SUCCESS
+                ):
+                    self._self_modification_write_observed = True
                 failure_mode = self._classify_tool_failure(tool_call, result)
                 if failure_mode:
                     self._record_failure_mode(failure_mode)

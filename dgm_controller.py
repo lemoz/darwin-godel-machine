@@ -535,6 +535,26 @@ class Agent:
             raise ValueError("self_modification.max_steps must be at least 1")
         return max_steps
 
+    def _resolve_fm_provider(
+        self,
+        provider_key: Optional[str] = None,
+    ) -> tuple[str, Dict[str, Any], str]:
+        """Resolve a configured provider key to its handler and API settings.
+
+        Named provider entries may set ``handler`` when the configuration key
+        is a role such as ``sol_mutator`` rather than a built-in Agent provider
+        name. Existing configurations remain unchanged because their key is
+        also their handler name.
+        """
+        providers = self.config['fm_providers']
+        resolved_key = provider_key or providers['primary']
+        if resolved_key not in providers or resolved_key == 'primary':
+            raise ValueError(f"Unknown FM provider configuration: {resolved_key}")
+
+        provider_config = dict(providers[resolved_key])
+        handler = provider_config.pop('handler', resolved_key)
+        return str(handler), provider_config, str(resolved_key)
+
     def _create_modification_task(self, parent_agent) -> Task:
         """
         Create a self-modification task for the parent agent.
@@ -609,6 +629,16 @@ Specific areas to consider:
 4. Refine your prompt engineering
 5. Add new capabilities or refactor existing ones
 
+Mutation quality requirements:
+- Make a benchmark-directed behavioral change justified by the failed benchmark
+  scores above.
+- Prefer executable solver/tool-recovery logic or a targeted benchmark-control
+  prompt over generic cleanup.
+- Do not add unused imports, logging, counters, comments, metadata fields, or
+  arbitrary timeout changes. Those changes are semantic no-ops and will be
+  rejected.
+- Do not change completion detection or the protected protocol methods.
+
 Important constraints:
 - Maintain compatibility with the existing Agent interface
 - Preserve your self-modification capabilities
@@ -679,11 +709,20 @@ performance."""
             before_snapshot = self._snapshot_agent_tree(workspace_dir)
 
             # Create agent configuration
-            primary_provider = self.config['fm_providers']['primary']
+            mutation_provider_key = self.config.get('self_modification', {}).get(
+                'fm_provider'
+            )
+            mutation_provider, mutation_provider_config, resolved_provider_key = (
+                self._resolve_fm_provider(mutation_provider_key)
+            )
+            logger.info(
+                "Using FM provider configuration %s for self-modification",
+                resolved_provider_key,
+            )
             agent_config = AgentConfig(
                 agent_id=parent_agent.agent_id,
-                fm_provider=primary_provider,
-                fm_config=self.config['fm_providers'][primary_provider],
+                fm_provider=mutation_provider,
+                fm_config=mutation_provider_config,
                 working_directory=str(workspace_dir),
                 max_iterations=self._self_modification_max_steps(),
                 sandbox_manager=self.sandbox_manager,
@@ -982,8 +1021,7 @@ performance."""
                 # Create minimal agent config for evaluation. Benchmark tasks
                 # get a scratch workspace so generated solution files do not
                 # modify the agent source directory being evaluated.
-                primary_provider = self.config['fm_providers']['primary']
-                provider_config = self.config['fm_providers'][primary_provider]
+                primary_provider, provider_config, _ = self._resolve_fm_provider()
 
                 agent_path_obj = Path(agent_path)
                 with tempfile.TemporaryDirectory(prefix="dgm-benchmark-") as benchmark_workspace:
