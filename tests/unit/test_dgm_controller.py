@@ -188,6 +188,26 @@ class TestDGMControllerInit:
         assert ctrl.parent_selector.focus_agent_ids == {"agent-a", "agent-b"}
         assert ctrl.parent_selector.focus_selection_probability == pytest.approx(0.75)
 
+    def test_constrained_mutation_config_is_wired(self, tmp_path):
+        from dgm_controller import DGMController
+
+        cfg = _minimal_config(tmp_path)
+        cfg["self_modification"] = {
+            "constrained_mutation": {
+                "enabled": True,
+                "protected_symbols": {
+                    "agent.py": ["Agent._is_task_complete"],
+                },
+            },
+        }
+
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+
+        assert ctrl.mutation_guard.enabled is True
+        assert ctrl.mutation_guard.protected_symbols == {
+            "agent.py": ("Agent._is_task_complete",),
+        }
+
     def test_build_score_delta_metadata_marks_regressions(self, tmp_path):
         from archive.agent_archive import ArchivedAgent
         from dgm_controller import DGMController
@@ -455,6 +475,66 @@ class TestDGMControllerInit:
             "mutation_status"
         ] == "noop"
 
+    async def test_self_modification_preserves_in_place_edit_over_terminal_code(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from archive.agent_archive import ArchivedAgent
+        from agent.agent import Task
+        from dgm_controller import DGMController
+
+        class InPlaceAgent:
+            def __init__(self, config):
+                self.workspace = Path(config.working_directory)
+
+            async def solve_task(self, task):
+                agent_file = self.workspace / "agent.py"
+                source = agent_file.read_text(encoding="utf-8")
+                agent_file.write_text(
+                    source.replace("return 'old'", "return 'improved'"),
+                    encoding="utf-8",
+                )
+                return {
+                    "success": True,
+                    "solution": "def unrelated_example():\n    return 42\n",
+                }
+
+        monkeypatch.setattr("dgm_controller.Agent", InPlaceAgent)
+
+        cfg = _minimal_config(tmp_path)
+        ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
+        parent_dir = tmp_path / "parent_agent"
+        parent_dir.mkdir()
+        parent_file = parent_dir / "agent.py"
+        parent_file.write_text(
+            "class Agent:\n"
+            "    def __init__(self, config=None): pass\n"
+            "    def solve_task(self, task): return 'old'\n",
+            encoding="utf-8",
+        )
+        parent = ArchivedAgent(
+            agent_id="parent_001",
+            parent_id=None,
+            generation=0,
+            source_path=str(parent_file),
+            created_at="2026-07-12T00:00:00",
+            benchmark_scores={"dummy": 0.0},
+            average_score=0.0,
+            is_valid=True,
+            metadata={},
+        )
+
+        result_path = await ctrl._perform_self_modification(
+            parent,
+            Task(task_id="self_modify_parent_001_0", description="modify"),
+        )
+
+        assert result_path is not None
+        result_source = Path(result_path).read_text(encoding="utf-8")
+        assert "return 'improved'" in result_source
+        assert "unrelated_example" not in result_source
+
     async def test_self_modification_uses_self_modification_step_budget(
         self,
         tmp_path,
@@ -577,6 +657,7 @@ class TestDGMControllerInit:
         assert child.benchmark_scores == {}
         assert child.metadata["mutation"]["mutation_status"] == "noop"
         assert ctrl.consecutive_noop_mutations == 1
+        assert ctrl.failure_mode_counts["no-op"] == 1
 
     async def test_evaluate_agent_passes_sandbox_config_to_loaded_agent(
         self,

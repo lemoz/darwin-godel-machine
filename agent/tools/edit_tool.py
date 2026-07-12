@@ -260,6 +260,10 @@ class EditTool(BaseTool):
         Returns:
             ToolResult: Result of the edit operation
         """
+        normalization_error = self._normalize_content_arguments(parameters)
+        if normalization_error is not None:
+            return normalization_error
+
         action = parameters.get("action")
         file_path_str = parameters.get("file_path")
         content = parameters.get("content", "")
@@ -681,6 +685,17 @@ class EditTool(BaseTool):
         if "content" in parameters and "content_lines" in parameters:
             return None
 
+        if (
+            "content" not in parameters
+            and "content_lines" not in parameters
+            and action == "line_replace"
+            and isinstance(parameters.get("replace_text"), str)
+        ):
+            # Some OpenAI-compatible tool callers use the semantically similar
+            # modify-action field for a ranged replacement. The explicit line
+            # range keeps this repair unambiguous.
+            parameters["content"] = parameters["replace_text"]
+
         if "content_lines" in parameters:
             lines, content_error = EditTool._coerce_content_lines_value(
                 parameters["content_lines"],
@@ -861,31 +876,20 @@ class EditTool(BaseTool):
                 ),
             )
 
-        lines: list[str] = []
-        invalid_type = EditTool._flatten_content_lines(parsed, lines)
-        if invalid_type is not None:
+        invalid_types = [
+            type(item).__name__ for item in parsed if not isinstance(item, str)
+        ]
+        if invalid_types:
             return [], ToolResult(
                 status=ToolExecutionStatus.ERROR,
                 output="",
                 error=(
-                    f"{parameter_name} parameter must contain only strings for "
-                    f"{action} action; found {invalid_type}"
+                    f"{parameter_name} parameter must contain only strings in a "
+                    f"flat array for {action} action; found "
+                    f"{invalid_types[0]}"
                 ),
             )
-        return lines, None
-
-    @staticmethod
-    def _flatten_content_lines(value: Any, lines: list[str]) -> str | None:
-        if isinstance(value, str):
-            lines.append(value)
-            return None
-        if isinstance(value, (list, tuple)):
-            for item in value:
-                invalid_type = EditTool._flatten_content_lines(item, lines)
-                if invalid_type is not None:
-                    return invalid_type
-            return None
-        return type(value).__name__
+        return list(parsed), None
 
     @staticmethod
     def _join_content_lines(content_lines: list[str]) -> str:

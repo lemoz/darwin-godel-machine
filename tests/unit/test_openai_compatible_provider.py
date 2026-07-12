@@ -275,6 +275,32 @@ async def test_get_completion_preserves_zero_temperature_and_extra_body():
     assert kwargs["extra_body"] == {"reasoning": {"enabled": True}}
 
 
+async def test_get_completion_forwards_required_tool_choice():
+    h = _handler()
+    fake_response = {
+        "model": "test/model",
+        "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+    }
+
+    with patch.object(
+        h.client.chat.completions,
+        "create",
+        new_callable=AsyncMock,
+        return_value=fake_response,
+    ) as mock_create:
+        await h.get_completion(CompletionRequest(
+            messages=[Message(role=MessageRole.USER, content="write")],
+            tools=[{
+                "name": "edit",
+                "description": "Edit files",
+                "parameters": {"type": "object", "properties": {}},
+            }],
+            tool_choice="required",
+        ))
+
+    assert mock_create.await_args.kwargs["tool_choice"] == "required"
+
+
 async def test_get_completion_retries_configured_timeout_once():
     h = _handler(timeout=1, timeout_retries=1, timeout_retry_delay=0)
     fake_response = {

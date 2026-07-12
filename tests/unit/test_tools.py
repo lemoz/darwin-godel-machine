@@ -419,7 +419,7 @@ class TestEditTool:
             "import sys\nprint(sys.stdin.read().strip())\n"
         )
 
-    async def test_write_python_nested_content_lines_repaired(self):
+    async def test_write_python_nested_content_lines_rejected(self):
         result = await self.tool.execute({
             "action": "write",
             "file_path": "solution.py",
@@ -429,10 +429,9 @@ class TestEditTool:
             ],
         })
 
-        assert result.status == ToolExecutionStatus.SUCCESS
-        assert (self.tmp / "solution.py").read_text() == (
-            "import sys\nprint(sys.stdin.read().strip())\n"
-        )
+        assert result.status == ToolExecutionStatus.ERROR
+        assert "flat array" in (result.error or "")
+        assert not (self.tmp / "solution.py").exists()
 
     async def test_write_python_stringified_content_lines_repaired(self):
         result = await self.tool.execute({
@@ -644,6 +643,25 @@ class TestEditTool:
             "class Agent:\n"
             "    def solve(self):\n"
             "        return 'ok'\n"
+        )
+
+    async def test_line_replace_repairs_replace_text_alias(self):
+        (self.tmp / "agent.py").write_text(
+            "# canary: old\nclass Agent:\n    pass\n",
+            encoding="utf-8",
+        )
+
+        result = await self.tool.execute({
+            "action": "line_replace",
+            "file_path": "agent.py",
+            "line_number": 1,
+            "line_count": 1,
+            "replace_text": "# canary: gemma",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "agent.py").read_text(encoding="utf-8").startswith(
+            "# canary: gemma\n"
         )
 
     async def test_line_replace_insert_zero_lines(self):

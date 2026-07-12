@@ -92,6 +92,8 @@ class OpenAICompatibleHandler(ApiHandler):
             }
             if request.tools:
                 api_params["tools"] = self.format_tools(request.tools)
+                if request.tool_choice:
+                    api_params["tool_choice"] = request.tool_choice
             if isinstance(self.extra_headers, dict) and self.extra_headers:
                 api_params["extra_headers"] = self.extra_headers
             if isinstance(self.extra_body, dict) and self.extra_body:

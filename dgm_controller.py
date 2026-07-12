@@ -27,6 +27,10 @@ from archive import AgentArchive, ParentSelector
 from evaluation.benchmark_runner import BenchmarkRunner
 from evaluation.agent_validator import AgentValidator
 from sandbox.sandbox_manager import SandboxConfig, SandboxManager
+from self_modification.mutation_guard import (
+    ConstrainedMutationGuard,
+    FAILURE_MODES,
+)
 from utils.logger import setup_logger
 from utils.agent_loader import AgentLoader
 
@@ -132,6 +136,15 @@ class DGMController:
             timeout=evaluation_config.get('timeout_seconds', 30),
         )
 
+        constrained_cfg = self.config.get('self_modification', {}).get(
+            'constrained_mutation',
+            {},
+        )
+        self.mutation_guard = ConstrainedMutationGuard(
+            enabled=constrained_cfg.get('enabled', False),
+            protected_symbols=constrained_cfg.get('protected_symbols'),
+        )
+
         # Initialize agent loader
         self.agent_loader = AgentLoader(project_root=Path(self.workspace))
 
@@ -144,6 +157,8 @@ class DGMController:
         self.successful_improvements = 0
         self.start_time = datetime.now()
         self._mutation_metadata_by_agent_path: Dict[str, Dict[str, Any]] = {}
+        self._evaluation_metadata_by_agent_path: Dict[str, Dict[str, Any]] = {}
+        self.failure_mode_counts = {mode: 0 for mode in FAILURE_MODES}
         self.consecutive_noop_mutations = 0
 
         # Create necessary directories
@@ -332,23 +347,45 @@ class Agent:
             str(Path(modified_agent_path).resolve()),
             {},
         )
-        if mutation_metadata.get("mutation_status") == "noop":
+        for mode, count in mutation_metadata.get("failure_modes", {}).items():
+            self._record_failure_mode(mode, count)
+
+        admission = mutation_metadata.get("admission", {})
+        mutation_failure_mode = admission.get("failure_mode")
+        if (
+            mutation_failure_mode is None
+            and mutation_metadata.get("mutation_status") == "noop"
+        ):
+            mutation_failure_mode = "no-op"
+        if not admission.get(
+            "admitted",
+            mutation_metadata.get("mutation_status") != "noop",
+        ):
             logger.warning(
-                "Self-modification produced no Python agent code changes; "
-                "archiving invalid no-op child without benchmark evaluation"
+                "Self-modification rejected before benchmark evaluation: %s",
+                mutation_failure_mode or "unknown mutation failure",
             )
             archived_agent = self.archive.add_agent(
                 agent_path=modified_agent_path,
                 parent_id=parent.agent_id,
                 benchmark_scores={},
                 is_valid=False,
-                metadata={"mutation": mutation_metadata},
+                metadata={
+                    "failure_mode": mutation_failure_mode,
+                    "mutation": mutation_metadata,
+                },
             )
             logger.info(
-                "Archived no-op child %s as invalid mutation_status=noop",
+                "Archived rejected child %s as invalid failure_mode=%s",
                 archived_agent.agent_id,
+                mutation_failure_mode,
             )
-            self.consecutive_noop_mutations += 1
+            if mutation_failure_mode == "no-op":
+                self.consecutive_noop_mutations += 1
+                self._record_failure_mode("no-op")
+            else:
+                self.consecutive_noop_mutations = 0
+                self._record_failure_mode(mutation_failure_mode)
             return
 
         self.consecutive_noop_mutations = 0
@@ -375,11 +412,18 @@ class Agent:
                 "Archived validation-failed child %s as invalid",
                 archived_agent.agent_id,
             )
+            self._record_failure_mode("invalid Python")
             return
 
         # 5. Evaluate on benchmarks
         logger.info("Evaluating modified agent on benchmarks...")
         benchmark_scores = await self._evaluate_agent(modified_agent_path)
+        evaluation_metadata = self._evaluation_metadata_by_agent_path.get(
+            str(Path(modified_agent_path).resolve()),
+            {},
+        )
+        for mode, count in evaluation_metadata.get("failure_modes", {}).items():
+            self._record_failure_mode(mode, count)
 
         # 6. Calculate performance metrics (guard against empty dict)
         total_score = sum(benchmark_scores.values()) / len(benchmark_scores) if benchmark_scores else 0.0
@@ -394,6 +438,7 @@ class Agent:
             metadata={
                 "score_delta": score_delta_metadata,
                 "mutation": mutation_metadata,
+                "evaluation": evaluation_metadata,
             },
         )
 
@@ -445,6 +490,12 @@ class Agent:
                 average_delta >= 0 and not benchmark_regressions
             ),
         }
+
+    def _record_failure_mode(self, mode: Optional[str], count: int = 1) -> None:
+        """Increment one of the stable constrained-lane failure counters."""
+        if mode not in self.failure_mode_counts:
+            return
+        self.failure_mode_counts[mode] += max(0, int(count))
 
     async def _initialize_base_agent(self):
         """Initialize the archive with the base agent."""
@@ -653,7 +704,19 @@ performance."""
                 #     write it to workspace agent.py; otherwise leave files as-is
                 #     (the agent edited them in place via its edit tool).
                 solution = result.get('solution', '')
-                if solution and isinstance(solution, str):
+                interim_snapshot = self._snapshot_agent_tree(workspace_dir)
+                has_in_place_agent_code_changes = any(
+                    self._is_agent_code_path(relative_path)
+                    and before_snapshot.get(relative_path)
+                    != interim_snapshot.get(relative_path)
+                    for relative_path in set(before_snapshot) | set(interim_snapshot)
+                )
+                if has_in_place_agent_code_changes:
+                    logger.info(
+                        "Preserving in-place agent code changes; ignoring terminal "
+                        "solution text as a replacement module"
+                    )
+                elif solution and isinstance(solution, str):
                     try:
                         ast.parse(solution)
                         edit_tool = EditTool(
@@ -700,6 +763,23 @@ performance."""
                     before_snapshot=before_snapshot,
                     after_snapshot=self._snapshot_agent_tree(workspace_dir),
                 )
+                mutation_metadata["failure_modes"] = {
+                    mode: int(count)
+                    for mode, count in result.get("failure_modes", {}).items()
+                    if mode in FAILURE_MODES and int(count) > 0
+                }
+                admission = self.mutation_guard.inspect(
+                    before_snapshot=before_snapshot,
+                    after_snapshot=self._snapshot_agent_tree(workspace_dir),
+                    changed_code_files=mutation_metadata["changed_code_files"],
+                )
+                mutation_metadata["admission"] = admission.to_dict()
+                if not admission.admitted:
+                    mutation_metadata["mutation_status"] = (
+                        "noop"
+                        if admission.failure_mode == "no-op"
+                        else "rejected"
+                    )
                 patch_text = self._build_mutation_patch(
                     before_snapshot=before_snapshot,
                     after_snapshot=self._snapshot_agent_tree(workspace_dir),
@@ -714,8 +794,11 @@ performance."""
                     str(agent_file.resolve())
                 ] = mutation_metadata
                 logger.info(
-                    "Mutation proof: status=%s changed_code_files=%d changed_files=%d",
+                    "Mutation proof: status=%s admitted=%s failure_mode=%s "
+                    "changed_code_files=%d changed_files=%d",
                     mutation_metadata["mutation_status"],
+                    admission.admitted,
+                    admission.failure_mode,
                     len(mutation_metadata["changed_code_files"]),
                     len(mutation_metadata["changed_files"]),
                 )
@@ -805,7 +888,7 @@ performance."""
         ]
         mutation_status = "changed" if changed_code_files else "noop"
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "task_id": task_id,
             "parent_agent_id": parent_agent.agent_id,
             "parent_source_path": str(parent_agent.source_path),
@@ -886,6 +969,8 @@ performance."""
             Dictionary of benchmark names to scores
         """
         scores = {}
+        benchmark_details: Dict[str, Dict[str, Any]] = {}
+        failure_mode_counts = {mode: 0 for mode in FAILURE_MODES}
 
         # Get list of benchmarks
         benchmarks = self.config['benchmarks']['enabled']
@@ -941,15 +1026,93 @@ performance."""
                         gc.collect()
 
                 scores[benchmark_name] = result.score
+                modes = self._classify_benchmark_failure_modes(result)
+                for mode in modes:
+                    failure_mode_counts[mode] += 1
+                benchmark_details[benchmark_name] = {
+                    "score": result.score,
+                    "success": bool(getattr(result, "success", result.score > 0)),
+                    "execution_time": getattr(result, "execution_time", None),
+                    "failure_modes": modes,
+                    "error": getattr(result, "error", None),
+                }
                 logger.info(f"{benchmark_name} score: {result.score:.3f}")
 
             except Exception as e:
                 logger.error(f"Error evaluating benchmark {benchmark_name}: {e}")
                 scores[benchmark_name] = 0.0
+                error_text = str(e)
+                modes = []
+                if self._text_has_timeout_or_provider_failure(error_text):
+                    modes.append("timeout/provider failure")
+                    failure_mode_counts["timeout/provider failure"] += 1
+                benchmark_details[benchmark_name] = {
+                    "score": 0.0,
+                    "success": False,
+                    "execution_time": None,
+                    "failure_modes": modes,
+                    "error": error_text,
+                }
             finally:
                 gc.collect()
 
+        self._evaluation_metadata_by_agent_path[
+            str(Path(agent_path).resolve())
+        ] = {
+            "schema_version": 1,
+            "failure_modes": {
+                mode: count
+                for mode, count in failure_mode_counts.items()
+                if count
+            },
+            "benchmarks": benchmark_details,
+        }
         return scores
+
+    def _classify_benchmark_failure_modes(self, result: Any) -> List[str]:
+        """Classify benchmark failures without collapsing distinct causes."""
+        if result.score > 0:
+            return []
+
+        error_parts = [str(getattr(result, "error", None) or "")]
+        for test_result in getattr(result, "test_results", None) or []:
+            if isinstance(test_result, dict):
+                error_parts.append(str(test_result.get("error") or ""))
+                for item in test_result.get("results", []) or []:
+                    if isinstance(item, dict):
+                        error_parts.append(str(item.get("error") or ""))
+        error_text = "\n".join(error_parts).lower()
+
+        modes: List[str] = []
+        if "resource guard" in error_text or "unsafe complexity" in error_text:
+            modes.append("unsafe complexity")
+        if self._text_has_timeout_or_provider_failure(error_text):
+            modes.append("timeout/provider failure")
+
+        private_scored = self.config.get("live_run", {}).get("segment", {}).get(
+            "scored_tests_include_private",
+            False,
+        )
+        if private_scored and not modes:
+            modes.append("hidden-test failure")
+        return modes
+
+    @staticmethod
+    def _text_has_timeout_or_provider_failure(text: str) -> bool:
+        lowered = text.lower()
+        return any(
+            marker in lowered
+            for marker in (
+                "timeout",
+                "timed out",
+                "openrouter",
+                "provider failure",
+                "api error",
+                "rate limit",
+                "http 429",
+                "http 5",
+            )
+        )
 
     def _should_stop(self) -> bool:
         """Check if stopping criteria are met."""
@@ -989,6 +1152,7 @@ performance."""
         logger.info(f"Runtime: {runtime:.1f} minutes")
         logger.info(f"Total agents created: {self.total_agents_created}")
         logger.info(f"Successful improvements: {self.successful_improvements}")
+        logger.info(f"Failure modes: {self.failure_mode_counts}")
         logger.info(f"Archive size: {len(self.archive.agents)}")
 
         # Top agents
@@ -1009,6 +1173,7 @@ performance."""
                 'successful_improvements': self.successful_improvements,
                 'improvement_rate': self.successful_improvements / max(1, self.total_agents_created),
                 'consecutive_noop_mutations': self.consecutive_noop_mutations,
+                'failure_mode_counts': self.failure_mode_counts,
                 'final_archive_size': len(self.archive.agents)
             },
             'top_agents': [],
