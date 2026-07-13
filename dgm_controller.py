@@ -94,6 +94,10 @@ class DGMController:
             elite_selection_probability=ps_cfg.get('elite_selection_probability', 0.0),
             focus_agent_ids=ps_cfg.get('focus_agent_ids'),
             focus_selection_probability=ps_cfg.get('focus_selection_probability', 0.0),
+            focus_include_descendants=ps_cfg.get(
+                'focus_include_descendants',
+                False,
+            ),
         )
 
         evaluation_config = self.config.get('evaluation', {})

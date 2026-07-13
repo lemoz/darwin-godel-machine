@@ -56,6 +56,7 @@ def test_frontier_mutator_configs_keep_gemma_as_solver(
     assert config["parent_selection"][
         "require_per_benchmark_non_regression"
     ] is True
+    assert config["parent_selection"]["focus_include_descendants"] is True
     assert config["live_run"]["recommended_generations"] == 16
     assert config["live_run"]["parallel"]["workers"] == 4
     assert config["live_run"]["cost_gate"][

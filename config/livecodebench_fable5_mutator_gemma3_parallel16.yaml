@@ -38,6 +38,7 @@ parent_selection:
   reject_score_ties: false
   elite_selection_probability: 0.1
   focus_selection_probability: 0.85
+  focus_include_descendants: true
   focus_agent_ids:
     - 0173925d-0778-43ad-8c74-e05ee18b3bf2
     - 87bca0da-0a85-4a65-a076-aa3fb9f6f12e

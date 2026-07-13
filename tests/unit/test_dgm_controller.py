@@ -201,6 +201,7 @@ class TestDGMControllerInit:
         cfg["parent_selection"]["elite_selection_probability"] = 0.25
         cfg["parent_selection"]["focus_agent_ids"] = ["agent-a", "agent-b"]
         cfg["parent_selection"]["focus_selection_probability"] = 0.75
+        cfg["parent_selection"]["focus_include_descendants"] = True
 
         ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
 
@@ -211,6 +212,7 @@ class TestDGMControllerInit:
         assert ctrl.parent_selector.elite_selection_probability == pytest.approx(0.25)
         assert ctrl.parent_selector.focus_agent_ids == {"agent-a", "agent-b"}
         assert ctrl.parent_selector.focus_selection_probability == pytest.approx(0.75)
+        assert ctrl.parent_selector.focus_include_descendants is True
 
     def test_constrained_mutation_config_is_wired(self, tmp_path):
         from dgm_controller import DGMController

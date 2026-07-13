@@ -35,6 +35,8 @@ class ParentSelector:
             falling back to the paper's stochastic formula.
         focus_agent_ids: optional list of agent IDs to exploit before falling
             back to the paper's stochastic formula.
+        focus_include_descendants: when true, eligible descendants of focused
+            roots participate in the focused exploitation pool.
         focus_selection_probability: probability of selecting from
             focus_agent_ids for single-parent draws when any focused agent is
             eligible.
@@ -51,6 +53,7 @@ class ParentSelector:
         elite_selection_probability: float = 0.0,
         focus_agent_ids: Optional[List[str]] = None,
         focus_selection_probability: float = 0.0,
+        focus_include_descendants: bool = False,
     ):
         self.lam = lam
         self.alpha_0 = alpha_0
@@ -65,6 +68,7 @@ class ParentSelector:
             min(1.0, elite_selection_probability),
         )
         self.focus_agent_ids = set(focus_agent_ids or [])
+        self.focus_include_descendants = focus_include_descendants
         self.focus_selection_probability = max(
             0.0,
             min(1.0, focus_selection_probability),
@@ -114,7 +118,7 @@ class ParentSelector:
             focused = [
                 a
                 for a in eligible
-                if a.agent_id in self.focus_agent_ids
+                if self._is_focused_agent(a, archive)
             ]
             if focused and random.random() < self.focus_selection_probability:
                 return [
@@ -182,6 +186,23 @@ class ParentSelector:
             pool = [(a, p) for i, (a, p) in enumerate(pool) if i != chosen_idx]
 
         return selected
+
+    def _is_focused_agent(
+        self,
+        agent: ArchivedAgent,
+        archive: AgentArchive,
+    ) -> bool:
+        """Return whether an agent is a focused root or its descendant."""
+        current: Optional[ArchivedAgent] = agent
+        seen = set()
+        while current is not None and current.agent_id not in seen:
+            seen.add(current.agent_id)
+            if current.agent_id in self.focus_agent_ids:
+                return True
+            if not self.focus_include_descendants or not current.parent_id:
+                return False
+            current = archive.get_agent(current.parent_id)
+        return False
 
     def _passes_regression_filter(
         self,
