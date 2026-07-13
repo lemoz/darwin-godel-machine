@@ -151,6 +151,7 @@ class DGMController:
         self.mutation_guard = ConstrainedMutationGuard(
             enabled=constrained_cfg.get('enabled', False),
             protected_symbols=constrained_cfg.get('protected_symbols'),
+            max_agent_iterations=constrained_cfg.get('max_agent_iterations'),
         )
 
         # Initialize agent loader

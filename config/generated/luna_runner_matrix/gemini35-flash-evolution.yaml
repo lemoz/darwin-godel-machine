@@ -23,6 +23,7 @@ fm_providers:
     extra_body:
       reasoning:
         effort: medium
+    max_agent_iterations: 24
 archive:
   path: .dgm-live-runs/luna-runner-matrix/evolution/gemini35-flash/archive
 parent_selection:
@@ -56,6 +57,7 @@ self_modification:
   max_consecutive_noop_mutations: 8
   constrained_mutation:
     enabled: true
+    max_agent_iterations: 24
     protected_symbols:
       agent.py:
       - Agent._build_system_message
@@ -79,7 +81,7 @@ benchmarks:
   - livecodebench_abc388_e
   - livecodebench_abc389_e
   - livecodebench_abc390_e
-target_performance: 0.75
+target_performance: 1.0
 logging:
   level: INFO
 generation_delay_seconds: 0

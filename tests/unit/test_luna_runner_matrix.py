@@ -99,6 +99,13 @@ def test_calibration_and_evolution_configs_have_full_experiment_shape(tmp_path: 
     assert evolution["live_run"]["parallel"]["budget_poll_seconds"] == 15
     assert evolution["live_run"]["seed_mode"] == "fresh_native"
     assert evolution["live_run"]["baseline_agent"] == "agent/agent.py"
+    assert evolution["target_performance"] == 1.0
+    assert (
+        evolution["self_modification"]["constrained_mutation"][
+            "max_agent_iterations"
+        ]
+        == 24
+    )
     assert not any(
         "seed_archive_from_proof.py" in command
         for command in evolution["live_run"]["required_preflight"]

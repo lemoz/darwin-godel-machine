@@ -129,6 +129,9 @@ def _base_config(
             "max_consecutive_noop_mutations": 8,
             "constrained_mutation": {
                 "enabled": True,
+                "max_agent_iterations": int(
+                    matrix["mutation"]["max_agent_iterations"]
+                ),
                 "protected_symbols": {
                     "agent.py": [
                         "Agent._build_system_message",

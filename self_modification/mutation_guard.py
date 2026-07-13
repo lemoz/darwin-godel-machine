@@ -63,8 +63,14 @@ class ConstrainedMutationGuard:
         *,
         enabled: bool = False,
         protected_symbols: Optional[Mapping[str, Iterable[str]]] = None,
+        max_agent_iterations: Optional[int] = None,
     ) -> None:
         self.enabled = bool(enabled)
+        if max_agent_iterations is not None and int(max_agent_iterations) < 1:
+            raise ValueError("max_agent_iterations must be at least 1")
+        self.max_agent_iterations = (
+            int(max_agent_iterations) if max_agent_iterations is not None else None
+        )
         configured = protected_symbols or DEFAULT_PROTECTED_SYMBOLS
         self.protected_symbols = {
             str(path): tuple(str(symbol) for symbol in symbols)
@@ -125,6 +131,19 @@ class ConstrainedMutationGuard:
                 protected_symbol_changes=(),
             )
 
+        iteration_limit_reason = self._iteration_limit_increase_reason(
+            before_snapshot=before_snapshot,
+            parsed_after=parsed_after,
+            changed_code_files=changed_code_files,
+        )
+        if iteration_limit_reason is not None:
+            return MutationAdmission(
+                admitted=False,
+                failure_mode="unsafe complexity",
+                reasons=(iteration_limit_reason,),
+                protected_symbol_changes=(),
+            )
+
         protected_changes = []
         for relative_path, symbols in self.protected_symbols.items():
             if relative_path not in changed_code_files:
@@ -176,6 +195,99 @@ class ConstrainedMutationGuard:
             failure_mode=None,
             reasons=(),
             protected_symbol_changes=(),
+        )
+
+    def _iteration_limit_increase_reason(
+        self,
+        *,
+        before_snapshot: Mapping[str, bytes],
+        parsed_after: Mapping[str, ast.AST],
+        changed_code_files: Sequence[str],
+    ) -> Optional[str]:
+        """Reject newly increased static iteration budgets above the lane cap."""
+        limit = self.max_agent_iterations
+        if limit is None:
+            return None
+
+        for relative_path in changed_code_files:
+            after_tree = parsed_after.get(relative_path)
+            if after_tree is None:
+                continue
+            after_max = self._max_assigned_iteration_literal(after_tree)
+            if after_max is None or after_max <= limit:
+                continue
+
+            before_max = None
+            before_content = before_snapshot.get(relative_path)
+            if before_content is not None:
+                try:
+                    before_tree = ast.parse(
+                        before_content.decode("utf-8"),
+                        filename=relative_path,
+                    )
+                except (SyntaxError, UnicodeDecodeError):
+                    before_tree = None
+                if before_tree is not None:
+                    before_max = self._max_assigned_iteration_literal(before_tree)
+
+            if before_max is not None and after_max <= before_max:
+                continue
+            previous = "none" if before_max is None else str(before_max)
+            return (
+                f"{relative_path}: max_iterations literal increased from "
+                f"{previous} to {after_max}; configured limit is {limit}"
+            )
+        return None
+
+    @classmethod
+    def _max_assigned_iteration_literal(cls, tree: ast.AST) -> Optional[int]:
+        values = []
+        for node in ast.walk(tree):
+            value_node: Optional[ast.AST] = None
+            if isinstance(node, ast.AnnAssign) and cls._is_iteration_target(node.target):
+                value_node = node.value
+            elif isinstance(node, ast.Assign) and any(
+                cls._is_iteration_target(target) for target in node.targets
+            ):
+                value_node = node.value
+            elif isinstance(node, ast.AugAssign) and cls._is_iteration_target(node.target):
+                value_node = node.value
+            elif (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "setattr"
+                and len(node.args) >= 3
+                and isinstance(node.args[1], ast.Constant)
+                and node.args[1].value == "max_iterations"
+            ):
+                value_node = node.args[2]
+
+            if value_node is not None:
+                values.extend(cls._integer_literals(value_node))
+
+            if isinstance(node, ast.Call):
+                for keyword in node.keywords:
+                    if keyword.arg == "max_iterations":
+                        values.extend(cls._integer_literals(keyword.value))
+
+        return max(values) if values else None
+
+    @staticmethod
+    def _is_iteration_target(node: ast.AST) -> bool:
+        return (
+            isinstance(node, ast.Name) and node.id == "max_iterations"
+        ) or (
+            isinstance(node, ast.Attribute) and node.attr == "max_iterations"
+        )
+
+    @staticmethod
+    def _integer_literals(node: ast.AST) -> Sequence[int]:
+        return tuple(
+            int(child.value)
+            for child in ast.walk(node)
+            if isinstance(child, ast.Constant)
+            and isinstance(child.value, int)
+            and not isinstance(child.value, bool)
         )
 
     @staticmethod

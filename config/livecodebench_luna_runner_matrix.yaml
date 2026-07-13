@@ -31,7 +31,7 @@ evolution:
   max_concurrency: 10
   max_openrouter_budget_usd: 72
   budget_poll_seconds: 15
-  target_score: 0.75
+  target_score: 1.0
 
 budget:
   max_openrouter_total_usd: 82
@@ -74,6 +74,7 @@ mutation:
       effort: medium
   input_price_per_mtok: 1.0
   output_price_per_mtok: 6.0
+  max_agent_iterations: 24
 
 models:
   - slug: qwen3-coder
