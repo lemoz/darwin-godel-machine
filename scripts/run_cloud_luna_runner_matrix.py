@@ -319,8 +319,23 @@ async def execute_runner_matrix(
     poll_seconds: float,
     executor: Callable[[dict[str, Any]], None] = execute_plan,
     usage_reader: Callable[[str], float] = get_openrouter_total_usage,
+    progress_output: Path | None = None,
 ) -> dict[str, Any]:
     start_usage = await asyncio.to_thread(usage_reader, budget_api_key)
+    if progress_output is not None:
+        _write_json(
+            progress_output,
+            {
+                "schema_version": 1,
+                "name": "cloud_luna_runner_matrix_live_state",
+                "status": "running",
+                "phase": plan["phase"],
+                "openrouter_usage_start_usd": start_usage,
+                "openrouter_usage_current_usd": start_usage,
+                "openrouter_usage_delta_usd": 0.0,
+                "max_budget_usd": plan["max_budget_usd"],
+            },
+        )
     semaphore = asyncio.Semaphore(plan["max_concurrency"])
     done = asyncio.Event()
     stop_requested = asyncio.Event()
@@ -350,6 +365,20 @@ async def execute_runner_matrix(
                 print(f"[budget] usage check failed: {exc}", file=sys.stderr)
                 continue
             delta = max(0.0, usage - start_usage)
+            if progress_output is not None:
+                _write_json(
+                    progress_output,
+                    {
+                        "schema_version": 1,
+                        "name": "cloud_luna_runner_matrix_live_state",
+                        "status": "running",
+                        "phase": plan["phase"],
+                        "openrouter_usage_start_usd": start_usage,
+                        "openrouter_usage_current_usd": usage,
+                        "openrouter_usage_delta_usd": delta,
+                        "max_budget_usd": plan["max_budget_usd"],
+                    },
+                )
             print(
                 f"[budget] OpenRouter usage delta=${delta:.4f}/${plan['max_budget_usd']:.2f}",
                 file=sys.stderr,
@@ -445,6 +474,7 @@ async def _main(args: argparse.Namespace) -> int:
             plan,
             budget_api_key=api_key,
             poll_seconds=args.budget_poll_seconds,
+            progress_output=args.aggregate_output,
         )
         _write_json(args.aggregate_output, aggregate)
         print(

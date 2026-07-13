@@ -1,3 +1,4 @@
+import json
 import time
 from pathlib import Path
 
@@ -215,12 +216,14 @@ async def test_budget_stop_prevents_queued_workers_from_starting(
     monkeypatch.setattr(
         "scripts.run_cloud_luna_runner_matrix._delete_vms", lambda _plan: None
     )
+    progress_output = tmp_path / "live-state.json"
     aggregate = await execute_runner_matrix(
         plan,
         budget_api_key="test-key",
         poll_seconds=0.01,
         executor=fake_executor,
         usage_reader=fake_usage,
+        progress_output=progress_output,
     )
 
     assert len(starts) == 1
@@ -230,3 +233,6 @@ async def test_budget_stop_prevents_queued_workers_from_starting(
         "budget_skipped",
         "budget_skipped",
     ]
+    live_state = json.loads(progress_output.read_text(encoding="utf-8"))
+    assert live_state["openrouter_usage_start_usd"] == 0.0
+    assert live_state["openrouter_usage_delta_usd"] == 2.0
