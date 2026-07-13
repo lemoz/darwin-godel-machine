@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "name": "lcb-runner-recovery-base4-20260713-1",
+  "run_type": "local_parallel_native_baseline",
+  "segment_id": "release_v6_atcoder_loop12",
+  "benchmark_count": 12,
+  "generations": 0,
+  "openrouter_usage_start_usd": 1662.818047,
+  "openrouter_usage_end_usd": 1672.016051594,
+  "openrouter_usage_delta_upper_bound_usd": 9.198004594,
+  "models": [
+    {
+      "slug": "gemini35-flash",
+      "model": "google/gemini-3.5-flash",
+      "agent_id": "65a4a7b9-7b4c-46dd-a21c-d6803930cadd",
+      "score": 0.9166666666666666,
+      "solved": 11,
+      "missed": ["livecodebench_abc389_d"]
+    },
+    {
+      "slug": "gpt56-sol",
+      "model": "openai/gpt-5.6-sol",
+      "agent_id": "f89def92-a0e2-4620-bce6-4e5a4bd49ee7",
+      "score": 0.8333333333333334,
+      "solved": 10,
+      "missed": [
+        "livecodebench_abc388_e",
+        "livecodebench_abc390_d"
+      ]
+    },
+    {
+      "slug": "fable5",
+      "model": "anthropic/claude-fable-5",
+      "agent_id": "c4eaa651-1b0a-403f-8815-2c5a7a5c6608",
+      "score": 0.6666666666666666,
+      "solved": 8,
+      "missed": [
+        "livecodebench_abc388_d",
+        "livecodebench_abc389_d",
+        "livecodebench_abc389_e",
+        "livecodebench_abc390_e"
+      ]
+    },
+    {
+      "slug": "gemini25-flash",
+      "model": "google/gemini-2.5-flash",
+      "agent_id": "15a7f002-0ea8-4aac-95e3-c749d6428509",
+      "score": 0.4166666666666667,
+      "solved": 5,
+      "missed": [
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_d",
+        "livecodebench_abc389_d",
+        "livecodebench_abc389_e",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ]
+    }
+  ]
+}
