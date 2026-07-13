@@ -290,3 +290,51 @@ async def test_budget_stop_prevents_queued_workers_from_starting(
     live_state = json.loads(progress_output.read_text(encoding="utf-8"))
     assert live_state["openrouter_usage_start_usd"] == 0.0
     assert live_state["openrouter_usage_delta_usd"] == 2.0
+
+
+@pytest.mark.asyncio
+async def test_worker_launch_failure_marks_matrix_failed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    artifact_dir = tmp_path / "failed-worker"
+    plan = {
+        "phase": "evolution",
+        "workers": 1,
+        "max_concurrency": 1,
+        "max_budget_usd": 5,
+        "worker_plans": [
+            {
+                "model_slug": "failed-model",
+                "model": "provider/failed-model",
+                "run_id": "failed-run",
+                "artifact_dir": str(artifact_dir),
+                "gcs_uri": None,
+                "cloud_plan": {"commands": {"teardown": ["true"]}},
+            }
+        ],
+    }
+
+    def fail_launch(_cloud_plan):
+        raise RuntimeError("VM creation failed")
+
+    monkeypatch.setattr(
+        "scripts.run_cloud_luna_runner_matrix.recover_missing_gcs_artifacts",
+        lambda _plan: 0,
+    )
+
+    aggregate = await execute_runner_matrix(
+        plan,
+        budget_api_key="test-key",
+        poll_seconds=0.01,
+        executor=fail_launch,
+        usage_reader=lambda _api_key: 0.0,
+    )
+
+    assert aggregate["status"] == "failed"
+    assert aggregate["executions"] == [
+        {
+            "run_id": "failed-run",
+            "status": "failed",
+            "error": "VM creation failed",
+        }
+    ]

@@ -439,9 +439,17 @@ async def execute_runner_matrix(
     final_usage = await asyncio.to_thread(usage_reader, budget_api_key)
     recovered = await asyncio.to_thread(recover_missing_gcs_artifacts, plan)
     aggregate = aggregate_runner_matrix(plan)
+    worker_failed = any(item["status"] == "failed" for item in executions)
+    status = (
+        "budget_stopped"
+        if budget_exceeded
+        else "failed"
+        if worker_failed
+        else "complete"
+    )
     aggregate.update(
         {
-            "status": "budget_stopped" if budget_exceeded else "complete",
+            "status": status,
             "executions": executions,
             "openrouter_usage_start_usd": start_usage,
             "openrouter_usage_end_usd": final_usage,
