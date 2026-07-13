@@ -21,8 +21,9 @@
   "improving_child_regressions": 0,
   "new_hard_task_solved": false,
   "provider_timeouts": 0,
+  "provider_api_errors": 0,
   "empty_responses": 0,
-  "recovered_api_errors": 2,
+  "recovered_non_provider_errors": 2,
   "total_tokens": 5516394,
   "estimated_model_cost_usd": 14.847543,
   "model_usage": {

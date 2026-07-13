@@ -18,8 +18,9 @@ The source commit was `a3c68079c6cf03cc1bbf608ee963b569fd6354b7`.
   solve a new hard problem. `abc387_b` is an easy-task reliability gain.
 - Exact telemetry totals 5,516,394 model tokens and an estimated $14.847543:
   $14.481920 for Fable 5 and $0.365623 for Gemma 3.
-- There were zero provider timeouts and zero empty responses. Two logged API
-  errors recovered; all workers still completed normally.
+- There were zero provider API errors, zero provider timeouts, and zero empty
+  responses. Two logged non-provider errors recovered; all workers still
+  completed normally.
 - All four VMs were absent after the run, confirming teardown.
 
 The result is a partial success for constrained mutation: it preserves the
