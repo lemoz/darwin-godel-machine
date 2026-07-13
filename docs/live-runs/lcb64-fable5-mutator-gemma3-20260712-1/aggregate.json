@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "base_run_id": "fablemut-gemma-evo-p16-20260712a",
+  "source_commit": "a3c68079c6cf03cc1bbf608ee963b569fd6354b7",
+  "config": "config/livecodebench_fable5_mutator_gemma3_parallel16.yaml",
+  "mutation_model": "anthropic/claude-fable-5",
+  "evaluation_model": "google/gemma-3-27b-it",
+  "workers": 4,
+  "generations_per_worker": 16,
+  "total_generations": 64,
+  "completed_workers": 4,
+  "worker_exit_codes": [0, 0, 0, 0],
+  "baseline_score": 0.2916666666666667,
+  "top_score": 0.3333333333333333,
+  "target_score": 0.75,
+  "target_reached": false,
+  "changed_mutations": 63,
+  "noop_mutations": 1,
+  "improved_workers": 4,
+  "improved_benchmark": "livecodebench_abc387_b",
+  "improving_child_regressions": 0,
+  "new_hard_task_solved": false,
+  "provider_timeouts": 0,
+  "empty_responses": 0,
+  "recovered_api_errors": 2,
+  "total_tokens": 5516394,
+  "estimated_model_cost_usd": 14.847543,
+  "model_usage": {
+    "anthropic/claude-fable-5": {
+      "total_tokens": 1239300,
+      "estimated_cost_usd": 14.48192
+    },
+    "google/gemma-3-27b-it": {
+      "total_tokens": 4277094,
+      "estimated_cost_usd": 0.365623
+    }
+  },
+  "workers_detail": [
+    {
+      "worker": "w01",
+      "generations": 16,
+      "changed_mutations": 16,
+      "noop_mutations": 0,
+      "top_score": 0.3333333333333333,
+      "tokens": 1481498,
+      "estimated_cost_usd": 3.680628,
+      "runtime_hours": 1.305204151111111
+    },
+    {
+      "worker": "w02",
+      "generations": 16,
+      "changed_mutations": 16,
+      "noop_mutations": 0,
+      "top_score": 0.3333333333333333,
+      "tokens": 1310638,
+      "estimated_cost_usd": 3.696587,
+      "runtime_hours": 1.2076260844444444
+    },
+    {
+      "worker": "w03",
+      "generations": 16,
+      "changed_mutations": 15,
+      "noop_mutations": 1,
+      "top_score": 0.3333333333333333,
+      "tokens": 1382106,
+      "estimated_cost_usd": 3.74039,
+      "runtime_hours": 1.2568635877777776
+    },
+    {
+      "worker": "w04",
+      "generations": 16,
+      "changed_mutations": 16,
+      "noop_mutations": 0,
+      "top_score": 0.3333333333333333,
+      "tokens": 1342152,
+      "estimated_cost_usd": 3.729938,
+      "runtime_hours": 1.21997012
+    }
+  ],
+  "gcs_prefix": "gs://dgm-live-runs-doittogether-prod/fablemut-gemma-evo-p16-20260712a/",
+  "all_vms_torn_down": true
+}
