@@ -39,6 +39,7 @@ class ToolParameter:
     required: bool = True
     default: Any = None
     enum_values: Optional[List[Any]] = None
+    items: Optional[Dict[str, Any]] = None
 
 
 class BaseTool(ABC):
@@ -189,6 +190,9 @@ class BaseTool(ABC):
             
             if param.default is not None:
                 param_schema["default"] = param.default
+
+            if param.items is not None:
+                param_schema["items"] = param.items
             
             properties[param.name] = param_schema
             

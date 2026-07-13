@@ -1162,6 +1162,44 @@ class TestAgentSolveTask:
         assert "BENCHMARK UNSAFE COMPLEXITY BLOCK" in text
         assert "Do not finalize from public samples alone" in text
 
+    def test_benchmark_timeout_parameter_is_not_timeout_evidence(self):
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={
+                    "command": "python3 solution.py << 'EOF'\n1\nEOF",
+                    "timeout": 30,
+                    "capture_output": True,
+                },
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.SUCCESS,
+                output="1\n",
+            ),
+        )
+
+        assert not self.agent._events_include_unsafe_benchmark_evidence([event])
+
+    def test_benchmark_timeout_result_remains_unsafe_evidence(self):
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={
+                    "command": "python3 solution.py",
+                    "timeout": 30,
+                },
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.TIMEOUT,
+                output="",
+                error="Command timed out after 30 seconds",
+            ),
+        )
+
+        assert self.agent._events_include_unsafe_benchmark_evidence([event])
+
     def test_benchmark_repeated_edit_failures_get_fresh_source_reset(self):
         task = Task(
             task_id="benchmark_livecodebench_example",

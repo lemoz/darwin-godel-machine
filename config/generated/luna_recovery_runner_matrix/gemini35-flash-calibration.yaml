@@ -1,0 +1,138 @@
+fm_providers:
+  primary: runner
+  runner:
+    handler: openai_compatible
+    api_key: ${OPENROUTER_API_KEY}
+    base_url: https://openrouter.ai/api/v1
+    max_tokens: 2048
+    temperature: 0.1
+    timeout: 120
+    timeout_retries: 1
+    timeout_retry_delay: 1
+    model: google/gemini-3.5-flash
+  luna_mutator:
+    handler: openai_compatible
+    model: openai/gpt-5.6-luna
+    api_key: ${OPENROUTER_API_KEY}
+    base_url: https://openrouter.ai/api/v1
+    max_tokens: 1024
+    temperature: 0.2
+    timeout: 120
+    timeout_retries: 0
+    tool_choice_policy: required_read_then_workspace_change
+    extra_body:
+      reasoning:
+        effort: medium
+    max_agent_iterations: 24
+archive:
+  path: .dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini35-flash/archive
+parent_selection:
+  lambda: 10
+  alpha_0: 0.5
+  require_non_regression: true
+  require_per_benchmark_non_regression: true
+  regression_tolerance: 0.0
+  reject_score_ties: false
+  elite_selection_probability: 0.1
+  focus_selection_probability: 0.85
+  focus_include_descendants: true
+  focus_agent_ids:
+  - 0173925d-0778-43ad-8c74-e05ee18b3bf2
+  - 87bca0da-0a85-4a65-a076-aa3fb9f6f12e
+  - a22a6b70-9c72-4f21-8866-67de9e007c61
+evaluation:
+  benchmarks_dir: .dgm-live-runs/livecodebench-loop12/benchmarks
+  results_dir: .dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini35-flash/results
+  timeout_seconds: 30
+  use_sandbox: true
+sandbox:
+  image_name: dgm-sandbox
+  memory_limit: 2g
+  cpu_limit: '1'
+  timeout: 43200
+  network_mode: none
+  working_dir: /home/dgm_agent/workspace
+  auto_build_image: true
+agents:
+  workspace_dir: .dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini35-flash/workspace
+  initial_agent_path: agent/agent.py
+  max_steps: 7
+self_modification:
+  fm_provider: luna_mutator
+  max_steps: 3
+  max_consecutive_noop_mutations: 8
+  constrained_mutation:
+    enabled: true
+    max_agent_iterations: 24
+    protected_symbols:
+      agent.py:
+      - Agent._build_system_message
+      - Agent._is_task_complete
+      - Agent._extract_code_solution
+      - Agent._read_workspace_solution
+      - Agent._benchmark_completion_block_reason
+benchmarks:
+  timeout_default: 30
+  max_attempts: 3
+  enabled:
+  - livecodebench_abc387_b
+  - livecodebench_abc388_b
+  - livecodebench_abc389_a
+  - livecodebench_abc390_b
+  - livecodebench_abc387_c
+  - livecodebench_abc388_d
+  - livecodebench_abc388_c
+  - livecodebench_abc389_d
+  - livecodebench_abc390_d
+  - livecodebench_abc388_e
+  - livecodebench_abc389_e
+  - livecodebench_abc390_e
+target_performance: 1.0
+logging:
+  level: INFO
+generation_delay_seconds: 0
+stop_on_error: true
+live_run:
+  purpose: livecodebench_luna_runner_matrix_calibration
+  approval_required: true
+  recommended_generations: 0
+  matrix:
+    name: livecodebench_luna_recovery_runner_matrix
+    phase: calibration
+    model_slug: gemini35-flash
+    runner_model: google/gemini-3.5-flash
+    mutation_model: openai/gpt-5.6-luna
+  segment:
+    config: config/livecodebench_segment_loop12.yaml
+    manifest_path: .dgm-live-runs/livecodebench-loop12/manifest.json
+    segment_id: release_v6_atcoder_loop12
+    benchmark_count: 12
+    expected_total_tests_min: 400
+    expected_private_tests_min: 350
+    source: https://huggingface.co/datasets/livecodebench/code_generation_lite
+    upstream: https://github.com/livecodebench/livecodebench
+    prompt_examples_are_public_only: true
+    scored_tests_include_private: true
+  cost_gate:
+    pricing_checked_at: 2026-07-13
+    pricing_source: https://openrouter.ai/api/v1/models
+    solver_input_price_per_mtok: 1.5
+    solver_output_price_per_mtok: 9.0
+    mutation_input_price_per_mtok: 1.0
+    mutation_output_price_per_mtok: 6.0
+    assumed_input_tokens_per_call: 12000
+    max_estimated_cost_usd: 100
+    max_generations_without_reapproval: 1
+    max_agent_steps: 7
+    max_self_modification_steps: 3
+    max_output_tokens_per_call: 2048
+    max_enabled_benchmarks: 12
+  post_run_scorecard:
+    command: PATH="$PWD/.venv/bin:$PATH" python scripts/summarize_archive_scores.py --archive-metadata .dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini35-flash/archive/archive_metadata.json --output .dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini35-flash/archive/scorecard.json
+    require_improvement: false
+  baseline_proof: docs/live-runs/lcb-gemma3-calibrated-seed-20260712-1/archive.tar.gz
+  required_preflight:
+  - PATH="$PWD/.venv/bin:$PATH" python scripts/prepare_livecodebench_segment.py --config config/livecodebench_segment_loop12.yaml
+  - PATH="$PWD/.venv/bin:$PATH" python scripts/seed_archive_from_proof.py --archive-tar docs/live-runs/lcb-gemma3-calibrated-seed-20260712-1/archive.tar.gz --target-archive .dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini35-flash/archive --focus-agent-id 0173925d-0778-43ad-8c74-e05ee18b3bf2 --focus-agent-id 87bca0da-0a85-4a65-a076-aa3fb9f6f12e --focus-agent-id a22a6b70-9c72-4f21-8866-67de9e007c61 --min-focus-score 0 --output .dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini35-flash/seed_manifest.json --force
+  - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --build-image --require
+  - PATH="$PWD/.venv/bin:$PATH" python scripts/rescore_archive_agents.py --config config/generated/luna_recovery_runner_matrix/gemini35-flash-calibration.yaml --agent-id 0173925d-0778-43ad-8c74-e05ee18b3bf2 --agent-id 87bca0da-0a85-4a65-a076-aa3fb9f6f12e --agent-id a22a6b70-9c72-4f21-8866-67de9e007c61 --replicates 1 --prune-unselected --output .dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini35-flash/archive/calibration.json

@@ -88,6 +88,13 @@ class TestToolRegistry:
         assert result.status == ToolExecutionStatus.SUCCESS
         assert (tmp_path / "solution.py").read_text() == "print(1)\n"
 
+    def test_edit_content_lines_schema_declares_string_items(self, tmp_path):
+        schema = EditTool(working_directory=str(tmp_path)).get_tool_schema()
+
+        content_lines = schema["parameters"]["properties"]["content_lines"]
+        assert content_lines["type"] == "array"
+        assert content_lines["items"] == {"type": "string"}
+
 
 # ---------------------------------------------------------------------------
 # BashTool

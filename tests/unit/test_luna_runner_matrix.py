@@ -17,6 +17,9 @@ from scripts.run_live_eval_on_cloud_vm import SecretSpec
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MATRIX_PATH = PROJECT_ROOT / "config/livecodebench_luna_runner_matrix.yaml"
+RECOVERY_MATRIX_PATH = (
+    PROJECT_ROOT / "config/livecodebench_luna_recovery_runner_matrix.yaml"
+)
 REFERENCE_PROOF = (
     PROJECT_ROOT / "docs/live-runs/lcb64-fable5-mutator-gemma3-20260712-1"
 )
@@ -72,6 +75,46 @@ def test_materializes_ten_runner_models_with_luna_mutation(tmp_path: Path):
             == "openai/gpt-5.6-luna"
         )
         assert config["self_modification"]["fm_provider"] == "luna_mutator"
+
+
+def test_materializes_recovery_runners_and_builds_native_baseline(tmp_path: Path):
+    matrix_path = tmp_path / "config/livecodebench_luna_recovery_runner_matrix.yaml"
+    matrix_path.parent.mkdir(parents=True)
+    matrix_path.write_text(
+        RECOVERY_MATRIX_PATH.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "config/generated/luna_recovery_runner_matrix"
+    manifest = materialize_matrix(
+        matrix_path=matrix_path,
+        output_dir=output_dir,
+        project_root=tmp_path,
+    )
+    manifest_path = output_dir / "manifest.json"
+
+    assert manifest["config_count"] == 8
+    assert {item["slug"] for item in manifest["configs"]} == {
+        "gemini25-flash",
+        "gemini35-flash",
+        "fable5",
+        "gpt56-sol",
+    }
+
+    plan = build_runner_matrix_plan(
+        phase="evolution",
+        generations_override=0,
+        workers_per_model_override=1,
+        max_concurrency_override=4,
+        max_budget_usd=20,
+        **_plan_kwargs(tmp_path, matrix_path, manifest_path),
+    )
+
+    assert plan["model_count"] == 4
+    assert plan["workers"] == 4
+    assert plan["generations_per_worker"] == 0
+    assert plan["total_generation_attempt_ceiling"] == 0
+    assert plan["max_concurrency"] == 4
+    assert plan["max_budget_usd"] == 20
 
 
 def test_calibration_and_evolution_configs_have_full_experiment_shape(tmp_path: Path):

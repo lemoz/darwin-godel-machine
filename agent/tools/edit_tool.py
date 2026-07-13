@@ -202,7 +202,8 @@ class EditTool(BaseTool):
                     "newlines and adds a final newline when the list is non-empty. "
                     "Use this when large escaped string arguments are unreliable."
                 ),
-                required=False
+                required=False,
+                items={"type": "string"},
             ),
             ToolParameter(
                 name="line_number",

@@ -939,6 +939,21 @@ class Agent:
         return "\n".join(parts)
 
     @staticmethod
+    def _tool_event_result_text(event: ToolExecutionEvent) -> str:
+        """Return searchable execution evidence without call parameters.
+
+        Tool parameters describe how a command should run.  They are not
+        evidence about how it actually ran.  In particular, a normal
+        ``timeout`` parameter must not be mistaken for a timeout result.
+        """
+        parts: List[str] = []
+        if event.result.output:
+            parts.append(event.result.output)
+        if event.result.error:
+            parts.append(event.result.error)
+        return "\n".join(parts)
+
+    @staticmethod
     def _stdin_example_expectations(task: Optional[Task]) -> Dict[str, str]:
         """Extract public stdin examples from a benchmark task description."""
         if task is None or not task.description:
@@ -1173,7 +1188,7 @@ class Agent:
             and (
                 event.result.status == ToolExecutionStatus.TIMEOUT
                 or cls._text_has_unsafe_benchmark_evidence(
-                    cls._tool_event_text(event)
+                    cls._tool_event_result_text(event)
                 )
             )
             for event in events

@@ -2,7 +2,9 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import asyncio
+import httpx
 import pytest
+from openai import APIStatusError as OpenAIAPIStatusError
 
 from agent.fm_interface.api_handler import (
     ApiError,
@@ -335,6 +337,42 @@ async def test_get_completion_enforces_outer_timeout():
         )
         with pytest.raises(ApiError, match="timed out after"):
             await h.get_completion(request)
+
+
+async def test_get_completion_preserves_provider_status_response(caplog):
+    h = _handler(model="google/gemini-3.5-flash")
+    response = httpx.Response(
+        400,
+        request=httpx.Request("POST", "https://example.com/v1/chat/completions"),
+        json={"error": {"message": "Unsupported request parameter"}},
+    )
+    status_error = OpenAIAPIStatusError(
+        "Error code: 400",
+        response=response,
+        body={
+            "error": {"message": "Unsupported request parameter"},
+            "user_id": "provider-user-123",
+        },
+    )
+
+    with patch.object(
+        h.client.chat.completions,
+        "create",
+        new_callable=AsyncMock,
+        side_effect=status_error,
+    ):
+        request = CompletionRequest(
+            messages=[Message(role=MessageRole.USER, content="hi")],
+        )
+        with pytest.raises(ApiError) as raised:
+            await h.get_completion(request)
+
+    assert raised.value.status_code == 400
+    assert "Unsupported request parameter" in str(raised.value)
+    assert "google/gemini-3.5-flash" in caplog.text
+    assert "Unsupported request parameter" in caplog.text
+    assert "provider-user-123" not in str(raised.value)
+    assert "provider-user-123" not in caplog.text
 
 
 def test_validate_config_rejects_bad_base_url():

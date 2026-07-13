@@ -85,6 +85,10 @@ def build_runner_matrix_plan(
     plan_dir: Path,
     gcs_root: str | None,
     max_budget_usd: float | None = None,
+    model_slugs: list[str] | None = None,
+    generations_override: int | None = None,
+    workers_per_model_override: int | None = None,
+    max_concurrency_override: int | None = None,
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, Any]:
     """Build one isolated cloud plan per calibration or evolution worker."""
@@ -92,7 +96,22 @@ def build_runner_matrix_plan(
     matrix = yaml.safe_load(matrix_path.read_text(encoding="utf-8")) or {}
     manifest = _read_json(generated_manifest_path)
     _require(manifest is not None, "generated config manifest is missing")
-    _require(len(matrix.get("models") or []) == 10, "matrix must contain ten models")
+    all_models = matrix.get("models") or []
+    _require(bool(all_models), "matrix must contain models")
+    requested_slugs = list(model_slugs or [])
+    _require(
+        len(requested_slugs) == len(set(requested_slugs)),
+        "selected model slugs must be unique",
+    )
+    known_slugs = {str(model["slug"]) for model in all_models}
+    unknown_slugs = set(requested_slugs) - known_slugs
+    _require(not unknown_slugs, f"unknown model slugs: {sorted(unknown_slugs)}")
+    selected_models = [
+        model
+        for model in all_models
+        if not requested_slugs or model["slug"] in requested_slugs
+    ]
+    _require(bool(selected_models), "at least one model must be selected")
     configs = {
         (item["slug"], item["phase"]): item
         for item in manifest.get("configs", [])
@@ -100,12 +119,26 @@ def build_runner_matrix_plan(
     }
     phase_config = matrix[phase]
     if phase == "calibration":
-        workers_per_model = 1
-        generations = int(phase_config["generations"])
+        default_workers_per_model = 1
+        default_generations = int(phase_config["generations"])
     else:
-        workers_per_model = int(phase_config["workers_per_model"])
-        generations = int(phase_config["generations_per_worker"])
-    max_concurrency = int(phase_config["max_concurrency"])
+        default_workers_per_model = int(phase_config["workers_per_model"])
+        default_generations = int(phase_config["generations_per_worker"])
+    workers_per_model = int(
+        workers_per_model_override
+        if workers_per_model_override is not None
+        else default_workers_per_model
+    )
+    generations = int(
+        generations_override
+        if generations_override is not None
+        else default_generations
+    )
+    max_concurrency = int(
+        max_concurrency_override
+        if max_concurrency_override is not None
+        else phase_config["max_concurrency"]
+    )
     budget = float(
         max_budget_usd
         if max_budget_usd is not None
@@ -119,13 +152,13 @@ def build_runner_matrix_plan(
     mutation = matrix["mutation"]
     if phase == "evolution":
         _require(
-            max_concurrency >= len(matrix["models"]),
+            max_concurrency >= len(selected_models),
             "evolution concurrency must start one worker per model",
         )
 
     worker_plans = []
     for worker_index in range(1, workers_per_model + 1):
-        for model in matrix["models"]:
+        for model in selected_models:
             slug = model["slug"]
             generated = configs.get((slug, phase))
             _require(generated is not None, f"missing generated {phase} config for {slug}")
@@ -198,7 +231,7 @@ def build_runner_matrix_plan(
         "base_run_id": base_run_id,
         "matrix": str(matrix_path),
         "generated_manifest": str(generated_manifest_path),
-        "model_count": len(matrix["models"]),
+        "model_count": len(selected_models),
         "workers_per_model": workers_per_model,
         "workers": len(worker_plans),
         "generations_per_worker": generations,
@@ -441,6 +474,19 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--plan-dir", type=Path, required=True)
     parser.add_argument("--gcs-root")
     parser.add_argument("--max-budget", type=float)
+    parser.add_argument(
+        "--model-slug",
+        action="append",
+        default=[],
+        help="Run only this model slug. Repeat to select multiple models.",
+    )
+    parser.add_argument(
+        "--generations",
+        type=int,
+        help="Override generations per worker; use 0 for a native baseline only.",
+    )
+    parser.add_argument("--workers-per-model", type=int)
+    parser.add_argument("--max-concurrency", type=int)
     parser.add_argument("--budget-env", default="OPENROUTER_API_KEY")
     parser.add_argument("--budget-poll-seconds", type=float, default=15.0)
     parser.add_argument("--output", type=Path, required=True)
@@ -467,6 +513,10 @@ async def _main(args: argparse.Namespace) -> int:
             plan_dir=args.plan_dir,
             gcs_root=args.gcs_root,
             max_budget_usd=args.max_budget,
+            model_slugs=args.model_slug,
+            generations_override=args.generations,
+            workers_per_model_override=args.workers_per_model,
+            max_concurrency_override=args.max_concurrency,
         )
         write_runner_matrix_plan(plan, args.output)
         print(

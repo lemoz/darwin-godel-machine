@@ -43,9 +43,9 @@ def _require(condition: bool, message: str) -> None:
 
 def _load_matrix(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    _require(payload.get("name") == "livecodebench_luna_runner_matrix", "wrong matrix name")
+    _require(bool(payload.get("name")), "matrix name is required")
     models = payload.get("models")
-    _require(isinstance(models, list) and len(models) == 10, "matrix must contain ten models")
+    _require(isinstance(models, list) and bool(models), "matrix must contain models")
     slugs = [item.get("slug") for item in models]
     _require(len(set(slugs)) == len(slugs), "matrix model slugs must be unique")
     _require(
@@ -66,7 +66,8 @@ def _base_config(
     phase: str,
 ) -> dict[str, Any]:
     slug = str(model["slug"])
-    root = f".dgm-live-runs/luna-runner-matrix/{phase}/{slug}"
+    run_root = str(matrix.get("run_root", "luna-runner-matrix"))
+    root = f".dgm-live-runs/{run_root}/{phase}/{slug}"
     runner = deepcopy(matrix["runner_defaults"])
     runner["model"] = model["model"]
     mutation = deepcopy(matrix["mutation"])
@@ -344,8 +345,14 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
+    matrix_path = args.matrix if args.matrix.is_absolute() else PROJECT_ROOT / args.matrix
+    output_dir = (
+        args.output_dir
+        if args.output_dir.is_absolute()
+        else PROJECT_ROOT / args.output_dir
+    )
     try:
-        result = materialize_matrix(matrix_path=args.matrix, output_dir=args.output_dir)
+        result = materialize_matrix(matrix_path=matrix_path, output_dir=output_dir)
     except (OSError, MatrixMaterializationError, yaml.YAMLError) as exc:
         print(f"[fail] {exc}", file=sys.stderr)
         return 1
