@@ -115,7 +115,7 @@ def test_observed_cost_estimate_fits_phase_and_total_budgets():
     assert estimate["estimated_calibration_openrouter_cost_usd"] == 0
     assert estimate["estimated_evolution_openrouter_cost_usd"] < 72
     assert estimate["estimated_openrouter_cost_usd"] == pytest.approx(79.165, abs=0.001)
-    assert estimate["estimated_total_cost_usd"] == pytest.approx(85.793, abs=0.001)
+    assert estimate["estimated_total_cost_usd"] == pytest.approx(82.979, abs=0.001)
     assert estimate["within_budget"] is True
 
 
@@ -140,9 +140,13 @@ def test_matrix_cloud_plans_cover_calibration_and_full_evolution(tmp_path: Path)
     assert evolution["workers"] == 30
     assert evolution["generations_per_worker"] == 15
     assert evolution["total_generation_attempt_ceiling"] == 450
-    assert evolution["max_concurrency"] == 6
+    assert evolution["max_concurrency"] == 10
     assert evolution["max_budget_usd"] == 72
     assert evolution["source"]["seed_mode"] == "fresh_native"
+    assert evolution["scheduling"] == "worker_round_robin"
+    first_wave = evolution["worker_plans"][:10]
+    assert {worker["worker_id"] for worker in first_wave} == {1}
+    assert len({worker["model_slug"] for worker in first_wave}) == 10
 
 
 def test_budget_teardown_deletes_the_fleet_in_one_cloud_call(monkeypatch):

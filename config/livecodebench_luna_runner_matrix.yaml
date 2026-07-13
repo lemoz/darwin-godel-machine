@@ -28,7 +28,7 @@ evolution:
   seed_mode: fresh_native
   workers_per_model: 3
   generations_per_worker: 15
-  max_concurrency: 6
+  max_concurrency: 10
   max_openrouter_budget_usd: 72
   budget_poll_seconds: 15
   target_score: 0.75
@@ -41,9 +41,9 @@ budget:
 cloud:
   project: doittogether-prod
   zone: us-central1-a
-  machine_type: e2-standard-4
+  machine_type: e2-standard-2
   boot_disk_size_gb: 100
-  hourly_vm_cost_estimate_usd: 0.134
+  hourly_vm_cost_estimate_usd: 0.067
   calibration_hours_per_vm: 0.6
   evolution_hours_per_vm: 1.4
   max_total_experiment_cost_usd: 100

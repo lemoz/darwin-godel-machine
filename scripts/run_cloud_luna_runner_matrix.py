@@ -117,27 +117,33 @@ def build_runner_matrix_plan(
     _require(budget > 0, "matrix budget must be positive")
 
     mutation = matrix["mutation"]
+    if phase == "evolution":
+        _require(
+            max_concurrency >= len(matrix["models"]),
+            "evolution concurrency must start one worker per model",
+        )
+
     worker_plans = []
-    for model in matrix["models"]:
-        slug = model["slug"]
-        generated = configs.get((slug, phase))
-        _require(generated is not None, f"missing generated {phase} config for {slug}")
-        config_label = generated["config"]
-        config_path = project_root / config_label
-        _require(config_path.exists(), f"generated config does not exist: {config_label}")
-        if (
-            phase == "evolution"
-            and phase_config.get("seed_mode", "calibrated_archive")
-            != "fresh_native"
-        ):
-            proof = (
-                project_root
-                / matrix["seed"]["calibration_bundle"]
-                / slug
-                / "archive.tar.gz"
-            )
-            _require(proof.exists(), f"calibrated archive is missing: {proof}")
-        for worker_index in range(1, workers_per_model + 1):
+    for worker_index in range(1, workers_per_model + 1):
+        for model in matrix["models"]:
+            slug = model["slug"]
+            generated = configs.get((slug, phase))
+            _require(generated is not None, f"missing generated {phase} config for {slug}")
+            config_label = generated["config"]
+            config_path = project_root / config_label
+            _require(config_path.exists(), f"generated config does not exist: {config_label}")
+            if (
+                phase == "evolution"
+                and phase_config.get("seed_mode", "calibrated_archive")
+                != "fresh_native"
+            ):
+                proof = (
+                    project_root
+                    / matrix["seed"]["calibration_bundle"]
+                    / slug
+                    / "archive.tar.gz"
+                )
+                _require(proof.exists(), f"calibrated archive is missing: {proof}")
             suffix = slug if workers_per_model == 1 else f"{slug}-w{worker_index:02d}"
             run_id = f"{base_run_id}-{suffix}"
             artifact_dir = artifact_root / run_id
@@ -197,6 +203,7 @@ def build_runner_matrix_plan(
         "workers": len(worker_plans),
         "generations_per_worker": generations,
         "total_generation_attempt_ceiling": len(worker_plans) * generations,
+        "scheduling": "worker_round_robin",
         "max_concurrency": max_concurrency,
         "max_budget_usd": budget,
         "project": project,

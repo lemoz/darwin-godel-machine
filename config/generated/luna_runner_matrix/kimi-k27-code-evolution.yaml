@@ -125,7 +125,7 @@ live_run:
   seed_mode: fresh_native
   parallel:
     workers: 3
-    max_concurrency: 6
+    max_concurrency: 10
     seed_changed_count: 0
     seed_noop_count: 0
     shared_max_budget_usd: 72
