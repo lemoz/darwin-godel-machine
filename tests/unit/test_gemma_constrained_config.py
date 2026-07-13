@@ -53,6 +53,9 @@ def test_frontier_mutator_configs_keep_gemma_as_solver(
     assert config["fm_providers"][provider_key]["handler"] == "openai_compatible"
     assert config["fm_providers"][provider_key]["model"] == model
     assert config["self_modification"]["max_steps"] == 3
+    assert config["parent_selection"][
+        "require_per_benchmark_non_regression"
+    ] is True
     assert config["live_run"]["recommended_generations"] == 16
     assert config["live_run"]["parallel"]["workers"] == 4
     assert config["live_run"]["cost_gate"][

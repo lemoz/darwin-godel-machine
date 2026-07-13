@@ -1,0 +1,84 @@
+{
+  "archive_metadata": ".dgm-live-runs/livecodebench-fable5-mutator-gemma3-parallel16/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "a22a6b70-9c72-4f21-8866-67de9e007c61",
+      "average_score": 0.2916666666666667,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 0.5,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "generation": 0
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "87bca0da-0a85-4a65-a076-aa3fb9f6f12e",
+      "average_score": 0.0,
+      "benchmark_count": 12,
+      "created_at": "2026-06-30T20:29:05.169763",
+      "generation": 0,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": null,
+      "solved_count": 0
+    },
+    {
+      "agent_id": "0173925d-0778-43ad-8c74-e05ee18b3bf2",
+      "average_score": 0.25,
+      "benchmark_count": 12,
+      "created_at": "2026-07-01T00:53:45.724184",
+      "generation": 0,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": null,
+      "solved_count": 3
+    },
+    {
+      "agent_id": "a22a6b70-9c72-4f21-8866-67de9e007c61",
+      "average_score": 0.2916666666666667,
+      "benchmark_count": 12,
+      "created_at": "2026-07-01T01:04:00.192669",
+      "generation": 0,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": null,
+      "solved_count": 4
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [],
+    "changed_count": 0,
+    "noop_agents": [],
+    "noop_count": 0,
+    "status_counts": {},
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [],
+  "top_agent_id": "a22a6b70-9c72-4f21-8866-67de9e007c61",
+  "top_score": 0.2916666666666667,
+  "total_agents": 3,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 0,
+  "valid_agents": 3
+}

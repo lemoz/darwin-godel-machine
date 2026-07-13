@@ -25,6 +25,8 @@ class ParentSelector:
         alpha_0: midpoint of the sigmoid (default 0.5)
         require_non_regression: when true, exclude children that regress
             relative to their parent on average score and do not improve overall.
+        require_per_benchmark_non_regression: when true, exclude a child if any
+            parent benchmark score regresses, even when its average improves.
         regression_tolerance: small tolerance for floating-point score deltas.
         reject_score_ties: when true, exclude children whose average score ties
             their parent's score instead of improving it.
@@ -43,6 +45,7 @@ class ParentSelector:
         lam: float = 10.0,
         alpha_0: float = 0.5,
         require_non_regression: bool = False,
+        require_per_benchmark_non_regression: bool = False,
         regression_tolerance: float = 0.0,
         reject_score_ties: bool = False,
         elite_selection_probability: float = 0.0,
@@ -52,6 +55,9 @@ class ParentSelector:
         self.lam = lam
         self.alpha_0 = alpha_0
         self.require_non_regression = require_non_regression
+        self.require_per_benchmark_non_regression = (
+            require_per_benchmark_non_regression
+        )
         self.regression_tolerance = regression_tolerance
         self.reject_score_ties = reject_score_ties
         self.elite_selection_probability = max(
@@ -193,6 +199,12 @@ class ParentSelector:
             return True
 
         tolerance = self.regression_tolerance
+        if self.require_per_benchmark_non_regression:
+            for benchmark, parent_score in parent.benchmark_scores.items():
+                child_score = agent.benchmark_scores.get(benchmark, 0.0)
+                if child_score < parent_score - tolerance:
+                    return False
+
         if agent.average_score > parent.average_score + tolerance:
             return True
 

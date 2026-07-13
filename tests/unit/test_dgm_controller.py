@@ -195,6 +195,7 @@ class TestDGMControllerInit:
 
         cfg = _minimal_config(tmp_path)
         cfg["parent_selection"]["require_non_regression"] = True
+        cfg["parent_selection"]["require_per_benchmark_non_regression"] = True
         cfg["parent_selection"]["regression_tolerance"] = 0.01
         cfg["parent_selection"]["reject_score_ties"] = True
         cfg["parent_selection"]["elite_selection_probability"] = 0.25
@@ -204,6 +205,7 @@ class TestDGMControllerInit:
         ctrl = DGMController(config_or_path=cfg, workspace=str(tmp_path))
 
         assert ctrl.parent_selector.require_non_regression is True
+        assert ctrl.parent_selector.require_per_benchmark_non_regression is True
         assert ctrl.parent_selector.regression_tolerance == pytest.approx(0.01)
         assert ctrl.parent_selector.reject_score_ties is True
         assert ctrl.parent_selector.elite_selection_probability == pytest.approx(0.25)
