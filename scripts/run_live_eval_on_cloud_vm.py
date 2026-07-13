@@ -339,7 +339,10 @@ def build_cloud_vm_plan(
     """Build a non-secret, executable cloud VM run plan."""
     _require(provider == "gcloud", "Only provider=gcloud is currently supported")
     validate_run_id(run_id)
-    _require(generations > 0, "generations must be positive")
+    _require(
+        generations >= 0,
+        "generations cannot be negative",
+    )
     _require(boot_disk_size_gb >= 50, "boot disk should be at least 50GB for live runs")
     _require(bool(project), "project is required")
     _require(bool(zone), "zone is required")
