@@ -50,6 +50,21 @@ def test_parse_controller_log_counts_provider_and_usage_events(tmp_path: Path):
     assert summary["observed_runtime_seconds"] == 6.0
 
 
+def test_parse_controller_log_counts_http_error_status_as_api_error(tmp_path: Path):
+    log_path = tmp_path / "controller.log"
+    log_path.write_text(
+        "2026-07-13 10:00:00,000 - httpx - INFO - "
+        "HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "
+        '"HTTP/1.1 400 Bad Request"\n',
+        encoding="utf-8",
+    )
+
+    summary = parse_controller_log(log_path)
+
+    assert summary["provider"]["http_post_count"] == 1
+    assert summary["provider"]["api_error_count"] == 1
+
+
 def test_summarize_live_run_telemetry_merges_score_and_archive_artifacts(tmp_path: Path):
     log_path = tmp_path / "controller.log"
     log_path.write_text(

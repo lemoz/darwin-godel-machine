@@ -1,0 +1,71 @@
+{
+  "archive": null,
+  "dgm_report": null,
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 9,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 2,
+    "resource_guard_rejections": 0,
+    "traceback_count": 15
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 7.468465204957097,
+      "count": 1049,
+      "max": 77.81
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 1050,
+    "model": "openai/gpt-5.6-sol",
+    "model_from_log": "openai/gpt-5.6-sol",
+    "name": "openrouter",
+    "timeout_count": 2
+  },
+  "run": {
+    "archive_metadata": null,
+    "completed": false,
+    "controller_log": "/tmp/dgm-luna-fair-final/luna-fair10-p15-20260713a/luna-fair10-p15-20260713a-gpt56-sol-w01/controller.log",
+    "dgm_report": null,
+    "end_time": "2026-07-13T16:41:28.590000",
+    "line_count": 32577,
+    "observed_runtime_seconds": 8617.119,
+    "scorecard": null,
+    "start_time": "2026-07-13T14:17:51.471000"
+  },
+  "schema_version": 1,
+  "score": null,
+  "tokens": {
+    "by_model": {
+      "openai/gpt-5.6-luna": {
+        "completion_tokens": 7297,
+        "estimated_cost_usd": 0.155551,
+        "input_price_per_mtok": 1.0,
+        "output_price_per_mtok": 6.0,
+        "prompt_tokens": 111769,
+        "total_tokens": 119066,
+        "usage_events": 30
+      },
+      "openai/gpt-5.6-sol": {
+        "completion_tokens": 300797,
+        "estimated_cost_usd": 26.716725,
+        "input_price_per_mtok": 5.0,
+        "output_price_per_mtok": 30.0,
+        "prompt_tokens": 3538563,
+        "total_tokens": 3839360,
+        "usage_events": 1003
+      }
+    },
+    "completion_tokens": 308094,
+    "estimated_cost_usd": 26.872276,
+    "input_price_per_mtok": 0.0,
+    "output_price_per_mtok": 0.0,
+    "prompt_tokens": 3650332,
+    "total_tokens": 3958426,
+    "usage_events": 1033
+  }
+}

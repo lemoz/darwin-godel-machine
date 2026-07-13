@@ -23,6 +23,9 @@ REQUEST_RE = re.compile(
     r"timeout:\s*(?P<timeout>[0-9.]+)s,\s*model:\s*(?P<model>[^,]+),\s*base_url:\s*(?P<base_url>[^)]+)"
 )
 FINISH_REASON_RE = re.compile(r"finish_reason[=:]\s*['\"]?(?P<reason>[A-Za-z0-9_-]+)")
+HTTP_POST_STATUS_RE = re.compile(
+    r'HTTP Request: POST .* "HTTP/[^ ]+ (?P<status>[0-9]{3})'
+)
 
 
 def _load_json(path: Path, *, label: str) -> dict[str, Any]:
@@ -148,6 +151,9 @@ def parse_controller_log(log_path: Path) -> dict[str, Any]:
         lowered = line.lower()
         if "http request: post" in lowered and "/chat/completions" in lowered:
             http_post_count += 1
+            status_match = HTTP_POST_STATUS_RE.search(line)
+            if status_match and int(status_match.group("status")) >= 400:
+                api_error_count += 1
         if "request timed out" in lowered or "timed out after" in lowered:
             timeout_count += 1
         if "no response generated" in lowered:
