@@ -73,6 +73,28 @@ def _base_config(
     mutation.pop("provider_key", None)
     mutation.pop("input_price_per_mtok", None)
     mutation.pop("output_price_per_mtok", None)
+    parent_selection = {
+        "lambda": 10,
+        "alpha_0": 0.5,
+        "require_non_regression": True,
+        "require_per_benchmark_non_regression": True,
+        "regression_tolerance": 0.0,
+        "reject_score_ties": False,
+        "elite_selection_probability": 0.1,
+        "focus_selection_probability": 0.85,
+        "focus_include_descendants": True,
+        "focus_agent_ids": list(matrix["seed"]["agent_ids"]),
+    }
+    if phase == "evolution" and matrix["evolution"].get("seed_mode") == "fresh_native":
+        parent_selection = {
+            "lambda": 10,
+            "alpha_0": 0.5,
+            "require_non_regression": True,
+            "require_per_benchmark_non_regression": True,
+            "regression_tolerance": 0.0,
+            "reject_score_ties": False,
+            "elite_selection_probability": 0.0,
+        }
     return {
         "fm_providers": {
             "primary": "runner",
@@ -80,18 +102,7 @@ def _base_config(
             "luna_mutator": mutation,
         },
         "archive": {"path": f"{root}/archive"},
-        "parent_selection": {
-            "lambda": 10,
-            "alpha_0": 0.5,
-            "require_non_regression": True,
-            "require_per_benchmark_non_regression": True,
-            "regression_tolerance": 0.0,
-            "reject_score_ties": False,
-            "elite_selection_probability": 0.1,
-            "focus_selection_probability": 0.85,
-            "focus_include_descendants": True,
-            "focus_agent_ids": list(matrix["seed"]["agent_ids"]),
-        },
+        "parent_selection": parent_selection,
         "evaluation": {
             "benchmarks_dir": ".dgm-live-runs/livecodebench-loop12/benchmarks",
             "results_dir": f"{root}/results",
@@ -244,10 +255,8 @@ def _live_run_metadata(
             rescore,
         ]
     else:
-        seed_source = (
-            f"{matrix['seed']['calibration_bundle']}/{model['slug']}/archive.tar.gz"
-        )
-        live_run["baseline_proof"] = seed_source
+        seed_mode = matrix["evolution"].get("seed_mode", "calibrated_archive")
+        live_run["seed_mode"] = seed_mode
         live_run["parallel"] = {
             "workers": matrix["evolution"]["workers_per_model"],
             "max_concurrency": matrix["evolution"]["max_concurrency"],
@@ -256,11 +265,23 @@ def _live_run_metadata(
             "shared_max_budget_usd": matrix["evolution"]["max_openrouter_budget_usd"],
             "budget_poll_seconds": matrix["evolution"]["budget_poll_seconds"],
         }
-        live_run["required_preflight"] = [
-            prepare,
-            _seed_command(matrix, archive, seed_source, seed_manifest),
-            verify,
-        ]
+        if seed_mode == "fresh_native":
+            live_run["baseline_agent"] = "agent/agent.py"
+            live_run["baseline_initialization"] = (
+                "DGMController._initialize_base_agent evaluates the common base agent "
+                "once per isolated worker before generation 1"
+            )
+            live_run["required_preflight"] = [prepare, verify]
+        else:
+            seed_source = (
+                f"{matrix['seed']['calibration_bundle']}/{model['slug']}/archive.tar.gz"
+            )
+            live_run["baseline_proof"] = seed_source
+            live_run["required_preflight"] = [
+                prepare,
+                _seed_command(matrix, archive, seed_source, seed_manifest),
+                verify,
+            ]
     return live_run
 
 

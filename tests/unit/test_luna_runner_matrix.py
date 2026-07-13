@@ -7,7 +7,6 @@ import yaml
 from scripts.estimate_luna_runner_matrix import estimate_matrix
 from scripts.materialize_luna_runner_matrix import materialize_matrix
 from scripts.run_cloud_luna_runner_matrix import (
-    RunnerMatrixError,
     _delete_vms,
     build_runner_matrix_plan,
     execute_runner_matrix,
@@ -93,24 +92,29 @@ def test_calibration_and_evolution_configs_have_full_experiment_shape(tmp_path: 
 
     evolution = configs[("gpt56-sol", "evolution")]
     assert evolution["evaluation"]["use_sandbox"] is False
-    assert evolution["live_run"]["recommended_generations"] == 16
+    assert evolution["live_run"]["recommended_generations"] == 15
     assert evolution["live_run"]["parallel"]["workers"] == 3
     assert evolution["live_run"]["parallel"]["shared_max_budget_usd"] == 72
     assert evolution["live_run"]["parallel"]["budget_poll_seconds"] == 15
-    assert evolution["live_run"]["baseline_proof"].endswith(
-        "/gpt56-sol/archive.tar.gz"
+    assert evolution["live_run"]["seed_mode"] == "fresh_native"
+    assert evolution["live_run"]["baseline_agent"] == "agent/agent.py"
+    assert not any(
+        "seed_archive_from_proof.py" in command
+        for command in evolution["live_run"]["required_preflight"]
     )
+    assert "focus_agent_ids" not in evolution["parent_selection"]
 
 
 def test_observed_cost_estimate_fits_phase_and_total_budgets():
     estimate = estimate_matrix(matrix_path=MATRIX_PATH, proof_dir=REFERENCE_PROOF)
 
-    assert estimate["total_evolution_generations"] == 480
-    assert estimate["calibration_evaluations_per_model"] == 6
-    assert estimate["estimated_calibration_openrouter_cost_usd"] < 10
+    assert estimate["total_evolution_generations"] == 450
+    assert estimate["calibration_evaluations_per_model"] == 0
+    assert estimate["base_initializations_per_model"] == 3
+    assert estimate["estimated_calibration_openrouter_cost_usd"] == 0
     assert estimate["estimated_evolution_openrouter_cost_usd"] < 72
-    assert estimate["estimated_openrouter_cost_usd"] == pytest.approx(77.1950, abs=0.001)
-    assert estimate["estimated_total_cost_usd"] == pytest.approx(94.7450, abs=0.001)
+    assert estimate["estimated_openrouter_cost_usd"] == pytest.approx(79.165, abs=0.001)
+    assert estimate["estimated_total_cost_usd"] == pytest.approx(85.793, abs=0.001)
     assert estimate["within_budget"] is True
 
 
@@ -131,25 +135,13 @@ def test_matrix_cloud_plans_cover_calibration_and_full_evolution(tmp_path: Path)
         for worker in calibration["worker_plans"]
     )
 
-    with pytest.raises(RunnerMatrixError, match="calibrated archive is missing"):
-        build_runner_matrix_plan(phase="evolution", **kwargs)
-
-    matrix = yaml.safe_load(matrix_path.read_text(encoding="utf-8"))
-    for model in matrix["models"]:
-        proof = (
-            tmp_path
-            / matrix["seed"]["calibration_bundle"]
-            / model["slug"]
-            / "archive.tar.gz"
-        )
-        proof.parent.mkdir(parents=True, exist_ok=True)
-        proof.write_bytes(b"test proof")
     evolution = build_runner_matrix_plan(phase="evolution", **kwargs)
     assert evolution["workers"] == 30
-    assert evolution["generations_per_worker"] == 16
-    assert evolution["total_generation_attempt_ceiling"] == 480
+    assert evolution["generations_per_worker"] == 15
+    assert evolution["total_generation_attempt_ceiling"] == 450
     assert evolution["max_concurrency"] == 6
     assert evolution["max_budget_usd"] == 72
+    assert evolution["source"]["seed_mode"] == "fresh_native"
 
 
 def test_budget_teardown_deletes_the_fleet_in_one_cloud_call(monkeypatch):

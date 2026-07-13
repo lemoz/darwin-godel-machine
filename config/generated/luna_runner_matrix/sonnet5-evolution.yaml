@@ -32,13 +32,7 @@ parent_selection:
   require_per_benchmark_non_regression: true
   regression_tolerance: 0.0
   reject_score_ties: false
-  elite_selection_probability: 0.1
-  focus_selection_probability: 0.85
-  focus_include_descendants: true
-  focus_agent_ids:
-  - 0173925d-0778-43ad-8c74-e05ee18b3bf2
-  - 87bca0da-0a85-4a65-a076-aa3fb9f6f12e
-  - a22a6b70-9c72-4f21-8866-67de9e007c61
+  elite_selection_probability: 0.0
 evaluation:
   benchmarks_dir: .dgm-live-runs/livecodebench-loop12/benchmarks
   results_dir: .dgm-live-runs/luna-runner-matrix/evolution/sonnet5/results
@@ -93,7 +87,7 @@ stop_on_error: true
 live_run:
   purpose: livecodebench_luna_runner_matrix_evolution
   approval_required: true
-  recommended_generations: 16
+  recommended_generations: 15
   matrix:
     name: livecodebench_luna_runner_matrix
     phase: evolution
@@ -120,7 +114,7 @@ live_run:
     mutation_output_price_per_mtok: 6.0
     assumed_input_tokens_per_call: 12000
     max_estimated_cost_usd: 100
-    max_generations_without_reapproval: 16
+    max_generations_without_reapproval: 15
     max_agent_steps: 7
     max_self_modification_steps: 3
     max_output_tokens_per_call: 2048
@@ -128,7 +122,7 @@ live_run:
   post_run_scorecard:
     command: PATH="$PWD/.venv/bin:$PATH" python scripts/summarize_archive_scores.py --archive-metadata .dgm-live-runs/luna-runner-matrix/evolution/sonnet5/archive/archive_metadata.json --output .dgm-live-runs/luna-runner-matrix/evolution/sonnet5/archive/scorecard.json
     require_improvement: false
-  baseline_proof: docs/live-runs/lcb-runner-calibration-luna-20260713-1/sonnet5/archive.tar.gz
+  seed_mode: fresh_native
   parallel:
     workers: 3
     max_concurrency: 6
@@ -136,7 +130,8 @@ live_run:
     seed_noop_count: 0
     shared_max_budget_usd: 72
     budget_poll_seconds: 15
+  baseline_agent: agent/agent.py
+  baseline_initialization: DGMController._initialize_base_agent evaluates the common base agent once per isolated worker before generation 1
   required_preflight:
   - PATH="$PWD/.venv/bin:$PATH" python scripts/prepare_livecodebench_segment.py --config config/livecodebench_segment_loop12.yaml
-  - PATH="$PWD/.venv/bin:$PATH" python scripts/seed_archive_from_proof.py --archive-tar docs/live-runs/lcb-runner-calibration-luna-20260713-1/sonnet5/archive.tar.gz --target-archive .dgm-live-runs/luna-runner-matrix/evolution/sonnet5/archive --focus-agent-id 0173925d-0778-43ad-8c74-e05ee18b3bf2 --focus-agent-id 87bca0da-0a85-4a65-a076-aa3fb9f6f12e --focus-agent-id a22a6b70-9c72-4f21-8866-67de9e007c61 --min-focus-score 0 --output .dgm-live-runs/luna-runner-matrix/evolution/sonnet5/seed_manifest.json --force
   - PATH="$PWD/.venv/bin:$PATH" python scripts/verify_sandbox_docker.py --build-image --require

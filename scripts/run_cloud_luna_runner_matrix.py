@@ -125,7 +125,11 @@ def build_runner_matrix_plan(
         config_label = generated["config"]
         config_path = project_root / config_label
         _require(config_path.exists(), f"generated config does not exist: {config_label}")
-        if phase == "evolution":
+        if (
+            phase == "evolution"
+            and phase_config.get("seed_mode", "calibrated_archive")
+            != "fresh_native"
+        ):
             proof = (
                 project_root
                 / matrix["seed"]["calibration_bundle"]
@@ -202,6 +206,7 @@ def build_runner_matrix_plan(
             "repo_url": repo_url,
             "commit": commit,
             "mutation_model": mutation["model"],
+            "seed_mode": phase_config.get("seed_mode", "calibrated_archive"),
         },
         "worker_plans": worker_plans,
     }

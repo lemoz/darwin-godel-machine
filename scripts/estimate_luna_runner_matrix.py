@@ -66,8 +66,16 @@ def estimate_matrix(
     eval_completion_per_run = evaluation_completion / source_generations
     mutation_prompt_per_generation = mutation_prompt / source_generations
     mutation_completion_per_generation = mutation_completion / source_generations
+    seed_mode = matrix["evolution"].get("seed_mode", "calibrated_archive")
+    fresh_native = seed_mode == "fresh_native"
     calibration_runs_per_model = (
-        len(matrix["seed"]["agent_ids"]) * int(matrix["calibration"]["replicates"])
+        0
+        if fresh_native
+        else len(matrix["seed"]["agent_ids"])
+        * int(matrix["calibration"]["replicates"])
+    )
+    base_initializations_per_model = (
+        int(matrix["evolution"]["workers_per_model"]) if fresh_native else 0
     )
     evolution_generations_per_model = (
         int(matrix["evolution"]["workers_per_model"])
@@ -93,8 +101,11 @@ def estimate_matrix(
     for model in models:
         calibration_prompt_tokens = eval_prompt_per_run * calibration_runs_per_model
         calibration_completion_tokens = eval_completion_per_run * calibration_runs_per_model
-        evolution_prompt_tokens = eval_prompt_per_run * evolution_generations_per_model
-        evolution_completion_tokens = eval_completion_per_run * evolution_generations_per_model
+        evolution_evaluations = (
+            evolution_generations_per_model + base_initializations_per_model
+        )
+        evolution_prompt_tokens = eval_prompt_per_run * evolution_evaluations
+        evolution_completion_tokens = eval_completion_per_run * evolution_evaluations
         calibration_cost = (
             calibration_prompt_tokens
             / 1_000_000
@@ -116,6 +127,7 @@ def estimate_matrix(
                 "slug": model["slug"],
                 "model": model["model"],
                 "calibration_evaluations": calibration_runs_per_model,
+                "base_initializations": base_initializations_per_model,
                 "evolution_generations": evolution_generations_per_model,
                 "estimated_calibration_runner_cost_usd": calibration_cost,
                 "estimated_evolution_runner_cost_usd": evolution_cost,
@@ -137,7 +149,9 @@ def estimate_matrix(
     )
     cloud = matrix["cloud"]
     calibration_vm_hours = (
-        len(models) * float(cloud["calibration_hours_per_vm"])
+        0.0
+        if fresh_native
+        else len(models) * float(cloud["calibration_hours_per_vm"])
     )
     evolution_vm_hours = (
         len(models)
@@ -147,7 +161,21 @@ def estimate_matrix(
     estimated_gcp_cost = (
         calibration_vm_hours + evolution_vm_hours
     ) * float(cloud["hourly_vm_cost_estimate_usd"])
-    estimated_total_cost = estimated_openrouter_cost + estimated_gcp_cost
+    reserved_openrouter = float(
+        matrix.get("budget", {}).get(
+            "reserved_failed_calibration_openrouter_usd",
+            0.0,
+        )
+    )
+    reserved_gcp = float(
+        matrix.get("budget", {}).get("reserved_failed_calibration_gcp_usd", 0.0)
+    )
+    estimated_openrouter_cost_with_reserved = (
+        estimated_openrouter_cost + reserved_openrouter
+    )
+    estimated_total_cost = (
+        estimated_openrouter_cost_with_reserved + estimated_gcp_cost + reserved_gcp
+    )
     calibration_openrouter_budget = float(
         matrix["calibration"]["max_openrouter_budget_usd"]
     )
@@ -163,7 +191,7 @@ def estimate_matrix(
         "observed-token evolution estimate exceeds the evolution budget",
     )
     _require(
-        estimated_openrouter_cost <= openrouter_budget,
+        estimated_openrouter_cost_with_reserved <= openrouter_budget,
         "observed-token OpenRouter estimate exceeds the total matrix budget",
     )
     _require(
@@ -177,7 +205,9 @@ def estimate_matrix(
         "reference_proof": str(proof_dir),
         "reference_generations": source_generations,
         "models": len(models),
+        "seed_mode": seed_mode,
         "calibration_evaluations_per_model": calibration_runs_per_model,
+        "base_initializations_per_model": base_initializations_per_model,
         "evolution_generations_per_model": evolution_generations_per_model,
         "total_evolution_generations": evolution_generations_per_model * len(models),
         "observed_tokens_per_unit": {
@@ -190,12 +220,15 @@ def estimate_matrix(
         "estimated_luna_mutation_cost_usd": mutation_cost,
         "estimated_calibration_openrouter_cost_usd": estimated_calibration_openrouter_cost,
         "estimated_evolution_openrouter_cost_usd": estimated_evolution_openrouter_cost,
-        "estimated_openrouter_cost_usd": estimated_openrouter_cost,
+        "estimated_prospective_openrouter_cost_usd": estimated_openrouter_cost,
+        "reserved_failed_calibration_openrouter_usd": reserved_openrouter,
+        "estimated_openrouter_cost_usd": estimated_openrouter_cost_with_reserved,
         "calibration_openrouter_budget_usd": calibration_openrouter_budget,
         "evolution_openrouter_budget_usd": evolution_openrouter_budget,
         "openrouter_budget_usd": openrouter_budget,
         "estimated_gcp_vm_hours": calibration_vm_hours + evolution_vm_hours,
         "estimated_gcp_cost_usd": estimated_gcp_cost,
+        "reserved_failed_calibration_gcp_usd": reserved_gcp,
         "estimated_total_cost_usd": estimated_total_cost,
         "total_budget_usd": total_budget,
         "within_budget": True,

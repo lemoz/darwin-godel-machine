@@ -25,8 +25,9 @@ calibration:
   budget_poll_seconds: 15
 
 evolution:
+  seed_mode: fresh_native
   workers_per_model: 3
-  generations_per_worker: 16
+  generations_per_worker: 15
   max_concurrency: 6
   max_openrouter_budget_usd: 72
   budget_poll_seconds: 15
@@ -34,15 +35,17 @@ evolution:
 
 budget:
   max_openrouter_total_usd: 82
+  reserved_failed_calibration_openrouter_usd: 10
+  reserved_failed_calibration_gcp_usd: 1
 
 cloud:
   project: doittogether-prod
   zone: us-central1-a
-  machine_type: n2-standard-8
+  machine_type: e2-standard-4
   boot_disk_size_gb: 100
-  hourly_vm_cost_estimate_usd: 0.39
+  hourly_vm_cost_estimate_usd: 0.134
   calibration_hours_per_vm: 0.6
-  evolution_hours_per_vm: 1.3
+  evolution_hours_per_vm: 1.4
   max_total_experiment_cost_usd: 100
 
 runner_defaults:
