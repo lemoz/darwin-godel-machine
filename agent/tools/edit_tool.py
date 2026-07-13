@@ -684,7 +684,20 @@ class EditTool(BaseTool):
             return None
 
         if "content" in parameters and "content_lines" in parameters:
-            return None
+            content = parameters["content"]
+            content_lines = parameters["content_lines"]
+            content_is_empty = content is None or content == ""
+            content_lines_is_empty = (
+                content_lines is None or content_lines == "" or content_lines == []
+            )
+            if content_is_empty and not content_lines_is_empty:
+                # Some strict tool callers populate every optional schema field
+                # with its empty default.  Preserve the substantive line array.
+                parameters.pop("content")
+            elif content_lines_is_empty and not content_is_empty:
+                parameters.pop("content_lines")
+            else:
+                return None
 
         if (
             "content" not in parameters

@@ -477,6 +477,21 @@ class TestEditTool:
         assert "either content or content_lines" in (result.error or "")
         assert not (self.tmp / "solution.py").exists()
 
+    async def test_write_empty_content_default_with_content_lines_repaired(self):
+        result = await self.tool.execute({
+            "action": "write",
+            "file_path": "solution.py",
+            "content": "",
+            "content_lines": ["print('ok')"],
+            "line_number": 1,
+            "line_count": 1,
+            "search_text": "",
+            "replace_text": "",
+        })
+
+        assert result.status == ToolExecutionStatus.SUCCESS
+        assert (self.tmp / "solution.py").read_text() == "print('ok')\n"
+
     async def test_write_python_wrapped_single_source_string_repaired(self):
         result = await self.tool.execute({
             "action": "write",
