@@ -1,0 +1,64 @@
+{
+  "calibrated_agents": [
+    {
+      "agent_id": "0173925d-0778-43ad-8c74-e05ee18b3bf2",
+      "average_score": 0.25,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    },
+    {
+      "agent_id": "87bca0da-0a85-4a65-a076-aa3fb9f6f12e",
+      "average_score": 0.0,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    },
+    {
+      "agent_id": "a22a6b70-9c72-4f21-8866-67de9e007c61",
+      "average_score": 0.2916666666666667,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 0.5,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    }
+  ],
+  "model": "google/gemma-3-27b-it",
+  "primary_provider": "gemma_solver",
+  "pruned_unselected": true,
+  "removed_agent_count": 49,
+  "replicates": 2,
+  "schema_version": 1
+}
