@@ -30,6 +30,8 @@ Use these entry points first:
 - [Live run index](docs/live-runs/README.md) for the proof bundle catalog.
 - [Cloud VM runbook](docs/cloud-vm-live-evals.md) for the canonical
   disposable-worker execution path.
+- [Self-elicitation and capability-overhang research direction](docs/research/self-elicitation-capability-overhang.md)
+  for the proposed Fort Labs study, experimental contract, and cost model.
 - [Static project site](docs/index.html) for a proof-oriented GitHub Pages
   landing page.
 

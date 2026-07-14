@@ -101,6 +101,25 @@ Near-term benchmark plan:
 - Consider SWE-bench style tasks later, after DGM can reliably mutate and
   preserve improvements across multiple LiveCodeBench runs.
 
+## Research Program
+
+The next research question is broader than reaching one more point on the
+current segment: how much of a model's best agent capability appears through a
+generic interface, and how well can the model discover improvements to that
+interface itself?
+
+The proposed self-elicitation study compares frozen native performance,
+external Luna-mutated performance, and same-model self-mutated performance
+under matched protocols and budgets. It also proposes DGM as a separate
+subproject within the Fort Labs research program, alongside Fort-Eval and
+Fort-Gym, without merging repositories or obscuring the original DGM research
+attribution.
+
+See
+[`docs/research/self-elicitation-capability-overhang.md`](docs/research/self-elicitation-capability-overhang.md)
+for the definitions, candidate model matrix, cost estimate, proof requirements,
+and open organizational decisions.
+
 ## Publication Bar
 
 A run is publishable only when it includes:
