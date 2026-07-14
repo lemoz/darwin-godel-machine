@@ -15,6 +15,8 @@ source:
   source_file: test6.jsonl
   version_label: release_v6
   decoder_reference: https://github.com/livecodebench/livecodebench/blob/main/lcb_runner/benchmarks/code_generation.py
+  gcs_uri: gs://dgm-live-runs-doittogether-prod/datasets/livecodebench/code_generation_lite/release_v6/test6.jsonl
+  sha256: bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5
   download_transport: curl
   download_timeout: 120
 

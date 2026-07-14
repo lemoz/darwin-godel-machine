@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 import pickle
 import subprocess
@@ -133,6 +134,37 @@ def test_iter_jsonl_supports_curl_transport(tmp_path, monkeypatch):
     assert list(_iter_jsonl(source, tmp_path)) == rows
 
 
+def test_iter_jsonl_prefers_hash_verified_gcs_source(tmp_path, monkeypatch):
+    rows = [{"question_id": "cached"}]
+    payload = "\n".join(json.dumps(row) for row in rows) + "\n"
+    expected_sha256 = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def fake_run(command, **kwargs):
+        assert command == [
+            "gcloud",
+            "storage",
+            "cat",
+            "gs://example.test/livecodebench/test6.jsonl",
+        ]
+        kwargs["stdout"].write(payload.encode("utf-8"))
+        assert kwargs["timeout"] == 150
+        return subprocess.CompletedProcess(command, 0, b"", b"")
+
+    monkeypatch.setattr(
+        "scripts.prepare_livecodebench_segment.subprocess.run",
+        fake_run,
+    )
+
+    source = {
+        "url": "https://example.test/test6.jsonl",
+        "gcs_uri": "gs://example.test/livecodebench/test6.jsonl",
+        "sha256": expected_sha256,
+        "download_transport": "curl",
+        "download_timeout": 120,
+    }
+    assert list(_iter_jsonl(source, tmp_path)) == rows
+
+
 def test_prepare_livecodebench_segment_writes_hidden_test_benchmarks(tmp_path):
     jsonl_path = tmp_path / "fixture.jsonl"
     _write_fixture_jsonl(jsonl_path)
@@ -148,6 +180,8 @@ def test_prepare_livecodebench_segment_writes_hidden_test_benchmarks(tmp_path):
     assert manifest["public_test_count"] == 2
     assert manifest["private_test_count"] == 3
     assert manifest["total_test_count"] == 5
+    assert manifest["source"]["gcs_uri"] is None
+    assert manifest["source"]["sha256"] is None
     assert manifest["benchmark_names"] == [
         "livecodebench_abc001_a",
         "livecodebench_abc001_b",

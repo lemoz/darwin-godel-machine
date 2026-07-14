@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import io
 import json
 import pickle
@@ -90,23 +91,77 @@ def _source_url(source: dict[str, Any]) -> str:
     return f"https://huggingface.co/datasets/{dataset}/resolve/main/{source_file}"
 
 
+def _verify_download(path: Path, source: dict[str, Any]) -> None:
+    expected_sha256 = str(source.get("sha256", "")).strip().lower()
+    if not expected_sha256:
+        return
+    _require(
+        re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is not None,
+        "source.sha256 must be a 64-character lowercase hex digest",
+    )
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    actual_sha256 = digest.hexdigest()
+    _require(
+        actual_sha256 == expected_sha256,
+        f"Downloaded dataset SHA-256 mismatch: expected {expected_sha256}, got {actual_sha256}",
+    )
+
+
+def _iter_downloaded_jsonl(path: Path) -> Iterator[dict[str, Any]]:
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if line:
+                yield json.loads(line)
+
+
 def _iter_jsonl(source: dict[str, Any], project_root: Path) -> Iterator[dict[str, Any]]:
     local_jsonl = source.get("local_jsonl")
     if local_jsonl:
         path = _project_path(str(local_jsonl), project_root)
         _require(path.is_file(), f"Missing local JSONL source: {_project_relative(path, project_root)}")
-        with path.open(encoding="utf-8") as handle:
-            for line in handle:
-                line = line.strip()
-                if line:
-                    yield json.loads(line)
+        _verify_download(path, source)
+        yield from _iter_downloaded_jsonl(path)
         return
 
     transport = str(source.get("download_transport", "urllib"))
     _require(transport in {"urllib", "curl"}, "download_transport must be urllib or curl")
-    if transport == "curl":
-        timeout = int(source.get("download_timeout", 120))
-        with tempfile.NamedTemporaryFile() as download:
+    timeout = int(source.get("download_timeout", 120))
+    gcs_uri = str(source.get("gcs_uri", "")).strip()
+    with tempfile.NamedTemporaryFile() as download:
+        if gcs_uri:
+            gcs_command = [
+                "gcloud",
+                "storage",
+                "cat",
+                gcs_uri,
+            ]
+            download.seek(0)
+            download.truncate()
+            try:
+                gcs_result = subprocess.run(
+                    gcs_command,
+                    check=False,
+                    stdout=download,
+                    stderr=subprocess.PIPE,
+                    timeout=timeout + 30,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                gcs_result = None
+            if gcs_result is not None and gcs_result.returncode == 0:
+                download.flush()
+                try:
+                    _verify_download(Path(download.name), source)
+                except LiveCodeBenchSegmentError:
+                    pass
+                else:
+                    yield from _iter_downloaded_jsonl(Path(download.name))
+                    return
+
+        if transport == "curl":
             command = [
                 "curl",
                 "--location",
@@ -143,12 +198,9 @@ def _iter_jsonl(source: dict[str, Any], project_root: Path) -> Iterator[dict[str
                 result.returncode == 0,
                 f"curl dataset download failed: {result.stderr.strip()[-1000:]}",
             )
-            download.seek(0)
-            for raw_line in download:
-                line = raw_line.decode("utf-8").strip()
-                if line:
-                    yield json.loads(line)
-        return
+            _verify_download(Path(download.name), source)
+            yield from _iter_downloaded_jsonl(Path(download.name))
+            return
 
     request = urllib.request.Request(
         _source_url(source),
@@ -386,6 +438,8 @@ def prepare_livecodebench_segment(
             "source_file": source.get("source_file", "test6.jsonl"),
             "version_label": source.get("version_label", "unknown"),
             "url": _source_url(source),
+            "gcs_uri": source.get("gcs_uri"),
+            "sha256": source.get("sha256"),
         },
         "segment_id": selection.get("segment_id"),
         "output_dir": _project_relative(output_dir, project_root),
