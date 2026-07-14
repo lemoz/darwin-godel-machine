@@ -1,8 +1,29 @@
 # Self-Elicitation and Capability Overhang
 
-Status: broad credible experiment approved on 2026-07-14; launch remains subject to credential, model, budget, and cloud preflights.
+Status: broad credible native + self-elicitation experiment completed on 2026-07-14; fixed-external-mutator and held-out-transfer arms remain open.
 Pricing snapshot: 2026-07-14, OpenRouter public model catalog.  
 Initial evaluation surface: the existing 12-problem LiveCodeBench segment.
+
+Completed proof: [`lcb-self-elicitation-broad8-20260714-1`](../live-runs/lcb-self-elicitation-broad8-20260714-1/).
+
+## Completed first measurement
+
+The completed run produced all 16 terminal evolution ladders and eight extra
+native evaluations. It executed 209 of the 240 allowed generation loops; no-op
+early stopping accounts for the difference. Endpoint-accounted OpenRouter spend
+was $207.44, and all experiment VMs were absent at closeout.
+
+Using the predeclared conservative score rule, Gemini 3.5 Flash showed +3 tasks
+of capability overhang, while GPT-5.6 Sol and Claude Fable 5 each showed +1.
+Grok 4.5 had the strongest native median at 11/12 and no measured overhang.
+Qwen 3.7 Max is protocol-blocked rather than a negative capability result:
+Alibaba rejected the shared required/object tool-choice mode on every mutation
+request. See the proof bundle for native dispersion, mutation patches, failure
+classification gaps, and the exact cost boundary.
+
+This first proof does not include the fixed-external-mutator arm and does not
+test mutation transfer to a held-out segment. Those remain necessary before
+interpreting the result as more than a small-segment capability-overhang signal.
 
 ## Research question
 

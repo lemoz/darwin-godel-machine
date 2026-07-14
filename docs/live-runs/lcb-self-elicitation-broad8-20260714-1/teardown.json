@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-07-14T21:48:35Z",
+  "project": "doittogether-prod",
+  "filter": "name~^dgm-sebc-",
+  "remaining_instances": [],
+  "status": "passed"
+}

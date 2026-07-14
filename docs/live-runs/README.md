@@ -23,6 +23,16 @@ Important nuance: `run_dgm.py --generations 50` controls loop iterations. The
 archive lineage depth in this proof reached generation 4 because many loop
 iterations explored siblings from existing parents.
 
+## Research Matrix Proof
+
+| Run | Benchmark | Models | Search | Result | Status |
+| --- | --- | ---: | ---: | --- | --- |
+| [`lcb-self-elicitation-broad8-20260714-1`](lcb-self-elicitation-broad8-20260714-1/) | LiveCodeBench, 12 problems | 8 across 5 providers | 16 ladders, 209 executed loops | Gemini +3 reliable overhang; Sol and Fable +1; Grok native 11/12 | Complete, all VMs torn down |
+
+This is the canonical proof for the self-elicitation/capability-overhang research
+direction. It keeps native variation, replicated achieved scores, one-off peaks,
+provider incompatibilities, endpoint spend, and telemetry estimates separate.
+
 ## Earlier Runs
 
 The other directories preserve the path that made the proof run possible:

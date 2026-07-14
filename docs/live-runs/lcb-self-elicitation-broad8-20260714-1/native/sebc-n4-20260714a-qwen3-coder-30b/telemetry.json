@@ -1,0 +1,153 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "4871b818-73de-4890-9935-af0a4377917f",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T16:11:36.843558",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 5
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {}
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc388_d": 1,
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 1,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.17908534944444446,
+    "successful_improvements": 0,
+    "total_agents_created": 0,
+    "total_generations": 0
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 2,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 0,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc388_d": 1,
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 8.319722222222223,
+      "count": 72,
+      "max": 48.28
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 0,
+    "finish_reasons": {
+      "length": 4
+    },
+    "http_post_count": 72,
+    "model": "qwen/qwen3-coder-30b-a3b-instruct",
+    "model_from_log": "qwen/qwen3-coder-30b-a3b-instruct",
+    "name": "openrouter",
+    "timeout_count": 0
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen3-coder-30b/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/sebc-n4-20260714a-qwen3-coder-30b/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen3-coder-30b/results/dgm_report_20260714_161136.json",
+    "end_time": "2026-07-14T16:11:36.846000",
+    "line_count": 3272,
+    "observed_runtime_seconds": 660.083,
+    "scorecard": "/var/tmp/dgm-live-runs/sebc-n4-20260714a-qwen3-coder-30b/artifacts/scorecard.json",
+    "start_time": "2026-07-14T16:00:36.763000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.4166666666666667,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "4871b818-73de-4890-9935-af0a4377917f",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 5
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": false,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "4871b818-73de-4890-9935-af0a4377917f",
+        "average_score": 0.4166666666666667,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 5
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [],
+      "changed_count": 0,
+      "noop_agents": [],
+      "noop_count": 0,
+      "status_counts": {},
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "4871b818-73de-4890-9935-af0a4377917f",
+    "top_score": 0.4166666666666667,
+    "total_agents": 1,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 0,
+    "valid_agents": 1
+  },
+  "tokens": {
+    "by_model": {
+      "qwen/qwen3-coder-30b-a3b-instruct": {
+        "completion_tokens": 32876,
+        "estimated_cost_usd": 0.031075,
+        "input_price_per_mtok": 0.07,
+        "output_price_per_mtok": 0.27,
+        "prompt_tokens": 317123,
+        "total_tokens": 349999,
+        "usage_events": 72
+      }
+    },
+    "completion_tokens": 32876,
+    "estimated_cost_usd": 0.031075,
+    "input_price_per_mtok": 0.07,
+    "output_price_per_mtok": 0.27,
+    "prompt_tokens": 317123,
+    "total_tokens": 349999,
+    "usage_events": 72
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "94cdbc67-7af5-4109-900f-0d5c3f75f95e",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T15:46:19.377369",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 6
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {}
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 1,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.2503995677777778,
+    "successful_improvements": 0,
+    "total_agents_created": 0,
+    "total_generations": 0
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 13,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 0,
+    "resource_guard_rejections": 0,
+    "traceback_count": 6,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_c": 1,
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 13.226451612903226,
+      "count": 62,
+      "max": 32.72
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 13,
+    "finish_reasons": {
+      "length": 13
+    },
+    "http_post_count": 62,
+    "model": "anthropic/claude-fable-5",
+    "model_from_log": "anthropic/claude-fable-5",
+    "name": "openrouter",
+    "timeout_count": 0
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/fable5/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/sebc-n3-20260714a-fable5/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/fable5/results/dgm_report_20260714_154619.json",
+    "end_time": "2026-07-14T15:46:19.381000",
+    "line_count": 1828,
+    "observed_runtime_seconds": 917.32,
+    "scorecard": "/var/tmp/dgm-live-runs/sebc-n3-20260714a-fable5/artifacts/scorecard.json",
+    "start_time": "2026-07-14T15:31:02.061000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.5,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "94cdbc67-7af5-4109-900f-0d5c3f75f95e",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 6
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": false,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "94cdbc67-7af5-4109-900f-0d5c3f75f95e",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 6
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [],
+      "changed_count": 0,
+      "noop_agents": [],
+      "noop_count": 0,
+      "status_counts": {},
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "94cdbc67-7af5-4109-900f-0d5c3f75f95e",
+    "top_score": 0.5,
+    "total_agents": 1,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 0,
+    "valid_agents": 1
+  },
+  "tokens": {
+    "by_model": {
+      "anthropic/claude-fable-5": {
+        "completion_tokens": 41285,
+        "estimated_cost_usd": 5.17013,
+        "input_price_per_mtok": 10.0,
+        "output_price_per_mtok": 50.0,
+        "prompt_tokens": 310588,
+        "total_tokens": 351873,
+        "usage_events": 62
+      }
+    },
+    "completion_tokens": 41285,
+    "estimated_cost_usd": 5.17013,
+    "input_price_per_mtok": 10.0,
+    "output_price_per_mtok": 50.0,
+    "prompt_tokens": 310588,
+    "total_tokens": 351873,
+    "usage_events": 62
+  }
+}

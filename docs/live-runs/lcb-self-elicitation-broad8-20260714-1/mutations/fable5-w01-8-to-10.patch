@@ -1,0 +1,28 @@
+--- parent/agent.py
++++ child/agent.py
+@@ -1747,6 +1747,25 @@
+   one complete Python source line per string, or provide the final solution in
+   a markdown `python` code block and end with the required completion phrase.
+ 
++HARD-PROBLEM STRATEGY (D/E tasks):
++==================================
++- Before coding, restate the constraints (N, Q, value ranges) and estimate the
++  worst-case operation count. If a brute-force approach exceeds ~10^7 basic
++  operations, do NOT submit it; design an O(N log N) or O(N) algorithm first.
++- For counting/combinatorics tasks, consider prefix sums, sorted two-pointer
++  scans, binary search (bisect), and modular arithmetic with precomputed
++  factorials instead of nested loops.
++- For grid/simulation tasks, look for periodicity or state compression before
++  simulating huge step counts.
++- For DP tasks, define the state and transition explicitly in comments before
++  writing code, and verify the DP by hand on the smallest sample.
++- After samples pass, stress-check performance: generate a maximum-size random
++  input and confirm the solution finishes within roughly 2 seconds. If it does
++  not, optimize (e.g., replace Python loops with precomputation, sorting, or
++  math) before finalizing.
++- Use sys.stdin for input parsing on large inputs; avoid per-line input() in
++  hot loops.
++
+ TESTING GUIDELINES:
+ ==================
+ - Focus on the examples provided in the task description

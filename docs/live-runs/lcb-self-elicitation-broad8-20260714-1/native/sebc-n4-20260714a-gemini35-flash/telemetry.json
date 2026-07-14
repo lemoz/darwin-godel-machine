@@ -1,0 +1,150 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "25b0c2b7-f524-4bba-a7df-d71a8cb6d96e",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T16:05:36.679231",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 7
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {}
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc390_b": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 1,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.07966126277777778,
+    "successful_improvements": 0,
+    "total_agents_created": 0,
+    "total_generations": 0
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 4,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 0,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc390_b": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 3.211095890410959,
+      "count": 73,
+      "max": 22.27
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 4,
+    "finish_reasons": {
+      "length": 1,
+      "stop": 4
+    },
+    "http_post_count": 73,
+    "model": "google/gemini-3.5-flash",
+    "model_from_log": "google/gemini-3.5-flash",
+    "name": "openrouter",
+    "timeout_count": 0
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/gemini35-flash/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/sebc-n4-20260714a-gemini35-flash/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/gemini35-flash/results/dgm_report_20260714_160536.json",
+    "end_time": "2026-07-14T16:05:36.683000",
+    "line_count": 2306,
+    "observed_runtime_seconds": 302.149,
+    "scorecard": "/var/tmp/dgm-live-runs/sebc-n4-20260714a-gemini35-flash/artifacts/scorecard.json",
+    "start_time": "2026-07-14T16:00:34.534000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.5833333333333334,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "25b0c2b7-f524-4bba-a7df-d71a8cb6d96e",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 7
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": false,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "25b0c2b7-f524-4bba-a7df-d71a8cb6d96e",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 7
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [],
+      "changed_count": 0,
+      "noop_agents": [],
+      "noop_count": 0,
+      "status_counts": {},
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "25b0c2b7-f524-4bba-a7df-d71a8cb6d96e",
+    "top_score": 0.5833333333333334,
+    "total_agents": 1,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 0,
+    "valid_agents": 1
+  },
+  "tokens": {
+    "by_model": {
+      "google/gemini-3.5-flash": {
+        "completion_tokens": 25922,
+        "estimated_cost_usd": 0.627927,
+        "input_price_per_mtok": 1.5,
+        "output_price_per_mtok": 9.0,
+        "prompt_tokens": 263086,
+        "total_tokens": 289008,
+        "usage_events": 71
+      }
+    },
+    "completion_tokens": 25922,
+    "estimated_cost_usd": 0.627927,
+    "input_price_per_mtok": 1.5,
+    "output_price_per_mtok": 9.0,
+    "prompt_tokens": 263086,
+    "total_tokens": 289008,
+    "usage_events": 71
+  }
+}

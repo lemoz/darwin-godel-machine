@@ -1,0 +1,21 @@
+--- parent/agent.py
++++ child/agent.py
+@@ -44,6 +44,18 @@
+     timeout: int = 300
+     benchmark_name: Optional[str] = None
+     metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
++
++    def __post_init__(self) -> None:
++        """Inject verification discipline for the harder LiveCodeBench tasks."""
++        if self.benchmark_name and "livecodebench" in self.benchmark_name.lower():
++            guidance = (
++                "Before coding, derive the full algorithm and prove boundary/counting "
++                "conditions; verify its time complexity against the largest constraints. "
++                "For geometry or cost-optimization tasks, use exact integer arithmetic "
++                "and explicitly check binary-search monotonicity and off-by-one cases."
++            )
++            if guidance not in self.constraints:
++                self.constraints.append(guidance)
+ 
+ 
+ @dataclass

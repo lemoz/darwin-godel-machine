@@ -1,0 +1,1004 @@
+{
+  "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/fable5/archive/archive_metadata.json",
+  "best_average_delta": 0.16666666666666674,
+  "generation_best_scores": [
+    {
+      "agent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "average_score": 0.6666666666666666,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc389_e": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "generation": 0
+    },
+    {
+      "agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "average_score": 0.8333333333333334,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc389_e": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "generation": 1
+    },
+    {
+      "agent_id": "feddb9a0-582f-4609-8f71-908a78620486",
+      "average_score": 0.6666666666666666,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "generation": 2
+    }
+  ],
+  "has_improvement": true,
+  "has_regression": true,
+  "improvements": [
+    {
+      "average_delta": 0.08333333333333337,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.75,
+      "child_generation": 1,
+      "child_id": "63798436-99e2-43d9-a3d8-2d00cbf70047",
+      "is_improvement": true,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    },
+    {
+      "average_delta": 0.16666666666666674,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_d",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc389_e",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.8333333333333334,
+      "child_generation": 1,
+      "child_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "is_improvement": true,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    }
+  ],
+  "loop_order_agents": [
+    {
+      "agent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "average_score": 0.6666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T16:33:40.530908",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 8
+    },
+    {
+      "agent_id": "63798436-99e2-43d9-a3d8-2d00cbf70047",
+      "average_score": 0.75,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T16:47:21.116784",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "solved_count": 9
+    },
+    {
+      "agent_id": "33f98021-5aba-46ee-bfe4-640ed528cc8f",
+      "average_score": 0.5,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T17:01:49.322408",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "solved_count": 6
+    },
+    {
+      "agent_id": "4f5faef1-0cec-4a52-a585-304a5931991b",
+      "average_score": 0.6666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T17:16:09.396712",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "solved_count": 8
+    },
+    {
+      "agent_id": "d292576e-cd72-4c08-aa02-3356d837dede",
+      "average_score": 0.5833333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T17:28:03.340208",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "solved_count": 7
+    },
+    {
+      "agent_id": "a8122310-8a08-4271-a249-311d43b54593",
+      "average_score": 0.6666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T17:42:31.850326",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "solved_count": 8
+    },
+    {
+      "agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "average_score": 0.8333333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T17:57:27.820302",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "solved_count": 10
+    },
+    {
+      "agent_id": "4241708b-8391-4d10-b37b-5f6aad0801db",
+      "average_score": 0.5,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T18:11:41.142431",
+      "generation": 2,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "solved_count": 6
+    },
+    {
+      "agent_id": "feddb9a0-582f-4609-8f71-908a78620486",
+      "average_score": 0.6666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T18:26:38.037585",
+      "generation": 2,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "solved_count": 8
+    },
+    {
+      "agent_id": "5ffbe17c-b7f2-4124-bfe1-5559b6bdd3b7",
+      "average_score": 0.5833333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T18:40:19.604213",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "solved_count": 7
+    },
+    {
+      "agent_id": "fb9e9eac-db39-4d08-90a5-82ecdc8212e2",
+      "average_score": 0.5833333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T18:55:12.079769",
+      "generation": 2,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "solved_count": 7
+    },
+    {
+      "agent_id": "76852526-bec1-43ee-938a-427725a85247",
+      "average_score": 0.6666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T19:08:46.276358",
+      "generation": 2,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "solved_count": 8
+    },
+    {
+      "agent_id": "e8a7dd40-e36e-43e6-a07d-505e3953b08e",
+      "average_score": 0.5833333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T19:23:03.102606",
+      "generation": 2,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "solved_count": 7
+    },
+    {
+      "agent_id": "6d310c36-9e49-409d-9b02-eb5899264ef6",
+      "average_score": 0.6666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T19:36:14.094261",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "solved_count": 8
+    },
+    {
+      "agent_id": "ea569f29-52cd-4067-a155-42fda1fba16d",
+      "average_score": 0.6666666666666666,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T19:50:23.573981",
+      "generation": 2,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "solved_count": 8
+    },
+    {
+      "agent_id": "f417d2e2-b35d-4be1-9baa-60e724d73edc",
+      "average_score": 0.5833333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T20:04:14.857995",
+      "generation": 2,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "solved_count": 7
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [
+      "63798436-99e2-43d9-a3d8-2d00cbf70047",
+      "33f98021-5aba-46ee-bfe4-640ed528cc8f",
+      "4f5faef1-0cec-4a52-a585-304a5931991b",
+      "d292576e-cd72-4c08-aa02-3356d837dede",
+      "a8122310-8a08-4271-a249-311d43b54593",
+      "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "5ffbe17c-b7f2-4124-bfe1-5559b6bdd3b7",
+      "6d310c36-9e49-409d-9b02-eb5899264ef6",
+      "4241708b-8391-4d10-b37b-5f6aad0801db",
+      "feddb9a0-582f-4609-8f71-908a78620486",
+      "fb9e9eac-db39-4d08-90a5-82ecdc8212e2",
+      "76852526-bec1-43ee-938a-427725a85247",
+      "e8a7dd40-e36e-43e6-a07d-505e3953b08e",
+      "ea569f29-52cd-4067-a155-42fda1fba16d",
+      "f417d2e2-b35d-4be1-9baa-60e724d73edc"
+    ],
+    "changed_count": 15,
+    "noop_agents": [],
+    "noop_count": 0,
+    "status_counts": {
+      "changed": 15
+    },
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [
+    {
+      "average_delta": 0.08333333333333337,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.75,
+      "child_generation": 1,
+      "child_id": "63798436-99e2-43d9-a3d8-2d00cbf70047",
+      "is_improvement": true,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    },
+    {
+      "average_delta": -0.16666666666666663,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": -1.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {
+        "livecodebench_abc389_d": -1.0,
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_d",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ],
+      "child_average_score": 0.5,
+      "child_generation": 1,
+      "child_id": "33f98021-5aba-46ee-bfe4-640ed528cc8f",
+      "is_improvement": false,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    },
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ],
+      "child_average_score": 0.6666666666666666,
+      "child_generation": 1,
+      "child_id": "4f5faef1-0cec-4a52-a585-304a5931991b",
+      "is_improvement": false,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    },
+    {
+      "average_delta": -0.08333333333333326,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {
+        "livecodebench_abc388_c": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_d",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc389_e",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ],
+      "child_average_score": 0.5833333333333334,
+      "child_generation": 1,
+      "child_id": "d292576e-cd72-4c08-aa02-3356d837dede",
+      "is_improvement": false,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    },
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": -1.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc387_c": -1.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc388_b",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.6666666666666666,
+      "child_generation": 1,
+      "child_id": "a8122310-8a08-4271-a249-311d43b54593",
+      "is_improvement": false,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    },
+    {
+      "average_delta": 0.16666666666666674,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_d",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc389_e",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.8333333333333334,
+      "child_generation": 1,
+      "child_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "is_improvement": true,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    },
+    {
+      "average_delta": -0.08333333333333326,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc390_e": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_d",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.5833333333333334,
+      "child_generation": 1,
+      "child_id": "5ffbe17c-b7f2-4124-bfe1-5559b6bdd3b7",
+      "is_improvement": false,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    },
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_e": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_d",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ],
+      "child_average_score": 0.6666666666666666,
+      "child_generation": 1,
+      "child_id": "6d310c36-9e49-409d-9b02-eb5899264ef6",
+      "is_improvement": false,
+      "parent_average_score": 0.6666666666666666,
+      "parent_generation": 0,
+      "parent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e"
+    },
+    {
+      "average_delta": -0.33333333333333337,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": -1.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": -1.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_d": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_e": -1.0,
+        "livecodebench_abc389_d": -1.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc389_a",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.5,
+      "child_generation": 2,
+      "child_id": "4241708b-8391-4d10-b37b-5f6aad0801db",
+      "is_improvement": false,
+      "parent_average_score": 0.8333333333333334,
+      "parent_generation": 1,
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83"
+    },
+    {
+      "average_delta": -0.16666666666666674,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": -1.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {
+        "livecodebench_abc387_c": -1.0,
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_d",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ],
+      "child_average_score": 0.6666666666666666,
+      "child_generation": 2,
+      "child_id": "feddb9a0-582f-4609-8f71-908a78620486",
+      "is_improvement": false,
+      "parent_average_score": 0.8333333333333334,
+      "parent_generation": 1,
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83"
+    },
+    {
+      "average_delta": -0.25,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_d",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.5833333333333334,
+      "child_generation": 2,
+      "child_id": "fb9e9eac-db39-4d08-90a5-82ecdc8212e2",
+      "is_improvement": false,
+      "parent_average_score": 0.8333333333333334,
+      "parent_generation": 1,
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83"
+    },
+    {
+      "average_delta": -0.16666666666666674,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_d",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ],
+      "child_average_score": 0.6666666666666666,
+      "child_generation": 2,
+      "child_id": "76852526-bec1-43ee-938a-427725a85247",
+      "is_improvement": false,
+      "parent_average_score": 0.8333333333333334,
+      "parent_generation": 1,
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83"
+    },
+    {
+      "average_delta": -0.25,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_d",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.5833333333333334,
+      "child_generation": 2,
+      "child_id": "e8a7dd40-e36e-43e6-a07d-505e3953b08e",
+      "is_improvement": false,
+      "parent_average_score": 0.8333333333333334,
+      "parent_generation": 1,
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83"
+    },
+    {
+      "average_delta": -0.16666666666666674,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": -1.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_d": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc388_e": -1.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.6666666666666666,
+      "child_generation": 2,
+      "child_id": "ea569f29-52cd-4067-a155-42fda1fba16d",
+      "is_improvement": false,
+      "parent_average_score": 0.8333333333333334,
+      "parent_generation": 1,
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83"
+    },
+    {
+      "average_delta": -0.25,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": -1.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_d": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc388_c": -1.0,
+        "livecodebench_abc388_e": -1.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d"
+      ],
+      "child_average_score": 0.5833333333333334,
+      "child_generation": 2,
+      "child_id": "f417d2e2-b35d-4be1-9baa-60e724d73edc",
+      "is_improvement": false,
+      "parent_average_score": 0.8333333333333334,
+      "parent_generation": 1,
+      "parent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83"
+    }
+  ],
+  "top_agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+  "top_score": 0.8333333333333334,
+  "total_agents": 16,
+  "total_benchmark_improvements": 14,
+  "total_benchmark_regressions": 34,
+  "total_benchmark_unchanged": 132,
+  "valid_agents": 16
+}

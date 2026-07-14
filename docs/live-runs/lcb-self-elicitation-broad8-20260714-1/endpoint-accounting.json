@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "provider": "OpenRouter",
+  "scope": "key usage endpoint",
+  "currency": "USD",
+  "native_start": 358.439322897,
+  "evolution_start": 366.236475173,
+  "closeout": 565.881637,
+  "native_delta": 7.797152276,
+  "evolution_delta": 199.645161827,
+  "combined_delta": 207.442314103,
+  "telemetry_pinned_price_estimate": 220.752797,
+  "spend_authority": "endpoint combined_delta",
+  "note": "Telemetry reprices logged tokens at declared catalog rates and is analytical, not the billing authority."
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "bundle": "lcb-self-elicitation-broad8-20260714-1",
+  "source": {
+    "repo_url": "https://github.com/lemoz/darwin-godel-machine.git",
+    "commit": "522ace0a78dda031ffab8f575c34738d723f653a",
+    "branch_at_closeout": "codex/gemma-parallel-search"
+  },
+  "matrix": "config/livecodebench_self_elicitation_matrix.yaml",
+  "segment": {
+    "id": "release_v6_atcoder_loop12",
+    "problems": 12,
+    "tests": 512,
+    "private_tests": 480
+  },
+  "native": {
+    "extra_workers": 8,
+    "generation_zero_observations_per_model": 3
+  },
+  "evolution": {
+    "base_run_id": "sebc-e1-20260714b",
+    "models": 8,
+    "workers_per_model": 2,
+    "workers": 16,
+    "generations_per_worker_ceiling": 15,
+    "generation_attempt_ceiling": 240,
+    "generation_loops_executed": 209,
+    "max_concurrency": 8,
+    "mutation_mode": "self"
+  },
+  "metric": {
+    "native_score": "median of the extra native run and generation-zero score from both ladders",
+    "replicated_ladder_floor": "minimum terminal top score across the two independent ladders",
+    "reliable_score": "maximum of native median and replicated ladder floor",
+    "capability_overhang": "reliable score minus native median",
+    "protocol_blocked_measurements_report_overhang": false
+  },
+  "budget": {
+    "currency": "USD",
+    "live_watchdog_stop": 300.0,
+    "approved_openrouter_ceiling": 318.545104,
+    "approved_all_in_ceiling": 325.0
+  },
+  "artifacts": {
+    "gcs_root": "gs://dgm-live-runs-doittogether-prod/self-elicitation-broad-credible-20260714/",
+    "terminal_evolution_scorecards": 16,
+    "terminal_native_scorecards": 8,
+    "evolution_exit_zero": 16,
+    "native_exit_zero": 8
+  }
+}
