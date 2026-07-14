@@ -9,7 +9,9 @@ import io
 import json
 import pickle
 import re
+import subprocess
 import sys
+import tempfile
 import urllib.request
 import zlib
 from collections import Counter
@@ -96,6 +98,54 @@ def _iter_jsonl(source: dict[str, Any], project_root: Path) -> Iterator[dict[str
         with path.open(encoding="utf-8") as handle:
             for line in handle:
                 line = line.strip()
+                if line:
+                    yield json.loads(line)
+        return
+
+    transport = str(source.get("download_transport", "urllib"))
+    _require(transport in {"urllib", "curl"}, "download_transport must be urllib or curl")
+    if transport == "curl":
+        timeout = int(source.get("download_timeout", 120))
+        with tempfile.NamedTemporaryFile() as download:
+            command = [
+                "curl",
+                "--location",
+                "--fail",
+                "--silent",
+                "--show-error",
+                "--retry",
+                "4",
+                "--retry-delay",
+                "2",
+                "--retry-all-errors",
+                "--connect-timeout",
+                str(min(timeout, 30)),
+                "--max-time",
+                str(timeout),
+                "--output",
+                download.name,
+                _source_url(source),
+            ]
+            try:
+                result = subprocess.run(
+                    command,
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=timeout + 30,
+                )
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                raise LiveCodeBenchSegmentError(
+                    "curl dataset download failed before producing a source file"
+                ) from exc
+            _require(
+                result.returncode == 0,
+                f"curl dataset download failed: {result.stderr.strip()[-1000:]}",
+            )
+            download.seek(0)
+            for raw_line in download:
+                line = raw_line.decode("utf-8").strip()
                 if line:
                     yield json.loads(line)
         return

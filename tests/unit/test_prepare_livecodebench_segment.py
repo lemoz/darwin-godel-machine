@@ -1,6 +1,7 @@
 import base64
 import json
 import pickle
+import subprocess
 import zlib
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from scripts.prepare_livecodebench_segment import (
     _main,
     benchmark_name_for_question,
     prepare_livecodebench_segment,
+    _iter_jsonl,
 )
 
 
@@ -103,6 +105,32 @@ def _write_config(tmp_path: Path, jsonl_path: Path) -> Path:
 
 def test_benchmark_name_for_question_slugifies():
     assert benchmark_name_for_question("ABC-001_A") == "livecodebench_abc_001_a"
+
+
+def test_iter_jsonl_supports_curl_transport(tmp_path, monkeypatch):
+    rows = [{"question_id": "one"}, {"question_id": "two"}]
+
+    def fake_run(command, **kwargs):
+        output = Path(command[command.index("--output") + 1])
+        output.write_text(
+            "\n".join(json.dumps(row) for row in rows) + "\n",
+            encoding="utf-8",
+        )
+        assert command[-1] == "https://example.test/test6.jsonl"
+        assert kwargs["timeout"] == 150
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(
+        "scripts.prepare_livecodebench_segment.subprocess.run",
+        fake_run,
+    )
+
+    source = {
+        "url": "https://example.test/test6.jsonl",
+        "download_transport": "curl",
+        "download_timeout": 120,
+    }
+    assert list(_iter_jsonl(source, tmp_path)) == rows
 
 
 def test_prepare_livecodebench_segment_writes_hidden_test_benchmarks(tmp_path):

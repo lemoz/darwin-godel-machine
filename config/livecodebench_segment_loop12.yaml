@@ -15,6 +15,7 @@ source:
   source_file: test6.jsonl
   version_label: release_v6
   decoder_reference: https://github.com/livecodebench/livecodebench/blob/main/lcb_runner/benchmarks/code_generation.py
+  download_transport: curl
   download_timeout: 120
 
 selection:
