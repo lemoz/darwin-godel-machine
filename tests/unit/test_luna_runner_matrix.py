@@ -6,6 +6,7 @@ import pytest
 import yaml
 
 from scripts.estimate_luna_runner_matrix import estimate_matrix
+from scripts.estimate_self_elicitation_matrix import estimate_self_elicitation_matrix
 from scripts.materialize_luna_runner_matrix import materialize_matrix
 from scripts.run_cloud_luna_runner_matrix import (
     _delete_vms,
@@ -19,6 +20,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MATRIX_PATH = PROJECT_ROOT / "config/livecodebench_luna_runner_matrix.yaml"
 RECOVERY_MATRIX_PATH = (
     PROJECT_ROOT / "config/livecodebench_luna_recovery_runner_matrix.yaml"
+)
+SELF_ELICITATION_MATRIX_PATH = (
+    PROJECT_ROOT / "config/livecodebench_self_elicitation_matrix.yaml"
 )
 REFERENCE_PROOF = (
     PROJECT_ROOT / "docs/live-runs/lcb64-fable5-mutator-gemma3-20260712-1"
@@ -115,6 +119,81 @@ def test_materializes_recovery_runners_and_builds_native_baseline(tmp_path: Path
     assert plan["total_generation_attempt_ceiling"] == 0
     assert plan["max_concurrency"] == 4
     assert plan["max_budget_usd"] == 20
+
+
+def test_materializes_broad_credible_self_elicitation_matrix(tmp_path: Path):
+    matrix_path = tmp_path / "config/livecodebench_self_elicitation_matrix.yaml"
+    matrix_path.parent.mkdir(parents=True)
+    matrix_path.write_text(
+        SELF_ELICITATION_MATRIX_PATH.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "config/generated/self_elicitation_matrix"
+    manifest = materialize_matrix(
+        matrix_path=matrix_path,
+        output_dir=output_dir,
+        project_root=tmp_path,
+    )
+    manifest_path = output_dir / "manifest.json"
+
+    assert manifest["config_count"] == 16
+    assert len({item["slug"] for item in manifest["configs"]}) == 8
+    for item in manifest["configs"]:
+        config = yaml.safe_load((tmp_path / item["config"]).read_text(encoding="utf-8"))
+        runner = config["fm_providers"]["runner"]
+        mutator = config["fm_providers"]["self_mutator"]
+        assert runner["model"] == item["model"]
+        assert mutator["model"] == item["model"]
+        assert config["self_modification"]["fm_provider"] == "self_mutator"
+        assert config["live_run"]["matrix"]["mutation_mode"] == "self"
+
+    kwargs = _plan_kwargs(tmp_path, matrix_path, manifest_path)
+    native = build_runner_matrix_plan(
+        phase="evolution",
+        generations_override=0,
+        workers_per_model_override=1,
+        max_concurrency_override=8,
+        max_budget_usd=10,
+        **kwargs,
+    )
+    assert native["workers"] == 8
+    assert native["total_generation_attempt_ceiling"] == 0
+    assert all(
+        worker["model"] == worker["mutation_model"]
+        for worker in native["worker_plans"]
+    )
+
+    evolution = build_runner_matrix_plan(phase="evolution", **kwargs)
+    assert evolution["workers"] == 16
+    assert evolution["workers_per_model"] == 2
+    assert evolution["generations_per_worker"] == 15
+    assert evolution["total_generation_attempt_ceiling"] == 240
+    assert evolution["max_concurrency"] == 8
+    assert evolution["max_budget_usd"] == 290
+    assert evolution["source"]["mutation_mode"] == "self"
+    assert evolution["source"]["mutation_model"] == "self"
+    assert all(
+        worker["cloud_plan"]["source"]["model"]
+        == worker["cloud_plan"]["source"]["mutation_model"]
+        for worker in evolution["worker_plans"]
+    )
+
+
+def test_broad_credible_self_elicitation_cost_contract():
+    estimate = estimate_self_elicitation_matrix(SELF_ELICITATION_MATRIX_PATH)
+
+    assert estimate["models"] == 8
+    assert estimate["native_observations_per_model"] == 3
+    assert estimate["independent_ladders_per_model"] == 2
+    assert estimate["total_generation_attempt_ceiling"] == 240
+    assert estimate["empirical_expected_openrouter_usd"] == pytest.approx(
+        254.836083, abs=0.000001
+    )
+    assert estimate["approved_openrouter_ceiling_usd"] == pytest.approx(
+        318.545104, abs=0.000001
+    )
+    assert estimate["approved_all_in_usd"] == 325
+    assert estimate["within_budget"] is True
 
 
 def test_calibration_and_evolution_configs_have_full_experiment_shape(tmp_path: Path):

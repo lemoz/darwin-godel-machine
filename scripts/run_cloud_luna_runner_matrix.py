@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plan and execute heterogeneous Luna-mutator runner fleets on ephemeral VMs."""
+"""Plan and execute heterogeneous runner/mutator fleets on ephemeral VMs."""
 
 from __future__ import annotations
 
@@ -26,7 +26,9 @@ from scripts.run_live_eval_on_cloud_vm import (
     execute_plan,
     write_plan_files,
 )
+from scripts.materialize_luna_runner_matrix import resolve_mutation
 from scripts.run_parallel_cloud_dgm import (
+    get_openrouter_key_usage,
     get_openrouter_total_usage,
     recover_missing_gcs_artifacts,
 )
@@ -149,7 +151,6 @@ def build_runner_matrix_plan(
     _require(max_concurrency > 0, "max concurrency must be positive")
     _require(budget > 0, "matrix budget must be positive")
 
-    mutation = matrix["mutation"]
     if phase == "evolution":
         _require(
             max_concurrency >= len(selected_models),
@@ -160,6 +161,7 @@ def build_runner_matrix_plan(
     for worker_index in range(1, workers_per_model + 1):
         for model in selected_models:
             slug = model["slug"]
+            mutation = resolve_mutation(matrix, model)
             generated = configs.get((slug, phase))
             _require(generated is not None, f"missing generated {phase} config for {slug}")
             config_label = generated["config"]
@@ -213,6 +215,8 @@ def build_runner_matrix_plan(
                 {
                     "model_slug": slug,
                     "model": model["model"],
+                    "mutation_model": mutation["model"],
+                    "mutation_mode": mutation["mode"],
                     "worker_id": worker_index,
                     "run_id": run_id,
                     "config": config_label,
@@ -225,7 +229,7 @@ def build_runner_matrix_plan(
     _require(max_concurrency <= len(worker_plans), "max concurrency exceeds worker count")
     return {
         "schema_version": 1,
-        "name": "cloud_luna_runner_matrix_plan",
+        "name": "cloud_runner_matrix_plan",
         "status": "planned",
         "phase": phase,
         "base_run_id": base_run_id,
@@ -245,7 +249,12 @@ def build_runner_matrix_plan(
         "source": {
             "repo_url": repo_url,
             "commit": commit,
-            "mutation_model": mutation["model"],
+            "mutation_mode": str(matrix.get("mutation", {}).get("mode", "fixed")),
+            "mutation_model": (
+                "self"
+                if str(matrix.get("mutation", {}).get("mode", "fixed")) == "self"
+                else matrix["mutation"]["model"]
+            ),
             "seed_mode": phase_config.get("seed_mode", "calibrated_archive"),
         },
         "worker_plans": worker_plans,
@@ -338,7 +347,7 @@ def aggregate_runner_matrix(plan: dict[str, Any]) -> dict[str, Any]:
         )
     return {
         "schema_version": 1,
-        "name": "cloud_luna_runner_matrix_aggregate",
+        "name": "cloud_runner_matrix_aggregate",
         "phase": plan["phase"],
         "models": list(model_rows.values()),
         "models_with_scorecards": sum(
@@ -360,6 +369,7 @@ async def execute_runner_matrix(
     executor: Callable[[dict[str, Any]], None] = execute_plan,
     usage_reader: Callable[[str], float] = get_openrouter_total_usage,
     progress_output: Path | None = None,
+    budget_scope: str = "account",
 ) -> dict[str, Any]:
     start_usage = await asyncio.to_thread(usage_reader, budget_api_key)
     if progress_output is not None:
@@ -367,13 +377,14 @@ async def execute_runner_matrix(
             progress_output,
             {
                 "schema_version": 1,
-                "name": "cloud_luna_runner_matrix_live_state",
+                "name": "cloud_runner_matrix_live_state",
                 "status": "running",
                 "phase": plan["phase"],
                 "openrouter_usage_start_usd": start_usage,
                 "openrouter_usage_current_usd": start_usage,
                 "openrouter_usage_delta_usd": 0.0,
                 "max_budget_usd": plan["max_budget_usd"],
+                "budget_scope": budget_scope,
             },
         )
     semaphore = asyncio.Semaphore(plan["max_concurrency"])
@@ -410,13 +421,14 @@ async def execute_runner_matrix(
                     progress_output,
                     {
                         "schema_version": 1,
-                        "name": "cloud_luna_runner_matrix_live_state",
+                        "name": "cloud_runner_matrix_live_state",
                         "status": "running",
                         "phase": plan["phase"],
                         "openrouter_usage_start_usd": start_usage,
                         "openrouter_usage_current_usd": usage,
                         "openrouter_usage_delta_usd": delta,
                         "max_budget_usd": plan["max_budget_usd"],
+                        "budget_scope": budget_scope,
                     },
                 )
             print(
@@ -456,6 +468,7 @@ async def execute_runner_matrix(
             "openrouter_usage_delta_usd": max(0.0, final_usage - start_usage),
             "budget_exceeded": budget_exceeded,
             "gcs_recovered_workers": recovered,
+            "budget_scope": budget_scope,
         }
     )
     return aggregate
@@ -496,6 +509,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--workers-per-model", type=int)
     parser.add_argument("--max-concurrency", type=int)
     parser.add_argument("--budget-env", default="OPENROUTER_API_KEY")
+    parser.add_argument(
+        "--budget-scope",
+        choices=("account", "key"),
+        default="account",
+        help="Measure spend against the whole account or only the supplied API key.",
+    )
     parser.add_argument("--budget-poll-seconds", type=float, default=15.0)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--aggregate-output", type=Path, required=True)
@@ -535,11 +554,18 @@ async def _main(args: argparse.Namespace) -> int:
             return 0
         api_key = os.environ.get(args.budget_env, "")
         _require(bool(api_key), f"budget environment variable is missing: {args.budget_env}")
+        usage_reader = (
+            get_openrouter_key_usage
+            if args.budget_scope == "key"
+            else get_openrouter_total_usage
+        )
         aggregate = await execute_runner_matrix(
             plan,
             budget_api_key=api_key,
             poll_seconds=args.budget_poll_seconds,
+            usage_reader=usage_reader,
             progress_output=args.aggregate_output,
+            budget_scope=args.budget_scope,
         )
         _write_json(args.aggregate_output, aggregate)
         print(

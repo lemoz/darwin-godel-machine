@@ -41,6 +41,36 @@ def _require(condition: bool, message: str) -> None:
         raise MatrixMaterializationError(message)
 
 
+def resolve_mutation(
+    matrix: dict[str, Any], model: dict[str, Any]
+) -> dict[str, Any]:
+    """Resolve a fixed external mutator or a model's self-mutator endpoint."""
+    mutation = deepcopy(matrix.get("mutation") or {})
+    mode = str(mutation.pop("mode", "fixed"))
+    provider_key = str(mutation.pop("provider_key", "mutation"))
+    _require(mode in {"fixed", "self"}, "mutation mode must be fixed or self")
+    _require(bool(provider_key), "mutation provider_key is required")
+    mutation.pop("input_price_per_mtok", None)
+    mutation.pop("output_price_per_mtok", None)
+    mutation.pop("max_agent_iterations", None)
+    if mode == "self":
+        mutation["model"] = model["model"]
+        input_price = float(model["input_price_per_mtok"])
+        output_price = float(model["output_price_per_mtok"])
+    else:
+        _require(bool(mutation.get("model")), "fixed mutation model is required")
+        input_price = float(matrix["mutation"]["input_price_per_mtok"])
+        output_price = float(matrix["mutation"]["output_price_per_mtok"])
+    return {
+        "mode": mode,
+        "provider_key": provider_key,
+        "model": mutation["model"],
+        "input_price_per_mtok": input_price,
+        "output_price_per_mtok": output_price,
+        "provider": mutation,
+    }
+
+
 def _load_matrix(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     _require(bool(payload.get("name")), "matrix name is required")
@@ -48,10 +78,16 @@ def _load_matrix(path: Path) -> dict[str, Any]:
     _require(isinstance(models, list) and bool(models), "matrix must contain models")
     slugs = [item.get("slug") for item in models]
     _require(len(set(slugs)) == len(slugs), "matrix model slugs must be unique")
+    mutation_mode = str(payload.get("mutation", {}).get("mode", "fixed"))
     _require(
-        payload.get("mutation", {}).get("model") == "openai/gpt-5.6-luna",
-        "matrix mutator must be GPT-5.6 Luna",
+        mutation_mode in {"fixed", "self"},
+        "mutation mode must be fixed or self",
     )
+    if mutation_mode == "fixed":
+        _require(
+            bool(payload.get("mutation", {}).get("model")),
+            "fixed mutation model is required",
+        )
     return payload
 
 
@@ -70,10 +106,7 @@ def _base_config(
     root = f".dgm-live-runs/{run_root}/{phase}/{slug}"
     runner = deepcopy(matrix["runner_defaults"])
     runner["model"] = model["model"]
-    mutation = deepcopy(matrix["mutation"])
-    mutation.pop("provider_key", None)
-    mutation.pop("input_price_per_mtok", None)
-    mutation.pop("output_price_per_mtok", None)
+    mutation = resolve_mutation(matrix, model)
     parent_selection = {
         "lambda": 10,
         "alpha_0": 0.5,
@@ -100,7 +133,7 @@ def _base_config(
         "fm_providers": {
             "primary": "runner",
             "runner": runner,
-            "luna_mutator": mutation,
+            mutation["provider_key"]: mutation["provider"],
         },
         "archive": {"path": f"{root}/archive"},
         "parent_selection": parent_selection,
@@ -125,7 +158,7 @@ def _base_config(
             "max_steps": 7,
         },
         "self_modification": {
-            "fm_provider": "luna_mutator",
+            "fm_provider": mutation["provider_key"],
             "max_steps": 3,
             "max_consecutive_noop_mutations": 8,
             "constrained_mutation": {
@@ -175,14 +208,14 @@ def _live_run_metadata(
     config_label: str,
     archive: str,
 ) -> dict[str, Any]:
-    mutation = matrix["mutation"]
+    mutation = resolve_mutation(matrix, model)
     generations = (
         int(matrix["calibration"]["generations"])
         if phase == "calibration"
         else int(matrix["evolution"]["generations_per_worker"])
     )
     live_run = {
-        "purpose": f"livecodebench_luna_runner_matrix_{phase}",
+        "purpose": f"{matrix['name']}_{phase}",
         "approval_required": True,
         "recommended_generations": generations,
         "matrix": {
@@ -191,6 +224,7 @@ def _live_run_metadata(
             "model_slug": model["slug"],
             "runner_model": model["model"],
             "mutation_model": mutation["model"],
+            "mutation_mode": mutation["mode"],
         },
         "segment": {
             "config": matrix["segment"]["config"],
@@ -326,7 +360,7 @@ def materialize_matrix(
             )
     manifest = {
         "schema_version": 1,
-        "name": "materialized_luna_runner_matrix",
+        "name": f"materialized_{matrix['name']}",
         "matrix": _relative(matrix_path, project_root),
         "config_count": len(configs),
         "configs": configs,

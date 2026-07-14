@@ -1,6 +1,6 @@
 # Self-Elicitation and Capability Overhang
 
-Status: proposed Fort Labs research direction; no run is approved or scheduled by this document.  
+Status: broad credible experiment approved on 2026-07-14; launch remains subject to credential, model, budget, and cloud preflights.
 Pricing snapshot: 2026-07-14, OpenRouter public model catalog.  
 Initial evaluation surface: the existing 12-problem LiveCodeBench segment.
 
@@ -71,6 +71,25 @@ Report at least:
 - easy-task regression rate;
 - provider failure and empty-response rate;
 - repeatability across ladders.
+
+### Approved execution contract
+
+The approved first measurement is the full eight-model cross-provider matrix,
+not the Qwen-only study. Its executable source of truth is
+`config/livecodebench_self_elicitation_matrix.yaml`.
+
+- Each model uses the same exact OpenRouter alias as runner and mutator, with
+  separate fixed role prompts and shared generic agent scaffolding.
+- The shared protocol does not request a model-specific reasoning mode; every
+  endpoint uses its provider-default reasoning behavior.
+- One extra zero-generation worker plus the generation-zero evaluation in each
+  of two ladders yields three native observations per model.
+- Two isolated 15-generation workers per model yield 16 ladders and a ceiling
+  of 240 mutation generations.
+- The empirical model estimate is $254.84. A 25% reserve produces a $318.55
+  OpenRouter ceiling, and the all-in OpenRouter plus GCP approval is $325.
+- The live watchdog stops below the approved ceiling and uses key-scoped usage
+  accounting so polling overshoot has explicit headroom.
 
 ## Candidate model set and cost
 
@@ -161,13 +180,9 @@ project relationship and public wording are agreed.
 
 ## Decisions still to discuss
 
-1. Whether the first public result should be the inexpensive Qwen-scale study
-   or the full cross-provider matrix.
-2. Whether “self-elicitation” requires the same model endpoint for runner and
-   mutator, or the same underlying model with separate fixed role prompts.
-3. Whether Fort-Eval should define a reusable capability-overhang profile or
+1. Whether Fort-Eval should define a reusable capability-overhang profile or
    DGM should publish the protocol first and graduate it later.
-4. How DGM should appear on the Fort Labs site without implying ownership of
+2. How DGM should appear on the Fort Labs site without implying ownership of
    the Sakana AI research project or universal comparability across budgets.
 
 ## Related projects

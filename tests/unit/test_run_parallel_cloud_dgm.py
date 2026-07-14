@@ -13,6 +13,7 @@ from scripts.run_parallel_cloud_dgm import (
     aggregate_parallel_artifacts,
     build_parallel_cloud_plan,
     execute_parallel_cloud_plan,
+    get_openrouter_key_usage,
     recover_missing_gcs_artifacts,
 )
 
@@ -90,6 +91,33 @@ def test_parallel_plan_has_isolated_workers_and_shared_budget(tmp_path):
 def test_parallel_plan_rejects_shared_estimate_over_budget(tmp_path):
     with pytest.raises(ParallelCloudRunError, match="exceeds shared budget"):
         _plan(tmp_path, workers=8, max_budget=0.01)
+
+
+def test_openrouter_key_usage_is_key_scoped(monkeypatch):
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self):
+            return b'{"data":{"usage":12.5,"usage_daily":1.25}}'
+
+    requests = []
+
+    def fake_urlopen(request, timeout):
+        requests.append((request, timeout))
+        return Response()
+
+    monkeypatch.setattr(
+        "scripts.run_parallel_cloud_dgm.urllib.request.urlopen",
+        fake_urlopen,
+    )
+
+    assert get_openrouter_key_usage("secret") == 12.5
+    assert requests[0][0].full_url == "https://openrouter.ai/api/v1/key"
+    assert requests[0][0].headers["Authorization"] == "Bearer secret"
 
 
 def test_parallel_aggregate_subtracts_seed_counts(tmp_path):

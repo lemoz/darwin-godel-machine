@@ -230,6 +230,17 @@ def get_openrouter_total_usage(api_key: str) -> float:
     return float(payload["data"]["total_usage"])
 
 
+def get_openrouter_key_usage(api_key: str) -> float:
+    """Return usage attributed to one OpenRouter API key."""
+    request = urllib.request.Request(
+        "https://openrouter.ai/api/v1/key",
+        headers={"Authorization": f"Bearer {api_key}"},
+    )
+    with urllib.request.urlopen(request, timeout=20) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    return float(payload["data"]["usage"])
+
+
 def _delete_worker_vms(plan: dict[str, Any]) -> None:
     for worker in plan["worker_plans"]:
         subprocess.run(
