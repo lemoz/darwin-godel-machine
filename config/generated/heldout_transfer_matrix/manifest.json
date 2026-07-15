@@ -1,0 +1,36 @@
+{
+  "config_count": 4,
+  "configs": [
+    {
+      "archive": ".dgm-live-runs/heldout-transfer-20260715/gemini35-transfer/archive",
+      "config": "config/generated/heldout_transfer_matrix/gemini35-transfer-calibration.yaml",
+      "model": "google/gemini-3.5-flash",
+      "phase": "calibration",
+      "slug": "gemini35-transfer"
+    },
+    {
+      "archive": ".dgm-live-runs/heldout-transfer-20260715/gpt56-task-transfer/archive",
+      "config": "config/generated/heldout_transfer_matrix/gpt56-task-transfer-calibration.yaml",
+      "model": "openai/gpt-5.6-sol",
+      "phase": "calibration",
+      "slug": "gpt56-task-transfer"
+    },
+    {
+      "archive": ".dgm-live-runs/heldout-transfer-20260715/gpt56-generic-transfer/archive",
+      "config": "config/generated/heldout_transfer_matrix/gpt56-generic-transfer-calibration.yaml",
+      "model": "openai/gpt-5.6-sol",
+      "phase": "calibration",
+      "slug": "gpt56-generic-transfer"
+    },
+    {
+      "archive": ".dgm-live-runs/heldout-transfer-20260715/fable5-transfer/archive",
+      "config": "config/generated/heldout_transfer_matrix/fable5-transfer-calibration.yaml",
+      "model": "anthropic/claude-fable-5",
+      "phase": "calibration",
+      "slug": "fable5-transfer"
+    }
+  ],
+  "matrix": "config/livecodebench_heldout_transfer_matrix.yaml",
+  "name": "materialized_livecodebench_heldout_transfer",
+  "schema_version": 1
+}

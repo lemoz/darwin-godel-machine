@@ -18,7 +18,7 @@ fm_providers:
     temperature: 0.2
     timeout: 120
     timeout_retries: 0
-    tool_choice_policy: required_read_then_workspace_change
+    tool_choice_policy: auto_read_then_workspace_change
     model: qwen/qwen3.7-max
 archive:
   path: .dgm-live-runs/self-elicitation-broad-credible-20260714/calibration/qwen37-max/archive

@@ -119,6 +119,10 @@ models:
     model: qwen/qwen3.7-max
     vendor: Alibaba
     scale: proprietary flagship
+    # Alibaba thinking mode rejects forced required/object tool_choice. Keep
+    # the staged read-then-write schemas but let the endpoint select the only
+    # exposed tool through its default/auto behavior.
+    mutation_tool_choice_policy: auto_read_then_workspace_change
     input_price_per_mtok: 1.25
     output_price_per_mtok: 3.75
   - slug: gemini35-flash

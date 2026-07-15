@@ -55,6 +55,17 @@ def resolve_mutation(
     mutation.pop("max_agent_iterations", None)
     if mode == "self":
         mutation["model"] = model["model"]
+        tool_choice_policy = model.get("mutation_tool_choice_policy")
+        if tool_choice_policy is not None:
+            _require(
+                tool_choice_policy
+                in {
+                    "required_read_then_workspace_change",
+                    "auto_read_then_workspace_change",
+                },
+                "mutation_tool_choice_policy is unsupported",
+            )
+            mutation["tool_choice_policy"] = tool_choice_policy
         input_price = float(model["input_price_per_mtok"])
         output_price = float(model["output_price_per_mtok"])
     else:

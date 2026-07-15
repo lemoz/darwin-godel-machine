@@ -226,6 +226,31 @@ class TestAgentInit:
         assert agent._self_modification_write_observed is True
         assert len(agent._tool_schemas_for_step(is_self_modification=True)) == 2
 
+    def test_auto_read_then_write_policy_keeps_staged_schema_without_forcing_choice(
+        self,
+        tmp_path,
+    ):
+        cfg = _make_config(tmp_path)
+        cfg.fm_config = {
+            **FM_CONFIG,
+            "tool_choice_policy": "auto_read_then_workspace_change",
+        }
+        agent = Agent(cfg)
+        task = Task(task_id="self_modify_canary_0", description="modify")
+        before = agent._snapshot_agent_code_files()
+
+        schemas = agent._tool_schemas_for_step(is_self_modification=True)
+
+        assert [schema["name"] for schema in schemas] == ["edit"]
+        assert schemas[0]["parameters"]["properties"]["action"]["enum"] == [
+            "read"
+        ]
+        assert agent._tool_choice_for_step(
+            task=task,
+            is_self_modification=True,
+            initial_agent_code_snapshot=before,
+        ) is None
+
     async def test_close_releases_provider_client(self, tmp_path):
         agent = Agent(_make_config(tmp_path))
         closed = {}

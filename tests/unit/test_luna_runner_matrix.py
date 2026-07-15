@@ -146,6 +146,12 @@ def test_materializes_broad_credible_self_elicitation_matrix(tmp_path: Path):
         assert mutator["model"] == item["model"]
         assert config["self_modification"]["fm_provider"] == "self_mutator"
         assert config["live_run"]["matrix"]["mutation_mode"] == "self"
+        expected_policy = (
+            "auto_read_then_workspace_change"
+            if item["slug"] == "qwen37-max"
+            else "required_read_then_workspace_change"
+        )
+        assert mutator["tool_choice_policy"] == expected_policy
 
     kwargs = _plan_kwargs(tmp_path, matrix_path, manifest_path)
     native = build_runner_matrix_plan(

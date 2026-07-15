@@ -579,7 +579,10 @@ class Agent:
         """Expose a narrow read-only discovery call before Gemma may mutate."""
         schemas = self.tool_registry.get_tool_schemas()
         policy = self.config.fm_config.get("tool_choice_policy")
-        if policy != "required_read_then_workspace_change" or not is_self_modification:
+        if policy not in {
+            "required_read_then_workspace_change",
+            "auto_read_then_workspace_change",
+        } or not is_self_modification:
             return schemas
 
         edit_schema = next(
@@ -633,6 +636,8 @@ class Agent:
     ) -> Optional[str]:
         """Require native tool use until a task has produced its first artifact."""
         policy = self.config.fm_config.get("tool_choice_policy")
+        if policy == "auto_read_then_workspace_change":
+            return None
         if policy not in {
             "required_until_workspace_change",
             "required_read_then_workspace_change",
