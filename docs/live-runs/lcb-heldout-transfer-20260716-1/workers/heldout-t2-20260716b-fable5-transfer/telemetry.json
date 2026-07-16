@@ -1,0 +1,158 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+        "average_score": 0.625,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T16:33:40.530908",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 8
+      },
+      {
+        "agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+        "average_score": 0.7083333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T17:57:27.820302",
+        "generation": 0,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": null,
+        "solved_count": 9
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {}
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc391_d": 2,
+      "livecodebench_abc391_e": 1,
+      "livecodebench_abc392_d": 2,
+      "livecodebench_abc392_f": 2
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 2,
+    "improvement_rate": 0.0,
+    "runtime_hours": 1.9472222222222222e-07,
+    "successful_improvements": 0,
+    "total_agents_created": 0,
+    "total_generations": 0
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 0,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc391_d": 2,
+      "livecodebench_abc391_e": 1,
+      "livecodebench_abc392_d": 2,
+      "livecodebench_abc392_f": 2
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": null,
+    "completion_latency_seconds": {
+      "average": null,
+      "count": 0,
+      "max": null
+    },
+    "configured_timeout_seconds": null,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 0,
+    "model": "anthropic/claude-fable-5",
+    "model_from_log": null,
+    "name": "openrouter",
+    "timeout_count": 0
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/heldout-transfer-20260715/fable5-transfer/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/heldout-t2-20260716b-fable5-transfer/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/heldout-transfer-20260715/fable5-transfer/results/dgm_report_20260716_011414.json",
+    "end_time": "2026-07-16T01:14:14.960000",
+    "line_count": 41,
+    "observed_runtime_seconds": 3.208,
+    "scorecard": "/var/tmp/dgm-live-runs/heldout-t2-20260716b-fable5-transfer/artifacts/scorecard.json",
+    "start_time": "2026-07-16T01:14:11.752000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.7083333333333334,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+        "average_score": 0.7083333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 9
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": false,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+        "average_score": 0.625,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 8
+      },
+      {
+        "agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+        "average_score": 0.7083333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": null,
+        "solved_count": 9
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [],
+      "changed_count": 0,
+      "noop_agents": [],
+      "noop_count": 0,
+      "status_counts": {},
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+    "top_score": 0.7083333333333334,
+    "total_agents": 2,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 0,
+    "valid_agents": 2
+  },
+  "tokens": {
+    "by_model": {},
+    "completion_tokens": 0,
+    "estimated_cost_usd": 0.0,
+    "input_price_per_mtok": 10.0,
+    "output_price_per_mtok": 50.0,
+    "prompt_tokens": 0,
+    "total_tokens": 0,
+    "usage_events": 0
+  }
+}

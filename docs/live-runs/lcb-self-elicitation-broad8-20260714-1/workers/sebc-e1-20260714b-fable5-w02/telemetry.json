@@ -1,0 +1,530 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T17:40:59.816355",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "133709f9-80bd-4226-9a08-db6a34a0b88d",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T17:55:45.097268",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "47a1d374-1afd-4e22-ab64-e34924ee2406",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T18:11:49.379424",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 6
+      },
+      {
+        "agent_id": "b964f0c6-22e4-4e88-ac4a-73a173427b6b",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T18:24:57.842825",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "3382412c-1198-4eef-aa8c-e0b1151b582b",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T18:40:03.146318",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "d5de657b-44e6-4a76-a20e-96109cc71dcd",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T18:56:51.169006",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "e734a024-04c3-4681-8475-60dc1b549e86",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T19:11:36.092437",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "cc9fadc3-067b-426d-8d40-33bd9941c727",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-07-14T19:11:55.958229",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "3169cf11-3dc1-4ccb-84a7-ba83b3eb836f",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T19:26:20.542096",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 6
+      },
+      {
+        "agent_id": "f6a49ad1-40b7-4d3c-9e86-67a077ef1d03",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T19:42:16.024309",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 9
+      },
+      {
+        "agent_id": "280bed8c-6693-4d45-a692-8379d16ae043",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T19:54:12.708825",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 9
+      },
+      {
+        "agent_id": "05181fc8-d9c1-44bc-8e88-5eb2a0ae9155",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T20:09:56.031097",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "def5fd4a-5694-40b6-b6fc-c933b3410e6d",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T20:25:44.751616",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 6
+      },
+      {
+        "agent_id": "21f96d50-93c4-444e-ad4d-072c8bf5a5ed",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T20:40:13.821537",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "936687f8-ec98-4004-ab3f-b437fe948de1",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T20:55:34.244432",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "cf162e01-1447-4d40-942e-e9e84eb006cd",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T21:11:10.884142",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {
+        "changed": 14,
+        "noop": 1
+      }
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 4,
+      "livecodebench_abc388_c": 4,
+      "livecodebench_abc388_d": 5,
+      "livecodebench_abc388_e": 10,
+      "livecodebench_abc389_d": 8,
+      "livecodebench_abc389_e": 12,
+      "livecodebench_abc390_d": 15,
+      "livecodebench_abc390_e": 8
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 16,
+    "improvement_rate": 0.0,
+    "runtime_hours": 3.745539658611111,
+    "successful_improvements": 0,
+    "total_agents_created": 14,
+    "total_generations": 15
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 199,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 2,
+    "resource_guard_rejections": 0,
+    "traceback_count": 40,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 4,
+      "livecodebench_abc388_c": 4,
+      "livecodebench_abc388_d": 5,
+      "livecodebench_abc388_e": 10,
+      "livecodebench_abc389_d": 8,
+      "livecodebench_abc389_e": 12,
+      "livecodebench_abc390_d": 15,
+      "livecodebench_abc390_e": 8
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 12.073140243902445,
+      "count": 984,
+      "max": 38.65
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 199,
+    "finish_reasons": {
+      "length": 200
+    },
+    "http_post_count": 984,
+    "model": "anthropic/claude-fable-5",
+    "model_from_log": "anthropic/claude-fable-5",
+    "name": "openrouter",
+    "timeout_count": 2
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/fable5/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/sebc-e1-20260714b-fable5-w02/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/fable5/results/dgm_report_20260714_211110.json",
+    "end_time": "2026-07-14T21:11:10.918000",
+    "line_count": 29639,
+    "observed_runtime_seconds": 13500.229,
+    "scorecard": "/var/tmp/dgm-live-runs/sebc-e1-20260714b-fable5-w02/artifacts/scorecard.json",
+    "start_time": "2026-07-14T17:26:10.689000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.75,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "f6a49ad1-40b7-4d3c-9e86-67a077ef1d03",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 1,
+        "solved_count": 9
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": true,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "133709f9-80bd-4226-9a08-db6a34a0b88d",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "47a1d374-1afd-4e22-ab64-e34924ee2406",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 6
+      },
+      {
+        "agent_id": "b964f0c6-22e4-4e88-ac4a-73a173427b6b",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "3382412c-1198-4eef-aa8c-e0b1151b582b",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "d5de657b-44e6-4a76-a20e-96109cc71dcd",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "e734a024-04c3-4681-8475-60dc1b549e86",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "cc9fadc3-067b-426d-8d40-33bd9941c727",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "3169cf11-3dc1-4ccb-84a7-ba83b3eb836f",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 6
+      },
+      {
+        "agent_id": "f6a49ad1-40b7-4d3c-9e86-67a077ef1d03",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 9
+      },
+      {
+        "agent_id": "280bed8c-6693-4d45-a692-8379d16ae043",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 9
+      },
+      {
+        "agent_id": "05181fc8-d9c1-44bc-8e88-5eb2a0ae9155",
+        "average_score": 0.5833333333333334,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 7
+      },
+      {
+        "agent_id": "def5fd4a-5694-40b6-b6fc-c933b3410e6d",
+        "average_score": 0.5,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 6
+      },
+      {
+        "agent_id": "21f96d50-93c4-444e-ad4d-072c8bf5a5ed",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "936687f8-ec98-4004-ab3f-b437fe948de1",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      },
+      {
+        "agent_id": "cf162e01-1447-4d40-942e-e9e84eb006cd",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+        "solved_count": 8
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [
+        "133709f9-80bd-4226-9a08-db6a34a0b88d",
+        "47a1d374-1afd-4e22-ab64-e34924ee2406",
+        "b964f0c6-22e4-4e88-ac4a-73a173427b6b",
+        "3382412c-1198-4eef-aa8c-e0b1151b582b",
+        "d5de657b-44e6-4a76-a20e-96109cc71dcd",
+        "e734a024-04c3-4681-8475-60dc1b549e86",
+        "3169cf11-3dc1-4ccb-84a7-ba83b3eb836f",
+        "f6a49ad1-40b7-4d3c-9e86-67a077ef1d03",
+        "280bed8c-6693-4d45-a692-8379d16ae043",
+        "05181fc8-d9c1-44bc-8e88-5eb2a0ae9155",
+        "def5fd4a-5694-40b6-b6fc-c933b3410e6d",
+        "21f96d50-93c4-444e-ad4d-072c8bf5a5ed",
+        "936687f8-ec98-4004-ab3f-b437fe948de1",
+        "cf162e01-1447-4d40-942e-e9e84eb006cd"
+      ],
+      "changed_count": 14,
+      "noop_agents": [
+        "cc9fadc3-067b-426d-8d40-33bd9941c727"
+      ],
+      "noop_count": 1,
+      "status_counts": {
+        "changed": 14,
+        "noop": 1
+      },
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "5b122912-d716-4ab1-a897-667f8b56d192",
+    "top_score": 0.75,
+    "total_agents": 16,
+    "total_benchmark_improvements": 14,
+    "total_benchmark_regressions": 35,
+    "total_benchmark_unchanged": 119,
+    "valid_agents": 15
+  },
+  "tokens": {
+    "by_model": {
+      "anthropic/claude-fable-5": {
+        "completion_tokens": 608008,
+        "estimated_cost_usd": 82.67004,
+        "input_price_per_mtok": 10.0,
+        "output_price_per_mtok": 50.0,
+        "prompt_tokens": 5226964,
+        "total_tokens": 5834972,
+        "usage_events": 984
+      }
+    },
+    "completion_tokens": 608008,
+    "estimated_cost_usd": 82.67004,
+    "input_price_per_mtok": 10.0,
+    "output_price_per_mtok": 50.0,
+    "prompt_tokens": 5226964,
+    "total_tokens": 5834972,
+    "usage_events": 984
+  }
+}

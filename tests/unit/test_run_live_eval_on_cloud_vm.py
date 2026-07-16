@@ -84,6 +84,9 @@ def test_build_cloud_vm_plan_contains_create_sync_and_teardown_commands(tmp_path
     assert plan["artifacts"]["remote_dir"] == "/var/tmp/dgm-live-runs/loop12-proof/artifacts"
     assert plan["artifacts"]["gcs_uri"] == "gs://dgm-runs/loop12-proof"
     assert plan["artifacts"]["exit_code"] == "/var/tmp/dgm-live-runs/loop12-proof/artifacts/exit_code"
+    assert "SELF_DELETE_VM_NAME=dgm-loop12-proof" in plan["startup_script"]
+    assert "gcloud compute instances delete" in plan["startup_script"]
+    assert "sleep 30" in plan["startup_script"]
     assert plan["commands"]["create"][:4] == [
         "gcloud",
         "compute",
@@ -198,4 +201,58 @@ def test_cloud_vm_plan_rejects_non_ephemeral_short_disk(tmp_path: Path):
             model="moonshotai/kimi-k2.7-code",
             input_price_per_mtok=0.74,
             output_price_per_mtok=3.50,
+        )
+
+
+def test_cloud_vm_plan_accepts_zero_generation_preflight_run(tmp_path: Path):
+    plan = build_cloud_vm_plan(
+        run_id="calibration-only",
+        provider="gcloud",
+        project="dgm-project",
+        zone="us-central1-a",
+        machine_type="n2-standard-8",
+        boot_disk_size_gb=100,
+        image_family="debian-12",
+        image_project="debian-cloud",
+        repo_url="https://github.com/example/dgm.git",
+        commit="abc1234",
+        config="config/calibration.yaml",
+        generations=0,
+        env_names=[],
+        secret_specs=[],
+        artifact_dir=tmp_path / "artifacts",
+        startup_script_path=tmp_path / "startup.sh",
+        fm_provider="openrouter",
+        model="qwen/qwen3-coder",
+        input_price_per_mtok=0.22,
+        output_price_per_mtok=1.8,
+    )
+
+    assert plan["source"]["generations"] == 0
+    assert "GENERATIONS=0" in plan["startup_script"]
+
+
+def test_cloud_vm_plan_rejects_negative_generations(tmp_path: Path):
+    with pytest.raises(CloudVmRunError, match="cannot be negative"):
+        build_cloud_vm_plan(
+            run_id="invalid-calibration",
+            provider="gcloud",
+            project="dgm-project",
+            zone="us-central1-a",
+            machine_type="n2-standard-8",
+            boot_disk_size_gb=100,
+            image_family="debian-12",
+            image_project="debian-cloud",
+            repo_url="https://github.com/example/dgm.git",
+            commit="abc1234",
+            config="config/calibration.yaml",
+            generations=-1,
+            env_names=[],
+            secret_specs=[],
+            artifact_dir=tmp_path / "artifacts",
+            startup_script_path=tmp_path / "startup.sh",
+            fm_provider="openrouter",
+            model="qwen/qwen3-coder",
+            input_price_per_mtok=0.22,
+            output_price_per_mtok=1.8,
         )

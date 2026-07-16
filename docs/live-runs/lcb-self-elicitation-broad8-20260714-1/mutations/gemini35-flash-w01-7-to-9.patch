@@ -1,0 +1,15 @@
+--- parent/agent.py
++++ child/agent.py
+@@ -3,6 +3,12 @@
+ 
+ This module contains the core Agent class that represents a self-modifying
+ coding agent in the Darwin Gödel Machine system.
++
++BENCHMARK SOLVER CONTROL POLICY:
++- Always write the solution to `solution.py` as early as possible.
++- Verify the solution thoroughly against all provided examples using heredocs.
++- Handle edge cases and optimize algorithms to avoid timeouts on hidden tests.
++- Recover from tool errors immediately and avoid no-op self-modification loops.
+ """
+ 
+ import ast

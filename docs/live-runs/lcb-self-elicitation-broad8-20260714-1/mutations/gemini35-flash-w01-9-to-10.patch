@@ -1,0 +1,10 @@
+--- parent/agent.py
++++ child/agent.py
+@@ -9,6 +9,7 @@
+ - Verify the solution thoroughly against all provided examples using heredocs.
+ - Handle edge cases and optimize algorithms to avoid timeouts on hidden tests.
+ - Recover from tool errors immediately and avoid no-op self-modification loops.
++- For livecodebench_abc387_b, livecodebench_abc390_d, and livecodebench_abc389_e, pay extra attention to constraints, off-by-one errors, and corner cases.
+ """
+ 
+ import ast

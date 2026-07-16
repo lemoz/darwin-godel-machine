@@ -450,6 +450,35 @@ class TestParentSelector:
 
         assert improved_child.agent_id in selected_ids
 
+    def test_strict_non_regression_gate_excludes_average_improvement_with_regression(
+        self,
+        tmp_path,
+    ):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        parent = archive.add_agent(
+            str(_make_agent_file(tmp_path, "parent.py")),
+            benchmark_scores={"easy": 1.0, "hard_a": 0.0, "hard_b": 0.0},
+            is_valid=True,
+        )
+        improved_child = archive.add_agent(
+            str(_make_agent_file(tmp_path, "improved.py")),
+            parent_id=parent.agent_id,
+            benchmark_scores={"easy": 0.0, "hard_a": 1.0, "hard_b": 1.0},
+            is_valid=True,
+        )
+
+        selector = ParentSelector(
+            require_non_regression=True,
+            require_per_benchmark_non_regression=True,
+        )
+        selected_ids = {
+            agent.agent_id
+            for agent in selector.select_parents(archive, n_parents=10)
+        }
+
+        assert parent.agent_id in selected_ids
+        assert improved_child.agent_id not in selected_ids
+
     def test_non_regression_gate_can_exclude_score_tied_child(self, tmp_path):
         archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
         parent_file = _make_agent_file(tmp_path, "parent.py")
@@ -537,6 +566,30 @@ class TestParentSelector:
 
         assert selected == [focused]
         assert selected != [high]
+
+    def test_focus_selection_can_follow_improving_descendant(self, tmp_path):
+        archive = AgentArchive(archive_dir=str(tmp_path / "arc"))
+        focused = archive.add_agent(
+            str(_make_agent_file(tmp_path, "focused.py")),
+            benchmark_scores={"easy": 1.0, "hard": 0.0},
+            is_valid=True,
+        )
+        child = archive.add_agent(
+            str(_make_agent_file(tmp_path, "child.py")),
+            parent_id=focused.agent_id,
+            benchmark_scores={"easy": 1.0, "hard": 1.0},
+            is_valid=True,
+        )
+
+        selector = ParentSelector(
+            require_non_regression=True,
+            require_per_benchmark_non_regression=True,
+            focus_agent_ids=[focused.agent_id],
+            focus_selection_probability=1.0,
+            focus_include_descendants=True,
+        )
+
+        assert selector.select_parents(archive, n_parents=1) == [child]
 
     def test_focus_selection_prefers_focused_agent_with_fewer_children(self, tmp_path):
         archive = AgentArchive(archive_dir=str(tmp_path / "arc"))

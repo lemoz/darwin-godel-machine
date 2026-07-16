@@ -1,0 +1,74 @@
+{
+  "archive": null,
+  "dgm_report": null,
+  "failure_reason_summary": {
+    "empty_response_count": 478,
+    "error_count": 4,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 0,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 15.705018867924545,
+      "count": 530,
+      "max": 31.53
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 478,
+    "finish_reasons": {
+      "error": 1,
+      "length": 478
+    },
+    "http_post_count": 530,
+    "model": "anthropic/claude-sonnet-5",
+    "model_from_log": "anthropic/claude-sonnet-5",
+    "name": "openrouter",
+    "timeout_count": 0
+  },
+  "run": {
+    "archive_metadata": null,
+    "completed": false,
+    "controller_log": "/tmp/dgm-luna-fair-final/luna-fair10-p15-20260713a/luna-fair10-p15-20260713a-sonnet5-w01/controller.log",
+    "dgm_report": null,
+    "end_time": "2026-07-13T16:41:52.375000",
+    "line_count": 12507,
+    "observed_runtime_seconds": 8624.714,
+    "scorecard": null,
+    "start_time": "2026-07-13T14:18:07.661000"
+  },
+  "schema_version": 1,
+  "score": null,
+  "tokens": {
+    "by_model": {
+      "anthropic/claude-sonnet-5": {
+        "completion_tokens": 663614,
+        "estimated_cost_usd": 11.730038,
+        "input_price_per_mtok": 2.0,
+        "output_price_per_mtok": 10.0,
+        "prompt_tokens": 2546949,
+        "total_tokens": 3210563,
+        "usage_events": 512
+      },
+      "openai/gpt-5.6-luna": {
+        "completion_tokens": 5621,
+        "estimated_cost_usd": 0.095469,
+        "input_price_per_mtok": 1.0,
+        "output_price_per_mtok": 6.0,
+        "prompt_tokens": 61743,
+        "total_tokens": 67364,
+        "usage_events": 17
+      }
+    },
+    "completion_tokens": 669235,
+    "estimated_cost_usd": 11.825507,
+    "input_price_per_mtok": 0.0,
+    "output_price_per_mtok": 0.0,
+    "prompt_tokens": 2608692,
+    "total_tokens": 3277927,
+    "usage_events": 529
+  }
+}

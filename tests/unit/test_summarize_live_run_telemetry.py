@@ -40,8 +40,29 @@ def test_parse_controller_log_counts_provider_and_usage_events(tmp_path: Path):
     assert summary["tokens"]["prompt_tokens"] == 1000
     assert summary["tokens"]["completion_tokens"] == 200
     assert summary["tokens"]["total_tokens"] == 1200
+    assert summary["tokens"]["by_model"]["moonshotai/kimi-k2.7-code"] == {
+        "usage_events": 1,
+        "prompt_tokens": 1000,
+        "completion_tokens": 200,
+        "total_tokens": 1200,
+    }
     assert summary["failure_signals"]["resource_guard_rejections"] == 1
     assert summary["observed_runtime_seconds"] == 6.0
+
+
+def test_parse_controller_log_counts_http_error_status_as_api_error(tmp_path: Path):
+    log_path = tmp_path / "controller.log"
+    log_path.write_text(
+        "2026-07-13 10:00:00,000 - httpx - INFO - "
+        "HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "
+        '"HTTP/1.1 400 Bad Request"\n',
+        encoding="utf-8",
+    )
+
+    summary = parse_controller_log(log_path)
+
+    assert summary["provider"]["http_post_count"] == 1
+    assert summary["provider"]["api_error_count"] == 1
 
 
 def test_summarize_live_run_telemetry_merges_score_and_archive_artifacts(tmp_path: Path):
@@ -202,3 +223,36 @@ def test_summarize_live_run_telemetry_merges_score_and_archive_artifacts(tmp_pat
 def test_summarize_live_run_telemetry_rejects_missing_log(tmp_path: Path):
     with pytest.raises(TelemetryError, match="Controller log not found"):
         summarize_live_run_telemetry(controller_log=tmp_path / "missing.log")
+
+
+def test_summarize_live_run_telemetry_prices_each_model(tmp_path: Path):
+    log_path = tmp_path / "controller.log"
+    log_path.write_text(
+        "\n".join(
+            [
+                "2026-07-12 10:00:00,000 - INFO - Starting OpenAI-compatible API request (timeout: 60s, model: openai/gpt-5.6-sol, base_url: https://openrouter.ai/api/v1)",
+                "2026-07-12 10:00:01,000 - INFO - API usage: {'prompt_tokens': 1000000, 'completion_tokens': 100000, 'total_tokens': 1100000}",
+                "2026-07-12 10:00:02,000 - INFO - Starting OpenAI-compatible API request (timeout: 60s, model: google/gemma-3-27b-it, base_url: https://openrouter.ai/api/v1)",
+                "2026-07-12 10:00:03,000 - INFO - API usage: {'prompt_tokens': 1000000, 'completion_tokens': 100000, 'total_tokens': 1100000}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    telemetry = summarize_live_run_telemetry(
+        controller_log=log_path,
+        input_price_per_mtok=0.08,
+        output_price_per_mtok=0.16,
+        model_prices={
+            "openai/gpt-5.6-sol": (5, 30),
+            "google/gemma-3-27b-it": (0.08, 0.16),
+        },
+    )
+
+    assert telemetry["tokens"]["by_model"]["openai/gpt-5.6-sol"][
+        "estimated_cost_usd"
+    ] == pytest.approx(8.0)
+    assert telemetry["tokens"]["by_model"]["google/gemma-3-27b-it"][
+        "estimated_cost_usd"
+    ] == pytest.approx(0.096)
+    assert telemetry["tokens"]["estimated_cost_usd"] == pytest.approx(8.096)

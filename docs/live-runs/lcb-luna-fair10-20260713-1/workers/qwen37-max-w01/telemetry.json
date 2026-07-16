@@ -1,0 +1,190 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "9228cecf-09d1-4794-8b9c-013d913ad5c7",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "created_at": "2026-07-13T14:40:02.946996",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "5ca7a044-86ff-497d-80aa-6833eb9ae298",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "created_at": "2026-07-13T15:01:29.909800",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "9228cecf-09d1-4794-8b9c-013d913ad5c7",
+        "solved_count": 9
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {
+        "changed": 1
+      }
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 2,
+      "livecodebench_abc390_d": 2,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 2,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.7168218633333333,
+    "successful_improvements": 0,
+    "total_agents_created": 1,
+    "total_generations": 1
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 8,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc389_e": 2,
+      "livecodebench_abc390_d": 2,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 13.992000000000004,
+      "count": 105,
+      "max": 111.84
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 120,
+    "model": "qwen/qwen3.7-max",
+    "model_from_log": "qwen/qwen3.7-max",
+    "name": "openrouter",
+    "timeout_count": 8
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/luna-runner-matrix/evolution/qwen37-max/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/luna-fair10-p15-20260713a-qwen37-max-w01/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/luna-runner-matrix/evolution/qwen37-max/results/dgm_report_20260713_150129.json",
+    "end_time": "2026-07-13T15:01:29.928000",
+    "line_count": 3325,
+    "observed_runtime_seconds": 2596.232,
+    "scorecard": "/var/tmp/dgm-live-runs/luna-fair10-p15-20260713a-qwen37-max-w01/artifacts/scorecard.json",
+    "start_time": "2026-07-13T14:18:13.696000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.75,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "9228cecf-09d1-4794-8b9c-013d913ad5c7",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "5ca7a044-86ff-497d-80aa-6833eb9ae298",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 1,
+        "solved_count": 9
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": true,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "9228cecf-09d1-4794-8b9c-013d913ad5c7",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "5ca7a044-86ff-497d-80aa-6833eb9ae298",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "9228cecf-09d1-4794-8b9c-013d913ad5c7",
+        "solved_count": 9
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [
+        "5ca7a044-86ff-497d-80aa-6833eb9ae298"
+      ],
+      "changed_count": 1,
+      "noop_agents": [],
+      "noop_count": 0,
+      "status_counts": {
+        "changed": 1
+      },
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "9228cecf-09d1-4794-8b9c-013d913ad5c7",
+    "top_score": 0.75,
+    "total_agents": 2,
+    "total_benchmark_improvements": 1,
+    "total_benchmark_regressions": 1,
+    "total_benchmark_unchanged": 10,
+    "valid_agents": 2
+  },
+  "tokens": {
+    "by_model": {
+      "openai/gpt-5.6-luna": {
+        "completion_tokens": 611,
+        "estimated_cost_usd": 0.013976,
+        "input_price_per_mtok": 1.0,
+        "output_price_per_mtok": 6.0,
+        "prompt_tokens": 10310,
+        "total_tokens": 10921,
+        "usage_events": 3
+      },
+      "qwen/qwen3.7-max": {
+        "completion_tokens": 69908,
+        "estimated_cost_usd": 0.714241,
+        "input_price_per_mtok": 1.25,
+        "output_price_per_mtok": 3.75,
+        "prompt_tokens": 361669,
+        "total_tokens": 431577,
+        "usage_events": 102
+      }
+    },
+    "completion_tokens": 70519,
+    "estimated_cost_usd": 0.728217,
+    "input_price_per_mtok": 1.25,
+    "output_price_per_mtok": 3.75,
+    "prompt_tokens": 371979,
+    "total_tokens": 442498,
+    "usage_events": 105
+  }
+}

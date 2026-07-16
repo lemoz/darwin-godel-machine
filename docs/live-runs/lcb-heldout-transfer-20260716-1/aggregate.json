@@ -1,0 +1,108 @@
+{
+  "budget_exceeded": false,
+  "budget_scope": "key",
+  "executions": [
+    {
+      "run_id": "heldout-t2-20260716b-gemini35-transfer",
+      "status": "complete"
+    },
+    {
+      "run_id": "heldout-t2-20260716b-gpt56-task-transfer",
+      "status": "complete"
+    },
+    {
+      "run_id": "heldout-t2-20260716b-gpt56-generic-transfer",
+      "status": "complete"
+    },
+    {
+      "run_id": "heldout-t2-20260716b-fable5-transfer",
+      "status": "complete"
+    }
+  ],
+  "gcs_recovered_workers": [],
+  "models": [
+    {
+      "model": "google/gemini-3.5-flash",
+      "model_slug": "gemini35-transfer",
+      "top_score": 0.7083333333333334,
+      "workers": [
+        {
+          "artifact_dir": ".dgm-live-runs/heldout-transfer-20260716b/cloud-artifacts/heldout-t2-20260716b-gemini35-transfer",
+          "exit_code": 0,
+          "gcs_uri": "gs://dgm-live-runs-doittogether-prod/heldout-transfer-20260716b/heldout-t2-20260716b-gemini35-transfer",
+          "has_scorecard": true,
+          "model_cost_usd": 0.0,
+          "run_id": "heldout-t2-20260716b-gemini35-transfer",
+          "top_score": 0.7083333333333334,
+          "total_tokens": 0
+        }
+      ],
+      "workers_with_scorecards": 1
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "model_slug": "gpt56-task-transfer",
+      "top_score": 0.8333333333333334,
+      "workers": [
+        {
+          "artifact_dir": ".dgm-live-runs/heldout-transfer-20260716b/cloud-artifacts/heldout-t2-20260716b-gpt56-task-transfer",
+          "exit_code": 0,
+          "gcs_uri": "gs://dgm-live-runs-doittogether-prod/heldout-transfer-20260716b/heldout-t2-20260716b-gpt56-task-transfer",
+          "has_scorecard": true,
+          "model_cost_usd": 0.0,
+          "run_id": "heldout-t2-20260716b-gpt56-task-transfer",
+          "top_score": 0.8333333333333334,
+          "total_tokens": 0
+        }
+      ],
+      "workers_with_scorecards": 1
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "model_slug": "gpt56-generic-transfer",
+      "top_score": 0.7916666666666666,
+      "workers": [
+        {
+          "artifact_dir": ".dgm-live-runs/heldout-transfer-20260716b/cloud-artifacts/heldout-t2-20260716b-gpt56-generic-transfer",
+          "exit_code": 0,
+          "gcs_uri": "gs://dgm-live-runs-doittogether-prod/heldout-transfer-20260716b/heldout-t2-20260716b-gpt56-generic-transfer",
+          "has_scorecard": true,
+          "model_cost_usd": 0.0,
+          "run_id": "heldout-t2-20260716b-gpt56-generic-transfer",
+          "top_score": 0.7916666666666666,
+          "total_tokens": 0
+        }
+      ],
+      "workers_with_scorecards": 1
+    },
+    {
+      "model": "anthropic/claude-fable-5",
+      "model_slug": "fable5-transfer",
+      "top_score": 0.7083333333333334,
+      "workers": [
+        {
+          "artifact_dir": ".dgm-live-runs/heldout-transfer-20260716b/cloud-artifacts/heldout-t2-20260716b-fable5-transfer",
+          "exit_code": 0,
+          "gcs_uri": "gs://dgm-live-runs-doittogether-prod/heldout-transfer-20260716b/heldout-t2-20260716b-fable5-transfer",
+          "has_scorecard": true,
+          "model_cost_usd": 0.0,
+          "run_id": "heldout-t2-20260716b-fable5-transfer",
+          "top_score": 0.7083333333333334,
+          "total_tokens": 0
+        }
+      ],
+      "workers_with_scorecards": 1
+    }
+  ],
+  "models_with_scorecards": 4,
+  "name": "cloud_runner_matrix_aggregate",
+  "openrouter_usage_delta_usd": 0.0,
+  "openrouter_usage_end_usd": 7.993400875,
+  "openrouter_usage_start_usd": 7.993400875,
+  "phase": "calibration",
+  "schema_version": 1,
+  "status": "complete",
+  "total_model_cost_usd_from_telemetry": 0.0,
+  "total_tokens": 0,
+  "workers_with_scorecards": 4
+}

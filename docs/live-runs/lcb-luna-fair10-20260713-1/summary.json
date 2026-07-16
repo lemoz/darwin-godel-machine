@@ -1,0 +1,308 @@
+{
+  "schema_version": 1,
+  "source_commit": "ef98255da1523849e181f7f084fc93fe30aaeebb",
+  "segment": {
+    "id": "release_v6_atcoder_loop12",
+    "benchmarks": 12,
+    "tests": 512,
+    "private_tests": 480
+  },
+  "experiment": {
+    "mutator": "openai/gpt-5.6-luna",
+    "runner_models": 10,
+    "planned_workers": 30,
+    "launched_workers": 15,
+    "terminal_worker_bundles": 5,
+    "partial_worker_logs": 10,
+    "budget_skipped_workers": 15,
+    "completed_generations": 81,
+    "status": "budget_stopped",
+    "best_score": 0.9166666666666666,
+    "best_solved": 11,
+    "models_with_observed_improvement": 8
+  },
+  "budget": {
+    "aborted_fifo_openrouter_usd": 14.15062089,
+    "fair_run_openrouter_usd": 58.190870991,
+    "total_openrouter_usd": 72.341491881,
+    "openrouter_allocation_usd": 82.0,
+    "total_experiment_ceiling_usd": 100.0,
+    "fair_worker_runtime_hours": 23.1959875,
+    "fair_worker_gcp_estimate_usd": 1.5541311625
+  },
+  "telemetry": {
+    "chat_completion_posts": 6659,
+    "provider_timeouts": 106,
+    "empty_responses": 1271,
+    "provider_api_errors": 134,
+    "http_status_counts": {
+      "400": 121,
+      "429": 13
+    },
+    "total_tokens": 28911060,
+    "pinned_price_estimate_usd": 54.246223
+  },
+  "failure_evidence": {
+    "generation_report_counts": {
+      "no-op": 0,
+      "malformed edit": 0,
+      "invalid Python": 5,
+      "unsafe complexity": 0,
+      "timeout/provider failure": 0,
+      "hidden-test failure": 509,
+      "completion/protocol failure": 0
+    },
+    "repaired_or_blocked_protocol_signals": {
+      "malformed_edit_repair": 167,
+      "invalid_tool_parameters": 65,
+      "unsafe_complexity_completion_block": 212,
+      "sample_failure_repair": 300,
+      "step_limit_without_completion": 407
+    }
+  },
+  "top_mutations": [
+    {
+      "worker": "grok45-w01",
+      "change": "AgentConfig.max_iterations 10 -> 14",
+      "base_solved": 10,
+      "best_solved": 11,
+      "gained": ["livecodebench_abc388_e"],
+      "regressed": []
+    },
+    {
+      "worker": "glm52-w01",
+      "change": "AgentConfig.max_iterations 10 -> 14",
+      "base_solved": 6,
+      "best_solved": 9,
+      "gained": [
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_c",
+        "livecodebench_abc389_d"
+      ],
+      "regressed": []
+    },
+    {
+      "worker": "qwen37-max-w02",
+      "change": "AgentConfig.max_iterations 10 -> 15",
+      "base_solved": 7,
+      "best_solved": 9,
+      "gained": [
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_d"
+      ],
+      "regressed": []
+    }
+  ],
+  "workers": [
+    {
+      "worker": "deepseek-v4-pro-w01",
+      "model": "deepseek/deepseek-v4-pro",
+      "terminal": false,
+      "completed_generations": 4,
+      "base_solved": 7,
+      "best_solved": 7,
+      "tokens": 1909563,
+      "estimated_cost_usd": 1.105971,
+      "timeouts": 1,
+      "empty_responses": 359,
+      "invalid_python": 0,
+      "hidden_test_failures": 25
+    },
+    {
+      "worker": "deepseek-v4-pro-w02",
+      "model": "deepseek/deepseek-v4-pro",
+      "terminal": false,
+      "completed_generations": 1,
+      "base_solved": 7,
+      "best_solved": 8,
+      "tokens": 1238444,
+      "estimated_cost_usd": 0.704947,
+      "timeouts": 0,
+      "empty_responses": 249,
+      "invalid_python": 0,
+      "hidden_test_failures": 4
+    },
+    {
+      "worker": "gemini35-flash-w01",
+      "model": "google/gemini-3.5-flash",
+      "terminal": true,
+      "completed_generations": 15,
+      "base_solved": 0,
+      "best_solved": 0,
+      "tokens": 181277,
+      "estimated_cost_usd": 0.243647,
+      "timeouts": 0,
+      "empty_responses": 0,
+      "invalid_python": 0,
+      "hidden_test_failures": 108
+    },
+    {
+      "worker": "glm52-w01",
+      "model": "z-ai/glm-5.2",
+      "terminal": true,
+      "completed_generations": 1,
+      "base_solved": 6,
+      "best_solved": 9,
+      "tokens": 556788,
+      "estimated_cost_usd": 0.734379,
+      "timeouts": 0,
+      "empty_responses": 68,
+      "invalid_python": 0,
+      "hidden_test_failures": 3
+    },
+    {
+      "worker": "gpt56-sol-w01",
+      "model": "openai/gpt-5.6-sol",
+      "terminal": false,
+      "completed_generations": 9,
+      "base_solved": 0,
+      "best_solved": 0,
+      "tokens": 3958426,
+      "estimated_cost_usd": 26.872276,
+      "timeouts": 2,
+      "empty_responses": 0,
+      "invalid_python": 0,
+      "hidden_test_failures": 108
+    },
+    {
+      "worker": "grok45-w01",
+      "model": "x-ai/grok-4.5",
+      "terminal": true,
+      "completed_generations": 1,
+      "base_solved": 10,
+      "best_solved": 11,
+      "tokens": 467497,
+      "estimated_cost_usd": 1.359137,
+      "timeouts": 1,
+      "empty_responses": 0,
+      "invalid_python": 0,
+      "hidden_test_failures": 1
+    },
+    {
+      "worker": "kimi-k27-code-w01",
+      "model": "moonshotai/kimi-k2.7-code",
+      "terminal": false,
+      "completed_generations": 7,
+      "base_solved": 7,
+      "best_solved": 8,
+      "tokens": 2341278,
+      "estimated_cost_usd": 2.827477,
+      "timeouts": 5,
+      "empty_responses": 14,
+      "invalid_python": 0,
+      "hidden_test_failures": 35
+    },
+    {
+      "worker": "kimi-k27-code-w02",
+      "model": "moonshotai/kimi-k2.7-code",
+      "terminal": false,
+      "completed_generations": 1,
+      "base_solved": 7,
+      "best_solved": 8,
+      "tokens": 594597,
+      "estimated_cost_usd": 0.764412,
+      "timeouts": 0,
+      "empty_responses": 6,
+      "invalid_python": 0,
+      "hidden_test_failures": 4
+    },
+    {
+      "worker": "qwen3-coder-w01",
+      "model": "qwen/qwen3-coder",
+      "terminal": false,
+      "completed_generations": 14,
+      "base_solved": 6,
+      "best_solved": 7,
+      "tokens": 5159192,
+      "estimated_cost_usd": 2.146477,
+      "timeouts": 7,
+      "empty_responses": 0,
+      "invalid_python": 1,
+      "hidden_test_failures": 73
+    },
+    {
+      "worker": "qwen3-coder-w02",
+      "model": "qwen/qwen3-coder",
+      "terminal": false,
+      "completed_generations": 13,
+      "base_solved": 6,
+      "best_solved": 7,
+      "tokens": 5389584,
+      "estimated_cost_usd": 2.062763,
+      "timeouts": 10,
+      "empty_responses": 0,
+      "invalid_python": 2,
+      "hidden_test_failures": 63
+    },
+    {
+      "worker": "qwen35-397b-a17b-w01",
+      "model": "qwen/qwen3.5-397b-a17b",
+      "terminal": false,
+      "completed_generations": 4,
+      "base_solved": 4,
+      "best_solved": 7,
+      "tokens": 1685359,
+      "estimated_cost_usd": 1.186836,
+      "timeouts": 39,
+      "empty_responses": 41,
+      "invalid_python": 0,
+      "hidden_test_failures": 27
+    },
+    {
+      "worker": "qwen35-397b-a17b-w02",
+      "model": "qwen/qwen3.5-397b-a17b",
+      "terminal": false,
+      "completed_generations": 4,
+      "base_solved": 7,
+      "best_solved": 8,
+      "tokens": 1316150,
+      "estimated_cost_usd": 1.040442,
+      "timeouts": 22,
+      "empty_responses": 56,
+      "invalid_python": 2,
+      "hidden_test_failures": 16
+    },
+    {
+      "worker": "qwen37-max-w01",
+      "model": "qwen/qwen3.7-max",
+      "terminal": true,
+      "completed_generations": 1,
+      "base_solved": 9,
+      "best_solved": 9,
+      "tokens": 442498,
+      "estimated_cost_usd": 0.728217,
+      "timeouts": 8,
+      "empty_responses": 0,
+      "invalid_python": 0,
+      "hidden_test_failures": 3
+    },
+    {
+      "worker": "qwen37-max-w02",
+      "model": "qwen/qwen3.7-max",
+      "terminal": true,
+      "completed_generations": 1,
+      "base_solved": 7,
+      "best_solved": 9,
+      "tokens": 392480,
+      "estimated_cost_usd": 0.643735,
+      "timeouts": 11,
+      "empty_responses": 0,
+      "invalid_python": 0,
+      "hidden_test_failures": 3
+    },
+    {
+      "worker": "sonnet5-w01",
+      "model": "anthropic/claude-sonnet-5",
+      "terminal": false,
+      "completed_generations": 5,
+      "base_solved": 5,
+      "best_solved": 6,
+      "tokens": 3277927,
+      "estimated_cost_usd": 11.825507,
+      "timeouts": 0,
+      "empty_responses": 478,
+      "invalid_python": 0,
+      "hidden_test_failures": 36
+    }
+  ]
+}

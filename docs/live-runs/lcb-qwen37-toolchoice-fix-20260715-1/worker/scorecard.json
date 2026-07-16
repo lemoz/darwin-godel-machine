@@ -1,0 +1,76 @@
+{
+  "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen37-max/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+      "average_score": 0.75,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc389_e": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "generation": 0
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+      "average_score": 0.75,
+      "benchmark_count": 12,
+      "created_at": "2026-07-16T00:02:46.799498",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 9
+    },
+    {
+      "agent_id": "34ea8faa-00cf-4563-9abe-90aba4db13b7",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-16T00:02:58.632931",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+      "solved_count": 0
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [],
+    "changed_count": 0,
+    "noop_agents": [
+      "34ea8faa-00cf-4563-9abe-90aba4db13b7"
+    ],
+    "noop_count": 1,
+    "status_counts": {
+      "noop": 1
+    },
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [],
+  "top_agent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+  "top_score": 0.75,
+  "total_agents": 2,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 0,
+  "valid_agents": 1
+}

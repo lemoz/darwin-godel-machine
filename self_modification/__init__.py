@@ -8,6 +8,11 @@ and implementation of agent improvements.
 from .performance_diagnosis import PerformanceDiagnosis, DiagnosisReport
 from .modification_proposal import ModificationProposer, ModificationProposal, CodeChange
 from .implementation import ImplementationManager
+from .mutation_guard import (
+    ConstrainedMutationGuard,
+    MutationAdmission,
+    FAILURE_MODES,
+)
 
 __all__ = [
     'PerformanceDiagnosis',
@@ -15,5 +20,8 @@ __all__ = [
     'ModificationProposer',
     'ModificationProposal',
     'CodeChange',
-    'ImplementationManager'
+    'ImplementationManager',
+    'ConstrainedMutationGuard',
+    'MutationAdmission',
+    'FAILURE_MODES',
 ]

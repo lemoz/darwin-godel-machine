@@ -1,0 +1,362 @@
+{
+  "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/grok45/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "average_score": 0.8333333333333334,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc389_e": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "generation": 0
+    },
+    {
+      "agent_id": "8fecfe6e-8310-455c-b132-da39b0b4ed57",
+      "average_score": 0.8333333333333334,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc389_e": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "generation": 1
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": true,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "average_score": 0.8333333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T16:27:29.014418",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 10
+    },
+    {
+      "agent_id": "27c7356e-903f-48f7-bc7d-376dbaa438c7",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:27:41.001448",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": false,
+      "mutation_status": "changed",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "90e5e74c-5695-4ec2-a28c-a5db275babb0",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:27:48.564792",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "d7f290fd-b3e7-44f6-96cd-715ae4670016",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:27:57.991866",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "d6787e71-81cf-4c8c-ab44-6fef6782f7b4",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:28:08.778932",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": false,
+      "mutation_status": "changed",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "bba92baa-56a2-4953-825e-554b5b97af04",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:28:19.005867",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "8fecfe6e-8310-455c-b132-da39b0b4ed57",
+      "average_score": 0.8333333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T16:36:13.389886",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 10
+    },
+    {
+      "agent_id": "8accf2c3-2dce-4b68-b7d2-69184cc1d77b",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:36:19.507322",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "79a5d3f1-c7a0-461d-a00e-430673b34fa3",
+      "average_score": 0.8333333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T16:44:52.824404",
+      "generation": 1,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 10
+    },
+    {
+      "agent_id": "988c0177-41f0-4426-a537-0211c350488b",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:45:00.727068",
+      "generation": 2,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "8fecfe6e-8310-455c-b132-da39b0b4ed57",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "5ed6a33e-1ed4-44bf-b726-7a822b9bdbb5",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:45:07.495130",
+      "generation": 2,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "8fecfe6e-8310-455c-b132-da39b0b4ed57",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "174fe5a0-9994-4c69-9268-dc3316126118",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:45:13.457290",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "0355f536-d8aa-4aa0-bbcc-f2cf699aa449",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:45:20.614547",
+      "generation": 1,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "480061a2-95a5-4c7b-9c83-832a32241467",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:45:27.385117",
+      "generation": 2,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "8fecfe6e-8310-455c-b132-da39b0b4ed57",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "5a6c4598-3765-4158-bcf8-d730c029d7f8",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:45:34.159825",
+      "generation": 2,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "8fecfe6e-8310-455c-b132-da39b0b4ed57",
+      "solved_count": 0
+    },
+    {
+      "agent_id": "7348bb57-a70f-4d1e-8c8e-66c37c2e33b8",
+      "average_score": 0.0,
+      "benchmark_count": 0,
+      "created_at": "2026-07-14T16:45:41.675731",
+      "generation": 2,
+      "has_code_changes": false,
+      "is_valid": false,
+      "mutation_status": "noop",
+      "parent_id": "8fecfe6e-8310-455c-b132-da39b0b4ed57",
+      "solved_count": 0
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [
+      "27c7356e-903f-48f7-bc7d-376dbaa438c7",
+      "d6787e71-81cf-4c8c-ab44-6fef6782f7b4",
+      "8fecfe6e-8310-455c-b132-da39b0b4ed57",
+      "79a5d3f1-c7a0-461d-a00e-430673b34fa3"
+    ],
+    "changed_count": 4,
+    "noop_agents": [
+      "90e5e74c-5695-4ec2-a28c-a5db275babb0",
+      "d7f290fd-b3e7-44f6-96cd-715ae4670016",
+      "bba92baa-56a2-4953-825e-554b5b97af04",
+      "8accf2c3-2dce-4b68-b7d2-69184cc1d77b",
+      "174fe5a0-9994-4c69-9268-dc3316126118",
+      "0355f536-d8aa-4aa0-bbcc-f2cf699aa449",
+      "988c0177-41f0-4426-a537-0211c350488b",
+      "5ed6a33e-1ed4-44bf-b726-7a822b9bdbb5",
+      "480061a2-95a5-4c7b-9c83-832a32241467",
+      "5a6c4598-3765-4158-bcf8-d730c029d7f8",
+      "7348bb57-a70f-4d1e-8c8e-66c37c2e33b8"
+    ],
+    "noop_count": 11,
+    "status_counts": {
+      "changed": 4,
+      "noop": 11
+    },
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "benchmark_improvements": {},
+      "benchmark_regressions": {},
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_d",
+        "livecodebench_abc388_e",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc389_e",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ],
+      "child_average_score": 0.8333333333333334,
+      "child_generation": 1,
+      "child_id": "8fecfe6e-8310-455c-b132-da39b0b4ed57",
+      "is_improvement": false,
+      "parent_average_score": 0.8333333333333334,
+      "parent_generation": 0,
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10"
+    },
+    {
+      "average_delta": 0.0,
+      "benchmark_deltas": {
+        "livecodebench_abc387_b": 0.0,
+        "livecodebench_abc387_c": 0.0,
+        "livecodebench_abc388_b": 0.0,
+        "livecodebench_abc388_c": 0.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 0.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc389_e": -1.0,
+        "livecodebench_abc390_b": 0.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 0.0
+      },
+      "benchmark_improvements": {
+        "livecodebench_abc388_e": 1.0
+      },
+      "benchmark_regressions": {
+        "livecodebench_abc389_e": -1.0
+      },
+      "benchmark_unchanged": [
+        "livecodebench_abc387_b",
+        "livecodebench_abc387_c",
+        "livecodebench_abc388_b",
+        "livecodebench_abc388_c",
+        "livecodebench_abc388_d",
+        "livecodebench_abc389_a",
+        "livecodebench_abc389_d",
+        "livecodebench_abc390_b",
+        "livecodebench_abc390_d",
+        "livecodebench_abc390_e"
+      ],
+      "child_average_score": 0.8333333333333334,
+      "child_generation": 1,
+      "child_id": "79a5d3f1-c7a0-461d-a00e-430673b34fa3",
+      "is_improvement": false,
+      "parent_average_score": 0.8333333333333334,
+      "parent_generation": 0,
+      "parent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10"
+    }
+  ],
+  "top_agent_id": "4c0b94d0-bcf7-4bae-817f-5c413bb78b10",
+  "top_score": 0.8333333333333334,
+  "total_agents": 16,
+  "total_benchmark_improvements": 1,
+  "total_benchmark_regressions": 1,
+  "total_benchmark_unchanged": 22,
+  "valid_agents": 3
+}

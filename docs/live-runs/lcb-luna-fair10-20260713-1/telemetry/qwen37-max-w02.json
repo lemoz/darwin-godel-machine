@@ -1,0 +1,71 @@
+{
+  "archive": null,
+  "dgm_report": null,
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 6,
+    "provider_timeout_count": 11,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0
+  },
+  "provider": {
+    "api_error_count": 6,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 13.553749999999999,
+      "count": 96,
+      "max": 100.92
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 114,
+    "model": "qwen/qwen3.7-max",
+    "model_from_log": "qwen/qwen3.7-max",
+    "name": "openrouter",
+    "timeout_count": 11
+  },
+  "run": {
+    "archive_metadata": null,
+    "completed": true,
+    "controller_log": "/tmp/dgm-luna-fair-final/luna-fair10-p15-20260713a/luna-fair10-p15-20260713a-qwen37-max-w02/controller.log",
+    "dgm_report": null,
+    "end_time": "2026-07-13T15:53:09.869000",
+    "line_count": 3138,
+    "observed_runtime_seconds": 2839.939,
+    "scorecard": null,
+    "start_time": "2026-07-13T15:05:49.930000"
+  },
+  "schema_version": 1,
+  "score": null,
+  "tokens": {
+    "by_model": {
+      "openai/gpt-5.6-luna": {
+        "completion_tokens": 887,
+        "estimated_cost_usd": 0.016555,
+        "input_price_per_mtok": 1.0,
+        "output_price_per_mtok": 6.0,
+        "prompt_tokens": 11233,
+        "total_tokens": 12120,
+        "usage_events": 3
+      },
+      "qwen/qwen3.7-max": {
+        "completion_tokens": 60692,
+        "estimated_cost_usd": 0.62718,
+        "input_price_per_mtok": 1.25,
+        "output_price_per_mtok": 3.75,
+        "prompt_tokens": 319668,
+        "total_tokens": 380360,
+        "usage_events": 93
+      }
+    },
+    "completion_tokens": 61579,
+    "estimated_cost_usd": 0.643735,
+    "input_price_per_mtok": 0.0,
+    "output_price_per_mtok": 0.0,
+    "prompt_tokens": 330901,
+    "total_tokens": 392480,
+    "usage_events": 96
+  }
+}

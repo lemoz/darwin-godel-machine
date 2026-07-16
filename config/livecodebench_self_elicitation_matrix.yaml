@@ -1,0 +1,151 @@
+schema_version: 1
+name: livecodebench_self_elicitation_broad_credible
+run_root: self-elicitation-broad-credible-20260714
+pricing_checked_at: 2026-07-14
+pricing_source: https://openrouter.ai/api/v1/models
+
+segment:
+  config: config/livecodebench_segment_loop12.yaml
+  manifest_path: .dgm-live-runs/livecodebench-loop12/manifest.json
+  segment_id: release_v6_atcoder_loop12
+  benchmark_count: 12
+
+# Calibration remains available for the generic materializer, but this protocol
+# uses fresh-native evolution configs for both the extra native observation and
+# the two independent self-elicitation ladders.
+seed:
+  source_proof: docs/live-runs/lcb-gemma3-calibrated-seed-20260712-1/archive.tar.gz
+  calibration_bundle: docs/live-runs/lcb-runner-calibration-luna-20260713-1
+  agent_ids:
+    - 0173925d-0778-43ad-8c74-e05ee18b3bf2
+    - 87bca0da-0a85-4a65-a076-aa3fb9f6f12e
+    - a22a6b70-9c72-4f21-8866-67de9e007c61
+
+calibration:
+  replicates: 1
+  generations: 0
+  max_concurrency: 8
+  max_openrouter_budget_usd: 10
+  budget_poll_seconds: 5
+
+native:
+  workers_per_model: 1
+  generations_per_worker: 0
+  max_concurrency: 8
+  watchdog_stop_usd: 10
+  budget_poll_seconds: 5
+
+evolution:
+  seed_mode: fresh_native
+  workers_per_model: 2
+  generations_per_worker: 15
+  max_concurrency: 8
+  max_openrouter_budget_usd: 290
+  budget_poll_seconds: 5
+  target_score: 1.0
+
+budget:
+  empirical_expected_openrouter_usd: 254.836083
+  reserve_fraction: 0.25
+  approved_openrouter_ceiling_usd: 318.545104
+  watchdog_stop_total_usd: 300
+  watchdog_headroom_usd: 18.545104
+  max_openrouter_total_usd: 318.545104
+  max_estimated_gcp_usd: 6.454896
+
+cloud:
+  project: doittogether-prod
+  zone: us-central1-a
+  machine_type: e2-standard-2
+  boot_disk_size_gb: 100
+  hourly_vm_cost_estimate_usd: 0.067
+  calibration_hours_per_vm: 0.6
+  evolution_hours_per_vm: 1.4
+  max_total_experiment_cost_usd: 325
+
+cost_reference:
+  telemetry: .dgm-live-runs/cloud-artifacts/luna-recovery-evo4-20260713a/luna-recovery-evo4-20260713a-gemini35-flash/telemetry.json
+  runner_model: google/gemini-3.5-flash
+  evaluated_agents: 16
+  generations: 15
+  runner_prompt_tokens: 3856935
+  runner_completion_tokens: 388941
+  combined_prompt_tokens: 4019203
+  combined_completion_tokens: 402913
+
+runner_defaults:
+  handler: openai_compatible
+  api_key: ${OPENROUTER_API_KEY}
+  base_url: https://openrouter.ai/api/v1
+  max_tokens: 2048
+  temperature: 0.1
+  timeout: 120
+  timeout_retries: 1
+  timeout_retry_delay: 1
+
+mutation:
+  mode: self
+  provider_key: self_mutator
+  handler: openai_compatible
+  api_key: ${OPENROUTER_API_KEY}
+  base_url: https://openrouter.ai/api/v1
+  max_tokens: 1024
+  temperature: 0.2
+  timeout: 120
+  timeout_retries: 0
+  tool_choice_policy: required_read_then_workspace_change
+  max_agent_iterations: 24
+
+models:
+  - slug: qwen3-coder-30b
+    model: qwen/qwen3-coder-30b-a3b-instruct
+    vendor: Alibaba
+    scale: 30B total, 3B active
+    input_price_per_mtok: 0.07
+    output_price_per_mtok: 0.27
+  - slug: qwen3-coder
+    model: qwen/qwen3-coder
+    vendor: Alibaba
+    scale: 480B total, 35B active
+    input_price_per_mtok: 0.22
+    output_price_per_mtok: 1.8
+  - slug: qwen35-397b-a17b
+    model: qwen/qwen3.5-397b-a17b
+    vendor: Alibaba
+    scale: 397B total, 17B active
+    input_price_per_mtok: 0.385
+    output_price_per_mtok: 2.45
+  - slug: qwen37-max
+    model: qwen/qwen3.7-max
+    vendor: Alibaba
+    scale: proprietary flagship
+    # Alibaba thinking mode rejects forced required/object tool_choice. Keep
+    # the staged read-then-write schemas but let the endpoint select the only
+    # exposed tool through its default/auto behavior.
+    mutation_tool_choice_policy: auto_read_then_workspace_change
+    input_price_per_mtok: 1.25
+    output_price_per_mtok: 3.75
+  - slug: gemini35-flash
+    model: google/gemini-3.5-flash
+    vendor: Google
+    scale: frontier reasoning model
+    input_price_per_mtok: 1.5
+    output_price_per_mtok: 9.0
+  - slug: gpt56-sol
+    model: openai/gpt-5.6-sol
+    vendor: OpenAI
+    scale: flagship coding and reasoning model
+    input_price_per_mtok: 5.0
+    output_price_per_mtok: 30.0
+  - slug: fable5
+    model: anthropic/claude-fable-5
+    vendor: Anthropic
+    scale: frontier agent model
+    input_price_per_mtok: 10.0
+    output_price_per_mtok: 50.0
+  - slug: grok45
+    model: x-ai/grok-4.5
+    vendor: xAI
+    scale: frontier reasoning model
+    input_price_per_mtok: 2.0
+    output_price_per_mtok: 6.0

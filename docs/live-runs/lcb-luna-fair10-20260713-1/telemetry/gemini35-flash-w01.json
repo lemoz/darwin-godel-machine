@@ -1,0 +1,62 @@
+{
+  "archive": null,
+  "dgm_report": null,
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 83,
+    "provider_api_error_count": 120,
+    "provider_timeout_count": 0,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0
+  },
+  "provider": {
+    "api_error_count": 120,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 4.090666666666667,
+      "count": 45,
+      "max": 8.57
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 165,
+    "model": "google/gemini-3.5-flash",
+    "model_from_log": "openai/gpt-5.6-luna",
+    "name": "openrouter",
+    "timeout_count": 0
+  },
+  "run": {
+    "archive_metadata": null,
+    "completed": true,
+    "controller_log": "/tmp/dgm-luna-fair-final/luna-fair10-p15-20260713a/luna-fair10-p15-20260713a-gemini35-flash-w01/controller.log",
+    "dgm_report": null,
+    "end_time": "2026-07-13T14:23:56.363000",
+    "line_count": 3123,
+    "observed_runtime_seconds": 358.455,
+    "scorecard": null,
+    "start_time": "2026-07-13T14:17:57.908000"
+  },
+  "schema_version": 1,
+  "score": null,
+  "tokens": {
+    "by_model": {
+      "openai/gpt-5.6-luna": {
+        "completion_tokens": 12474,
+        "estimated_cost_usd": 0.243647,
+        "input_price_per_mtok": 1.0,
+        "output_price_per_mtok": 6.0,
+        "prompt_tokens": 168803,
+        "total_tokens": 181277,
+        "usage_events": 45
+      }
+    },
+    "completion_tokens": 12474,
+    "estimated_cost_usd": 0.243647,
+    "input_price_per_mtok": 0.0,
+    "output_price_per_mtok": 0.0,
+    "prompt_tokens": 168803,
+    "total_tokens": 181277,
+    "usage_events": 45
+  }
+}

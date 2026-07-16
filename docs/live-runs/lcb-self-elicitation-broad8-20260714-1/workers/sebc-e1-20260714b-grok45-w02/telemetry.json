@@ -1,0 +1,536 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T17:34:54.070262",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 11
+      },
+      {
+        "agent_id": "71e43bfb-f286-46ee-b8f8-c7d44fcc89b9",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-07-14T17:35:00.944327",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "be13049c-5e64-448e-801c-b638fc94061f",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-07-14T17:35:07.547472",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "a553c6db-7fde-4061-a456-3494c5fe0459",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-07-14T17:35:15.072298",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "5c6a62e1-7fbb-424f-b4b7-c7ef443a17c9",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-07-14T17:35:21.550683",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "5297ee4d-03fd-4169-9d0d-99413b511a29",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-07-14T17:35:27.768823",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T17:42:13.777346",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 11
+      },
+      {
+        "agent_id": "a180898b-2533-42be-a065-86fa9b1fb870",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T17:50:21.630261",
+        "generation": 2,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "solved_count": 11
+      },
+      {
+        "agent_id": "6e737005-92fe-47b5-ad1a-89aac4b48380",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T17:58:46.624608",
+        "generation": 2,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "solved_count": 10
+      },
+      {
+        "agent_id": "ddbeca56-5e45-4360-aacd-126b4f22c924",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T18:05:43.212123",
+        "generation": 3,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "a180898b-2533-42be-a065-86fa9b1fb870",
+        "solved_count": 10
+      },
+      {
+        "agent_id": "1978b90d-5207-4eb5-87d6-995718dde0a6",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T18:12:50.228539",
+        "generation": 2,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "solved_count": 10
+      },
+      {
+        "agent_id": "d79b2e88-c87c-4ae0-acc7-9be0494bebc9",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-07-14T18:12:58.347043",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "aa59cfd2-977e-4471-834d-bcf6b005317b",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-07-14T18:13:05.085003",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "0499c584-67ab-4c93-b902-9238c7c5c560",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T18:23:35.163510",
+        "generation": 2,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "solved_count": 11
+      },
+      {
+        "agent_id": "b91ad1ab-78c7-44ec-85f4-6e1f2ba7a588",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T18:31:14.305484",
+        "generation": 3,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "0499c584-67ab-4c93-b902-9238c7c5c560",
+        "solved_count": 11
+      },
+      {
+        "agent_id": "550b4c3d-7811-487e-840d-36b1c377a7c2",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T18:39:46.496728",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 11
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {
+        "changed": 8,
+        "noop": 7
+      }
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_d": 9
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 16,
+    "improvement_rate": 0.0,
+    "runtime_hours": 1.1900411263888888,
+    "successful_improvements": 0,
+    "total_agents_created": 8,
+    "total_generations": 15
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 2,
+    "error_count": 7,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 3,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc387_c": 1,
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc389_e": 1,
+      "livecodebench_abc390_d": 9
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 6.126026365348404,
+      "count": 531,
+      "max": 110.79
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 2,
+    "finish_reasons": {
+      "stop": 2
+    },
+    "http_post_count": 532,
+    "model": "x-ai/grok-4.5",
+    "model_from_log": "x-ai/grok-4.5",
+    "name": "openrouter",
+    "timeout_count": 3
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/grok45/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/sebc-e1-20260714b-grok45-w02/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/grok45/results/dgm_report_20260714_183946.json",
+    "end_time": "2026-07-14T18:39:46.520000",
+    "line_count": 15757,
+    "observed_runtime_seconds": 4299.438,
+    "scorecard": "/var/tmp/dgm-live-runs/sebc-e1-20260714b-grok45-w02/artifacts/scorecard.json",
+    "start_time": "2026-07-14T17:28:07.082000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.9166666666666666,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 11
+      },
+      {
+        "agent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "solved_count": 11
+      },
+      {
+        "agent_id": "a180898b-2533-42be-a065-86fa9b1fb870",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 2,
+        "solved_count": 11
+      },
+      {
+        "agent_id": "b91ad1ab-78c7-44ec-85f4-6e1f2ba7a588",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 3,
+        "solved_count": 11
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": true,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 11
+      },
+      {
+        "agent_id": "71e43bfb-f286-46ee-b8f8-c7d44fcc89b9",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "be13049c-5e64-448e-801c-b638fc94061f",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "a553c6db-7fde-4061-a456-3494c5fe0459",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "5c6a62e1-7fbb-424f-b4b7-c7ef443a17c9",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "5297ee4d-03fd-4169-9d0d-99413b511a29",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 11
+      },
+      {
+        "agent_id": "a180898b-2533-42be-a065-86fa9b1fb870",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 2,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "solved_count": 11
+      },
+      {
+        "agent_id": "6e737005-92fe-47b5-ad1a-89aac4b48380",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "generation": 2,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "solved_count": 10
+      },
+      {
+        "agent_id": "ddbeca56-5e45-4360-aacd-126b4f22c924",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "generation": 3,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "a180898b-2533-42be-a065-86fa9b1fb870",
+        "solved_count": 10
+      },
+      {
+        "agent_id": "1978b90d-5207-4eb5-87d6-995718dde0a6",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "generation": 2,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "solved_count": 10
+      },
+      {
+        "agent_id": "d79b2e88-c87c-4ae0-acc7-9be0494bebc9",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "aa59cfd2-977e-4471-834d-bcf6b005317b",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 0
+      },
+      {
+        "agent_id": "0499c584-67ab-4c93-b902-9238c7c5c560",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 2,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "solved_count": 11
+      },
+      {
+        "agent_id": "b91ad1ab-78c7-44ec-85f4-6e1f2ba7a588",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 3,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "0499c584-67ab-4c93-b902-9238c7c5c560",
+        "solved_count": 11
+      },
+      {
+        "agent_id": "550b4c3d-7811-487e-840d-36b1c377a7c2",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+        "solved_count": 11
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [
+        "f6961cdd-f9bc-44eb-9656-5356bdd8e9d4",
+        "550b4c3d-7811-487e-840d-36b1c377a7c2",
+        "a180898b-2533-42be-a065-86fa9b1fb870",
+        "6e737005-92fe-47b5-ad1a-89aac4b48380",
+        "1978b90d-5207-4eb5-87d6-995718dde0a6",
+        "0499c584-67ab-4c93-b902-9238c7c5c560",
+        "ddbeca56-5e45-4360-aacd-126b4f22c924",
+        "b91ad1ab-78c7-44ec-85f4-6e1f2ba7a588"
+      ],
+      "changed_count": 8,
+      "noop_agents": [
+        "71e43bfb-f286-46ee-b8f8-c7d44fcc89b9",
+        "be13049c-5e64-448e-801c-b638fc94061f",
+        "a553c6db-7fde-4061-a456-3494c5fe0459",
+        "5c6a62e1-7fbb-424f-b4b7-c7ef443a17c9",
+        "5297ee4d-03fd-4169-9d0d-99413b511a29",
+        "d79b2e88-c87c-4ae0-acc7-9be0494bebc9",
+        "aa59cfd2-977e-4471-834d-bcf6b005317b"
+      ],
+      "noop_count": 7,
+      "status_counts": {
+        "changed": 8,
+        "noop": 7
+      },
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "ace30cff-7ed4-40cc-89e9-596cbb4c1d65",
+    "top_score": 0.9166666666666666,
+    "total_agents": 16,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 3,
+    "total_benchmark_unchanged": 93,
+    "valid_agents": 9
+  },
+  "tokens": {
+    "by_model": {
+      "x-ai/grok-4.5": {
+        "completion_tokens": 371113,
+        "estimated_cost_usd": 5.663446,
+        "input_price_per_mtok": 2.0,
+        "output_price_per_mtok": 6.0,
+        "prompt_tokens": 1718384,
+        "total_tokens": 2089497,
+        "usage_events": 531
+      }
+    },
+    "completion_tokens": 371113,
+    "estimated_cost_usd": 5.663446,
+    "input_price_per_mtok": 2.0,
+    "output_price_per_mtok": 6.0,
+    "prompt_tokens": 1718384,
+    "total_tokens": 2089497,
+    "usage_events": 531
+  }
+}

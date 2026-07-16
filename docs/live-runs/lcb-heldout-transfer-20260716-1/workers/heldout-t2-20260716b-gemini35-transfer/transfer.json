@@ -1,0 +1,64 @@
+{
+  "calibrated_agents": [
+    {
+      "agent_id": "ea98b448-ee41-472d-9c7e-6d2adfffa344",
+      "average_score": 0.625,
+      "benchmark_scores": {
+        "livecodebench_abc391_a": 1.0,
+        "livecodebench_abc391_d": 0.0,
+        "livecodebench_abc391_e": 0.5,
+        "livecodebench_abc392_a": 1.0,
+        "livecodebench_abc392_c": 1.0,
+        "livecodebench_abc392_d": 0.0,
+        "livecodebench_abc392_f": 0.0,
+        "livecodebench_abc393_a": 1.0,
+        "livecodebench_abc394_a": 1.0,
+        "livecodebench_abc394_c": 0.5,
+        "livecodebench_abc394_d": 1.0,
+        "livecodebench_abc394_e": 0.5
+      }
+    },
+    {
+      "agent_id": "b4061d8a-bc4b-4d87-9fcc-bd405a768711",
+      "average_score": 0.5833333333333334,
+      "benchmark_scores": {
+        "livecodebench_abc391_a": 0.5,
+        "livecodebench_abc391_d": 0.0,
+        "livecodebench_abc391_e": 0.5,
+        "livecodebench_abc392_a": 1.0,
+        "livecodebench_abc392_c": 1.0,
+        "livecodebench_abc392_d": 0.0,
+        "livecodebench_abc392_f": 0.0,
+        "livecodebench_abc393_a": 1.0,
+        "livecodebench_abc394_a": 1.0,
+        "livecodebench_abc394_c": 0.5,
+        "livecodebench_abc394_d": 1.0,
+        "livecodebench_abc394_e": 0.5
+      }
+    },
+    {
+      "agent_id": "93d22ff9-cc23-4935-b029-8bf755ab9dbe",
+      "average_score": 0.7083333333333334,
+      "benchmark_scores": {
+        "livecodebench_abc391_a": 1.0,
+        "livecodebench_abc391_d": 0.0,
+        "livecodebench_abc391_e": 1.0,
+        "livecodebench_abc392_a": 1.0,
+        "livecodebench_abc392_c": 1.0,
+        "livecodebench_abc392_d": 0.0,
+        "livecodebench_abc392_f": 0.0,
+        "livecodebench_abc393_a": 1.0,
+        "livecodebench_abc394_a": 1.0,
+        "livecodebench_abc394_c": 1.0,
+        "livecodebench_abc394_d": 1.0,
+        "livecodebench_abc394_e": 0.5
+      }
+    }
+  ],
+  "model": "google/gemini-3.5-flash",
+  "primary_provider": "runner",
+  "pruned_unselected": true,
+  "removed_agent_count": 13,
+  "replicates": 2,
+  "schema_version": 1
+}

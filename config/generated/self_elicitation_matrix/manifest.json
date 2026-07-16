@@ -1,0 +1,120 @@
+{
+  "config_count": 16,
+  "configs": [
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/calibration/qwen3-coder-30b/archive",
+      "config": "config/generated/self_elicitation_matrix/qwen3-coder-30b-calibration.yaml",
+      "model": "qwen/qwen3-coder-30b-a3b-instruct",
+      "phase": "calibration",
+      "slug": "qwen3-coder-30b"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen3-coder-30b/archive",
+      "config": "config/generated/self_elicitation_matrix/qwen3-coder-30b-evolution.yaml",
+      "model": "qwen/qwen3-coder-30b-a3b-instruct",
+      "phase": "evolution",
+      "slug": "qwen3-coder-30b"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/calibration/qwen3-coder/archive",
+      "config": "config/generated/self_elicitation_matrix/qwen3-coder-calibration.yaml",
+      "model": "qwen/qwen3-coder",
+      "phase": "calibration",
+      "slug": "qwen3-coder"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen3-coder/archive",
+      "config": "config/generated/self_elicitation_matrix/qwen3-coder-evolution.yaml",
+      "model": "qwen/qwen3-coder",
+      "phase": "evolution",
+      "slug": "qwen3-coder"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/calibration/qwen35-397b-a17b/archive",
+      "config": "config/generated/self_elicitation_matrix/qwen35-397b-a17b-calibration.yaml",
+      "model": "qwen/qwen3.5-397b-a17b",
+      "phase": "calibration",
+      "slug": "qwen35-397b-a17b"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen35-397b-a17b/archive",
+      "config": "config/generated/self_elicitation_matrix/qwen35-397b-a17b-evolution.yaml",
+      "model": "qwen/qwen3.5-397b-a17b",
+      "phase": "evolution",
+      "slug": "qwen35-397b-a17b"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/calibration/qwen37-max/archive",
+      "config": "config/generated/self_elicitation_matrix/qwen37-max-calibration.yaml",
+      "model": "qwen/qwen3.7-max",
+      "phase": "calibration",
+      "slug": "qwen37-max"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen37-max/archive",
+      "config": "config/generated/self_elicitation_matrix/qwen37-max-evolution.yaml",
+      "model": "qwen/qwen3.7-max",
+      "phase": "evolution",
+      "slug": "qwen37-max"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/calibration/gemini35-flash/archive",
+      "config": "config/generated/self_elicitation_matrix/gemini35-flash-calibration.yaml",
+      "model": "google/gemini-3.5-flash",
+      "phase": "calibration",
+      "slug": "gemini35-flash"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/gemini35-flash/archive",
+      "config": "config/generated/self_elicitation_matrix/gemini35-flash-evolution.yaml",
+      "model": "google/gemini-3.5-flash",
+      "phase": "evolution",
+      "slug": "gemini35-flash"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/calibration/gpt56-sol/archive",
+      "config": "config/generated/self_elicitation_matrix/gpt56-sol-calibration.yaml",
+      "model": "openai/gpt-5.6-sol",
+      "phase": "calibration",
+      "slug": "gpt56-sol"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/gpt56-sol/archive",
+      "config": "config/generated/self_elicitation_matrix/gpt56-sol-evolution.yaml",
+      "model": "openai/gpt-5.6-sol",
+      "phase": "evolution",
+      "slug": "gpt56-sol"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/calibration/fable5/archive",
+      "config": "config/generated/self_elicitation_matrix/fable5-calibration.yaml",
+      "model": "anthropic/claude-fable-5",
+      "phase": "calibration",
+      "slug": "fable5"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/fable5/archive",
+      "config": "config/generated/self_elicitation_matrix/fable5-evolution.yaml",
+      "model": "anthropic/claude-fable-5",
+      "phase": "evolution",
+      "slug": "fable5"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/calibration/grok45/archive",
+      "config": "config/generated/self_elicitation_matrix/grok45-calibration.yaml",
+      "model": "x-ai/grok-4.5",
+      "phase": "calibration",
+      "slug": "grok45"
+    },
+    {
+      "archive": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/grok45/archive",
+      "config": "config/generated/self_elicitation_matrix/grok45-evolution.yaml",
+      "model": "x-ai/grok-4.5",
+      "phase": "evolution",
+      "slug": "grok45"
+    }
+  ],
+  "matrix": "config/livecodebench_self_elicitation_matrix.yaml",
+  "name": "materialized_livecodebench_self_elicitation_broad_credible",
+  "schema_version": 1
+}

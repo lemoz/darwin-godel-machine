@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "provider": "openrouter",
+  "authority": "account_credits_endpoint",
+  "usage_start_usd": 1967.770834732,
+  "usage_end_usd": 1997.107261739,
+  "experiment_delta_usd": 29.336427007,
+  "total_credits_usd": 2075.0,
+  "remaining_credits_usd": 77.892738261,
+  "key_scoped_launcher_delta_usd": 0.0,
+  "key_scoped_value_was_stale": true,
+  "note": "Transfer calls ran during generation-zero preflight and were not captured by DGM telemetry; the account credits delta is the spend authority."
+}

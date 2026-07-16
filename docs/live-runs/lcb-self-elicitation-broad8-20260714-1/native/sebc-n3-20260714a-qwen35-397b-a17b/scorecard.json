@@ -1,0 +1,60 @@
+{
+  "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen35-397b-a17b/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "69eb871f-c09d-4a68-a5b8-7978406c6b7d",
+      "average_score": 0.75,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "generation": 0
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "69eb871f-c09d-4a68-a5b8-7978406c6b7d",
+      "average_score": 0.75,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T15:54:20.674910",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 9
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [],
+    "changed_count": 0,
+    "noop_agents": [],
+    "noop_count": 0,
+    "status_counts": {},
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [],
+  "top_agent_id": "69eb871f-c09d-4a68-a5b8-7978406c6b7d",
+  "top_score": 0.75,
+  "total_agents": 1,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 0,
+  "valid_agents": 1
+}

@@ -1,0 +1,64 @@
+{
+  "config_count": 8,
+  "configs": [
+    {
+      "archive": ".dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini25-flash/archive",
+      "config": "config/generated/luna_recovery_runner_matrix/gemini25-flash-calibration.yaml",
+      "model": "google/gemini-2.5-flash",
+      "phase": "calibration",
+      "slug": "gemini25-flash"
+    },
+    {
+      "archive": ".dgm-live-runs/luna-recovery-runner-matrix/evolution/gemini25-flash/archive",
+      "config": "config/generated/luna_recovery_runner_matrix/gemini25-flash-evolution.yaml",
+      "model": "google/gemini-2.5-flash",
+      "phase": "evolution",
+      "slug": "gemini25-flash"
+    },
+    {
+      "archive": ".dgm-live-runs/luna-recovery-runner-matrix/calibration/gemini35-flash/archive",
+      "config": "config/generated/luna_recovery_runner_matrix/gemini35-flash-calibration.yaml",
+      "model": "google/gemini-3.5-flash",
+      "phase": "calibration",
+      "slug": "gemini35-flash"
+    },
+    {
+      "archive": ".dgm-live-runs/luna-recovery-runner-matrix/evolution/gemini35-flash/archive",
+      "config": "config/generated/luna_recovery_runner_matrix/gemini35-flash-evolution.yaml",
+      "model": "google/gemini-3.5-flash",
+      "phase": "evolution",
+      "slug": "gemini35-flash"
+    },
+    {
+      "archive": ".dgm-live-runs/luna-recovery-runner-matrix/calibration/fable5/archive",
+      "config": "config/generated/luna_recovery_runner_matrix/fable5-calibration.yaml",
+      "model": "anthropic/claude-fable-5",
+      "phase": "calibration",
+      "slug": "fable5"
+    },
+    {
+      "archive": ".dgm-live-runs/luna-recovery-runner-matrix/evolution/fable5/archive",
+      "config": "config/generated/luna_recovery_runner_matrix/fable5-evolution.yaml",
+      "model": "anthropic/claude-fable-5",
+      "phase": "evolution",
+      "slug": "fable5"
+    },
+    {
+      "archive": ".dgm-live-runs/luna-recovery-runner-matrix/calibration/gpt56-sol/archive",
+      "config": "config/generated/luna_recovery_runner_matrix/gpt56-sol-calibration.yaml",
+      "model": "openai/gpt-5.6-sol",
+      "phase": "calibration",
+      "slug": "gpt56-sol"
+    },
+    {
+      "archive": ".dgm-live-runs/luna-recovery-runner-matrix/evolution/gpt56-sol/archive",
+      "config": "config/generated/luna_recovery_runner_matrix/gpt56-sol-evolution.yaml",
+      "model": "openai/gpt-5.6-sol",
+      "phase": "evolution",
+      "slug": "gpt56-sol"
+    }
+  ],
+  "matrix": "config/livecodebench_luna_recovery_runner_matrix.yaml",
+  "name": "materialized_luna_runner_matrix",
+  "schema_version": 1
+}

@@ -1,0 +1,72 @@
+{
+  "archive_metadata": ".dgm-live-runs/heldout-transfer-20260715/fable5-transfer/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "average_score": 0.7083333333333334,
+      "benchmark_scores": {
+        "livecodebench_abc391_a": 1.0,
+        "livecodebench_abc391_d": 0.0,
+        "livecodebench_abc391_e": 0.5,
+        "livecodebench_abc392_a": 1.0,
+        "livecodebench_abc392_c": 1.0,
+        "livecodebench_abc392_d": 0.0,
+        "livecodebench_abc392_f": 0.0,
+        "livecodebench_abc393_a": 1.0,
+        "livecodebench_abc394_a": 1.0,
+        "livecodebench_abc394_c": 1.0,
+        "livecodebench_abc394_d": 1.0,
+        "livecodebench_abc394_e": 1.0
+      },
+      "generation": 0
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e",
+      "average_score": 0.625,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T16:33:40.530908",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 8
+    },
+    {
+      "agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+      "average_score": 0.7083333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-14T17:57:27.820302",
+      "generation": 0,
+      "has_code_changes": true,
+      "is_valid": true,
+      "mutation_status": "changed",
+      "parent_id": null,
+      "solved_count": 9
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [],
+    "changed_count": 0,
+    "noop_agents": [],
+    "noop_count": 0,
+    "status_counts": {},
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [],
+  "top_agent_id": "90379c3a-10fc-4cdd-9f4c-82d2006c8e83",
+  "top_score": 0.7083333333333334,
+  "total_agents": 2,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 0,
+  "valid_agents": 2
+}

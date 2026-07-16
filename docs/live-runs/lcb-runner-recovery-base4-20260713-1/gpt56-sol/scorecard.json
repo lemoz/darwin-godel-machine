@@ -1,0 +1,60 @@
+{
+  "archive_metadata": ".dgm-live-runs/luna-recovery-runner-matrix/evolution/gpt56-sol/archive/archive_metadata.json",
+  "best_average_delta": 0.0,
+  "generation_best_scores": [
+    {
+      "agent_id": "f89def92-a0e2-4620-bce6-4e5a4bd49ee7",
+      "average_score": 0.8333333333333334,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc388_d": 1.0,
+        "livecodebench_abc388_e": 0.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc389_d": 1.0,
+        "livecodebench_abc389_e": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc390_d": 0.0,
+        "livecodebench_abc390_e": 1.0
+      },
+      "generation": 0
+    }
+  ],
+  "has_improvement": false,
+  "has_regression": false,
+  "improvements": [],
+  "loop_order_agents": [
+    {
+      "agent_id": "f89def92-a0e2-4620-bce6-4e5a4bd49ee7",
+      "average_score": 0.8333333333333334,
+      "benchmark_count": 12,
+      "created_at": "2026-07-13T16:41:17.392023",
+      "generation": 0,
+      "has_code_changes": null,
+      "is_valid": true,
+      "mutation_status": null,
+      "parent_id": null,
+      "solved_count": 10
+    }
+  ],
+  "min_delta": 0.0,
+  "mutation_summary": {
+    "changed_agents": [],
+    "changed_count": 0,
+    "noop_agents": [],
+    "noop_count": 0,
+    "status_counts": {},
+    "unknown_agents": [],
+    "unknown_count": 0
+  },
+  "parent_child_deltas": [],
+  "top_agent_id": "f89def92-a0e2-4620-bce6-4e5a4bd49ee7",
+  "top_score": 0.8333333333333334,
+  "total_agents": 1,
+  "total_benchmark_improvements": 0,
+  "total_benchmark_regressions": 0,
+  "total_benchmark_unchanged": 0,
+  "valid_agents": 1
+}

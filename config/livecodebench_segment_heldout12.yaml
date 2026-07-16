@@ -1,0 +1,51 @@
+# Disjoint transfer segment for mutations discovered on release_v6_atcoder_loop12.
+# No question id below appeared in the search segment. The 4/5/3
+# easy/medium/hard mix matches the original experiment.
+
+purpose: livecodebench_segment
+approval_required: true
+live_calls_performed: 0
+
+source:
+  dataset: livecodebench/code_generation_lite
+  dataset_url: https://huggingface.co/datasets/livecodebench/code_generation_lite
+  source_file: test6.jsonl
+  version_label: release_v6
+  decoder_reference: https://github.com/livecodebench/livecodebench/blob/main/lcb_runner/benchmarks/code_generation.py
+  gcs_uri: gs://dgm-live-runs-doittogether-prod/datasets/livecodebench/code_generation_lite/release_v6/test6.jsonl
+  sha256: bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5
+  download_transport: curl
+  download_timeout: 120
+
+selection:
+  segment_id: release_v6_atcoder_heldout12
+  output_dir: .dgm-live-runs/livecodebench-heldout12/benchmarks
+  manifest_path: .dgm-live-runs/livecodebench-heldout12/manifest.json
+  per_problem_timeout_seconds: 10
+  question_ids:
+    # 4 easy
+    - abc391_a
+    - abc392_a
+    - abc393_a
+    - abc394_a
+    # 5 medium
+    - abc391_d
+    - abc392_d
+    - abc392_c
+    - abc394_c
+    - abc394_d
+    # 3 hard
+    - abc391_e
+    - abc392_f
+    - abc394_e
+
+gates:
+  min_problem_count: 12
+  required_difficulties:
+    - easy
+    - medium
+    - hard
+  min_total_tests: 400
+  min_private_tests: 350
+  require_stdin_only: true
+  prompt_policy: public_examples_only

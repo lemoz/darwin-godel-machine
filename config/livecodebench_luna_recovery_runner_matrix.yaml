@@ -1,0 +1,104 @@
+schema_version: 1
+name: livecodebench_luna_recovery_runner_matrix
+run_root: luna-recovery-runner-matrix
+pricing_checked_at: 2026-07-13
+pricing_source: https://openrouter.ai/api/v1/models
+
+segment:
+  config: config/livecodebench_segment_loop12.yaml
+  manifest_path: .dgm-live-runs/livecodebench-loop12/manifest.json
+  segment_id: release_v6_atcoder_loop12
+  benchmark_count: 12
+
+seed:
+  source_proof: docs/live-runs/lcb-gemma3-calibrated-seed-20260712-1/archive.tar.gz
+  calibration_bundle: docs/live-runs/lcb-runner-calibration-luna-20260713-1
+  agent_ids:
+    - 0173925d-0778-43ad-8c74-e05ee18b3bf2
+    - 87bca0da-0a85-4a65-a076-aa3fb9f6f12e
+    - a22a6b70-9c72-4f21-8866-67de9e007c61
+
+calibration:
+  replicates: 1
+  generations: 0
+  max_concurrency: 4
+  max_openrouter_budget_usd: 20
+  budget_poll_seconds: 15
+
+evolution:
+  seed_mode: fresh_native
+  workers_per_model: 1
+  generations_per_worker: 15
+  max_concurrency: 4
+  max_openrouter_budget_usd: 78
+  budget_poll_seconds: 15
+  target_score: 1.0
+
+budget:
+  max_openrouter_total_usd: 98
+  reserved_failed_calibration_openrouter_usd: 20
+  reserved_failed_calibration_gcp_usd: 1
+
+cloud:
+  project: doittogether-prod
+  zone: us-central1-a
+  machine_type: e2-standard-2
+  boot_disk_size_gb: 100
+  hourly_vm_cost_estimate_usd: 0.067
+  calibration_hours_per_vm: 0.6
+  evolution_hours_per_vm: 1.8
+  max_total_experiment_cost_usd: 100
+
+runner_defaults:
+  handler: openai_compatible
+  api_key: ${OPENROUTER_API_KEY}
+  base_url: https://openrouter.ai/api/v1
+  max_tokens: 2048
+  temperature: 0.1
+  timeout: 120
+  timeout_retries: 1
+  timeout_retry_delay: 1
+
+mutation:
+  provider_key: luna_mutator
+  handler: openai_compatible
+  model: openai/gpt-5.6-luna
+  api_key: ${OPENROUTER_API_KEY}
+  base_url: https://openrouter.ai/api/v1
+  max_tokens: 1024
+  temperature: 0.2
+  timeout: 120
+  timeout_retries: 0
+  tool_choice_policy: required_read_then_workspace_change
+  extra_body:
+    reasoning:
+      effort: medium
+  input_price_per_mtok: 1.0
+  output_price_per_mtok: 6.0
+  max_agent_iterations: 24
+
+models:
+  - slug: gemini25-flash
+    model: google/gemini-2.5-flash
+    vendor: Google
+    scale: stable Gemini 2.5 Flash
+    input_price_per_mtok: 0.3
+    output_price_per_mtok: 2.5
+  - slug: gemini35-flash
+    model: google/gemini-3.5-flash
+    vendor: Google
+    scale: frontier reasoning model
+    input_price_per_mtok: 1.5
+    output_price_per_mtok: 9.0
+  - slug: fable5
+    model: anthropic/claude-fable-5
+    vendor: Anthropic
+    scale: frontier agent model
+    input_price_per_mtok: 10.0
+    output_price_per_mtok: 50.0
+  - slug: gpt56-sol
+    model: openai/gpt-5.6-sol
+    vendor: OpenAI
+    scale: flagship coding and reasoning model
+    input_price_per_mtok: 5.0
+    output_price_per_mtok: 30.0

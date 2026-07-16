@@ -67,6 +67,41 @@ class OpenAICompatibleHandler(ApiHandler):
             max_retries=5,
         )
 
+    @classmethod
+    def _redact_status_body(cls, value: Any) -> Any:
+        """Redact provider/account identifiers recursively from error JSON."""
+        if isinstance(value, dict):
+            return {
+                key: (
+                    "[REDACTED]"
+                    if str(key).lower()
+                    in {"api_key", "authorization", "token", "user_id"}
+                    else cls._redact_status_body(item)
+                )
+                for key, item in value.items()
+            }
+        if isinstance(value, list):
+            return [cls._redact_status_body(item) for item in value]
+        return value
+
+    def _status_error_detail(self, exc: OpenAIAPIStatusError) -> str:
+        """Return a bounded, redacted provider response for diagnostics."""
+        body = getattr(exc, "body", None)
+        if body is None:
+            response = getattr(exc, "response", None)
+            body = getattr(response, "text", None)
+        if isinstance(body, (dict, list)):
+            detail = json.dumps(
+                self._redact_status_body(body),
+                sort_keys=True,
+                default=str,
+            )
+        else:
+            detail = str(body or "").strip()
+        if self.api_key:
+            detail = detail.replace(str(self.api_key), "[REDACTED]")
+        return detail[:2000]
+
     async def get_completion(self, request: CompletionRequest) -> CompletionResponse:
         """Get a completion from an OpenAI-compatible Chat Completions API."""
         try:
@@ -92,6 +127,8 @@ class OpenAICompatibleHandler(ApiHandler):
             }
             if request.tools:
                 api_params["tools"] = self.format_tools(request.tools)
+                if request.tool_choice:
+                    api_params["tool_choice"] = request.tool_choice
             if isinstance(self.extra_headers, dict) and self.extra_headers:
                 api_params["extra_headers"] = self.extra_headers
             if isinstance(self.extra_body, dict) and self.extra_body:
@@ -154,8 +191,18 @@ class OpenAICompatibleHandler(ApiHandler):
                 provider="openai_compatible",
             ) from exc
         except OpenAIAPIStatusError as exc:
+            detail = self._status_error_detail(exc)
+            logger.warning(
+                "OpenAI-compatible API status error "
+                "(status: %s, model: %s, detail: %s)",
+                exc.status_code,
+                self.model,
+                detail or "[no response body]",
+            )
+            detail_suffix = f"; provider response: {detail}" if detail else ""
             raise ApiError(
-                f"OpenAI-compatible API status error: {str(exc)}",
+                "OpenAI-compatible API status error "
+                f"(status {exc.status_code}){detail_suffix}",
                 status_code=exc.status_code,
                 provider="openai_compatible",
             ) from exc

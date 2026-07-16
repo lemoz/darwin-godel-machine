@@ -1,0 +1,73 @@
+{
+  "archive": null,
+  "dgm_report": null,
+  "failure_reason_summary": {
+    "empty_response_count": 249,
+    "error_count": 2,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 0,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 20.57675373134328,
+      "count": 268,
+      "max": 52.96
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 249,
+    "finish_reasons": {
+      "length": 250
+    },
+    "http_post_count": 269,
+    "model": "deepseek/deepseek-v4-pro",
+    "model_from_log": "deepseek/deepseek-v4-pro",
+    "name": "openrouter",
+    "timeout_count": 0
+  },
+  "run": {
+    "archive_metadata": null,
+    "completed": false,
+    "controller_log": "/tmp/dgm-luna-fair-final/luna-fair10-p15-20260713a/luna-fair10-p15-20260713a-deepseek-v4-pro-w02/controller.log",
+    "dgm_report": null,
+    "end_time": "2026-07-13T16:41:19.814000",
+    "line_count": 6201,
+    "observed_runtime_seconds": 5689.566,
+    "scorecard": null,
+    "start_time": "2026-07-13T15:06:30.248000"
+  },
+  "schema_version": 1,
+  "score": null,
+  "tokens": {
+    "by_model": {
+      "deepseek/deepseek-v4-pro": {
+        "completion_tokens": 336827,
+        "estimated_cost_usd": 0.675439,
+        "input_price_per_mtok": 0.435,
+        "output_price_per_mtok": 0.87,
+        "prompt_tokens": 879079,
+        "total_tokens": 1215906,
+        "usage_events": 262
+      },
+      "openai/gpt-5.6-luna": {
+        "completion_tokens": 1394,
+        "estimated_cost_usd": 0.029508,
+        "input_price_per_mtok": 1.0,
+        "output_price_per_mtok": 6.0,
+        "prompt_tokens": 21144,
+        "total_tokens": 22538,
+        "usage_events": 6
+      }
+    },
+    "completion_tokens": 338221,
+    "estimated_cost_usd": 0.704947,
+    "input_price_per_mtok": 0.0,
+    "output_price_per_mtok": 0.0,
+    "prompt_tokens": 900223,
+    "total_tokens": 1238444,
+    "usage_events": 268
+  }
+}

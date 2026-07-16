@@ -7,6 +7,7 @@ coding agent in the Darwin Gödel Machine system.
 
 import ast
 import asyncio
+import copy
 import hashlib
 import json
 import logging
@@ -103,6 +104,8 @@ class Agent:
         # Conversation state
         self.conversation_history: List[Message] = []
         self.current_task: Optional[Task] = None
+        self._self_modification_read_observed = False
+        self._self_modification_write_observed = False
         
         # Agent metadata
         self.generation = 0  # Which generation this agent is (0 = seed)
@@ -180,6 +183,9 @@ class Agent:
             Dict containing solution and execution details
         """
         self.current_task = task
+        self._failure_mode_counts: Dict[str, int] = {}
+        self._self_modification_read_observed = False
+        self._self_modification_write_observed = False
         
         # Clear conversation history for new task
         self.conversation_history = []
@@ -222,9 +228,11 @@ class Agent:
                 "agent_id": self.agent_id,
                 "steps": len(self.conversation_history),
                 "conversation_history": conversation_history,
+                "failure_modes": dict(self._failure_mode_counts),
             }
             
         except Exception as e:
+            self._record_failure_mode("timeout/provider failure")
             conversation_history = (
                 [msg.content for msg in self.conversation_history]
                 if self.config.retain_conversation_history
@@ -237,6 +245,7 @@ class Agent:
                 "agent_id": self.agent_id,
                 "steps": len(self.conversation_history),
                 "conversation_history": conversation_history,
+                "failure_modes": dict(self._failure_mode_counts),
             }
     
     async def _solve_with_steps(self, task: Task) -> str:
@@ -281,9 +290,16 @@ class Agent:
             # Get completion from FM
             request = CompletionRequest(
                 messages=self.conversation_history,
-                tools=self.tool_registry.get_tool_schemas(),
+                tools=self._tool_schemas_for_step(
+                    is_self_modification=is_self_modification,
+                ),
                 max_tokens=self.config.fm_config.get("max_tokens", 8192),
-                temperature=self.config.fm_config.get("temperature", 0.1)
+                temperature=self.config.fm_config.get("temperature", 0.1),
+                tool_choice=self._tool_choice_for_step(
+                    task=task,
+                    is_self_modification=is_self_modification,
+                    initial_agent_code_snapshot=initial_agent_code_snapshot,
+                ),
             )
             
             # Debug: Log conversation history size and last few messages
@@ -554,6 +570,88 @@ class Agent:
                 )
                 return solution
         return solution or self._read_workspace_solution(task)
+
+    def _tool_schemas_for_step(
+        self,
+        *,
+        is_self_modification: bool,
+    ) -> List[Dict[str, Any]]:
+        """Expose a narrow read-only discovery call before Gemma may mutate."""
+        schemas = self.tool_registry.get_tool_schemas()
+        policy = self.config.fm_config.get("tool_choice_policy")
+        if policy not in {
+            "required_read_then_workspace_change",
+            "auto_read_then_workspace_change",
+        } or not is_self_modification:
+            return schemas
+
+        edit_schema = next(
+            (copy.deepcopy(schema) for schema in schemas if schema.get("name") == "edit"),
+            None,
+        )
+        if edit_schema is None:
+            return schemas
+
+        parameters = edit_schema["parameters"]
+        properties = parameters["properties"]
+        if self._self_modification_read_observed:
+            if self._self_modification_write_observed:
+                return schemas
+            parameters["properties"]["action"]["enum"] = [
+                "line_replace",
+                "modify",
+                "write",
+            ]
+            parameters["required"] = ["action", "file_path"]
+            edit_schema["description"] = (
+                "Required mutation step after source discovery. Make one concrete "
+                "Python source edit now; Bash and additional reads are unavailable "
+                "until a write succeeds. Prefer line_replace."
+            )
+            return [edit_schema]
+
+        parameters["properties"] = {
+            name: properties[name]
+            for name in ("action", "file_path", "line_number", "line_count")
+        }
+        parameters["properties"]["action"]["enum"] = ["read"]
+        parameters["required"] = [
+            "action",
+            "file_path",
+            "line_number",
+            "line_count",
+        ]
+        edit_schema["description"] = (
+            "Required discovery step before self-modification. Read a narrow "
+            "bounded source range; writing is unavailable until this succeeds."
+        )
+        return [edit_schema]
+
+    def _tool_choice_for_step(
+        self,
+        *,
+        task: Task,
+        is_self_modification: bool,
+        initial_agent_code_snapshot: Dict[str, str],
+    ) -> Optional[str]:
+        """Require native tool use until a task has produced its first artifact."""
+        policy = self.config.fm_config.get("tool_choice_policy")
+        if policy == "auto_read_then_workspace_change":
+            return None
+        if policy not in {
+            "required_until_workspace_change",
+            "required_read_then_workspace_change",
+        }:
+            return None
+        if is_self_modification:
+            return (
+                None
+                if self._has_agent_code_changes(initial_agent_code_snapshot)
+                else "required"
+            )
+        if self._is_benchmark_task(task):
+            return None if self._benchmark_solution_file_exists() else "required"
+        return None
 
     def _build_no_progress_nudge(
         self,
@@ -846,6 +944,21 @@ class Agent:
         return "\n".join(parts)
 
     @staticmethod
+    def _tool_event_result_text(event: ToolExecutionEvent) -> str:
+        """Return searchable execution evidence without call parameters.
+
+        Tool parameters describe how a command should run.  They are not
+        evidence about how it actually ran.  In particular, a normal
+        ``timeout`` parameter must not be mistaken for a timeout result.
+        """
+        parts: List[str] = []
+        if event.result.output:
+            parts.append(event.result.output)
+        if event.result.error:
+            parts.append(event.result.error)
+        return "\n".join(parts)
+
+    @staticmethod
     def _stdin_example_expectations(task: Optional[Task]) -> Dict[str, str]:
         """Extract public stdin examples from a benchmark task description."""
         if task is None or not task.description:
@@ -1080,7 +1193,7 @@ class Agent:
             and (
                 event.result.status == ToolExecutionStatus.TIMEOUT
                 or cls._text_has_unsafe_benchmark_evidence(
-                    cls._tool_event_text(event)
+                    cls._tool_event_result_text(event)
                 )
             )
             for event in events
@@ -1278,6 +1391,25 @@ class Agent:
                     tool_call.tool_name,
                     tool_call.parameters,
                 )
+                if (
+                    task is not None
+                    and self._is_self_modification_task(task)
+                    and tool_call.tool_name == "edit"
+                    and tool_call.parameters.get("action") == "read"
+                    and result.status == ToolExecutionStatus.SUCCESS
+                ):
+                    self._self_modification_read_observed = True
+                if (
+                    task is not None
+                    and self._is_self_modification_task(task)
+                    and tool_call.tool_name == "edit"
+                    and tool_call.parameters.get("action") != "read"
+                    and result.status == ToolExecutionStatus.SUCCESS
+                ):
+                    self._self_modification_write_observed = True
+                failure_mode = self._classify_tool_failure(tool_call, result)
+                if failure_mode:
+                    self._record_failure_mode(failure_mode)
 
                 logger.info(f"Tool Result Status: {result.status}")
                 logger.info(
@@ -1328,6 +1460,58 @@ class Agent:
                 self.conversation_history.append(error_message)
                 events.append(ToolExecutionEvent(tool_call=tool_call, result=result))
         return events
+
+    def _record_failure_mode(self, mode: str) -> None:
+        counts = getattr(self, "_failure_mode_counts", None)
+        if counts is None:
+            counts = {}
+            self._failure_mode_counts = counts
+        counts[mode] = counts.get(mode, 0) + 1
+
+    @staticmethod
+    def _classify_tool_failure(
+        tool_call: ToolCall,
+        result: ToolResult,
+    ) -> Optional[str]:
+        if result.status == ToolExecutionStatus.SUCCESS:
+            return None
+
+        error_text = (result.error or "").lower()
+        if result.status == ToolExecutionStatus.TIMEOUT or "timed out" in error_text:
+            return "timeout/provider failure"
+
+        if tool_call.tool_name == "edit":
+            python_markers = (
+                "syntax error",
+                "invalid python",
+                "unexpected indent",
+                "unmatched '",
+                "unmatched \"",
+            )
+            if any(marker in error_text for marker in python_markers):
+                return "invalid Python"
+
+            malformed_markers = (
+                "invalid parameter",
+                "required parameter",
+                "unknown parameter",
+                "content parameter",
+                "content_lines parameter",
+                "serialized/list fragment",
+                "replacement would overwrite",
+                "provide either content or content_lines",
+                "line_number parameter",
+                "line_count parameter",
+            )
+            if (
+                result.status == ToolExecutionStatus.INVALID_PARAMS
+                or any(marker in error_text for marker in malformed_markers)
+            ):
+                return "malformed edit"
+
+        if "resource guard" in error_text or "unsafe complexity" in error_text:
+            return "unsafe complexity"
+        return None
 
     def _build_edit_repair_nudge(
         self,

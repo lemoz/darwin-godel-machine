@@ -1,0 +1,141 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "d0b489b5-5e9d-4254-ad91-f4a4a8d865c3",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T15:37:56.386933",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 10
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {}
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc390_d": 1
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 1,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.33761266194444445,
+    "successful_improvements": 0,
+    "total_agents_created": 0,
+    "total_generations": 0
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 1,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc389_d": 1,
+      "livecodebench_abc390_d": 1
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 18.565384615384616,
+      "count": 52,
+      "max": 104.89
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 53,
+    "model": "openai/gpt-5.6-sol",
+    "model_from_log": "openai/gpt-5.6-sol",
+    "name": "openrouter",
+    "timeout_count": 1
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/gpt56-sol/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/sebc-n1-20260714a-gpt56-sol/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/gpt56-sol/results/dgm_report_20260714_153756.json",
+    "end_time": "2026-07-14T15:37:56.391000",
+    "line_count": 1791,
+    "observed_runtime_seconds": 1231.146,
+    "scorecard": "/var/tmp/dgm-live-runs/sebc-n1-20260714a-gpt56-sol/artifacts/scorecard.json",
+    "start_time": "2026-07-14T15:17:25.245000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.8333333333333334,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "d0b489b5-5e9d-4254-ad91-f4a4a8d865c3",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 10
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": false,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "d0b489b5-5e9d-4254-ad91-f4a4a8d865c3",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 10
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [],
+      "changed_count": 0,
+      "noop_agents": [],
+      "noop_count": 0,
+      "status_counts": {},
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "d0b489b5-5e9d-4254-ad91-f4a4a8d865c3",
+    "top_score": 0.8333333333333334,
+    "total_agents": 1,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 0,
+    "valid_agents": 1
+  },
+  "tokens": {
+    "by_model": {
+      "openai/gpt-5.6-sol": {
+        "completion_tokens": 17083,
+        "estimated_cost_usd": 1.27614,
+        "input_price_per_mtok": 5.0,
+        "output_price_per_mtok": 30.0,
+        "prompt_tokens": 152730,
+        "total_tokens": 169813,
+        "usage_events": 52
+      }
+    },
+    "completion_tokens": 17083,
+    "estimated_cost_usd": 1.27614,
+    "input_price_per_mtok": 5.0,
+    "output_price_per_mtok": 30.0,
+    "prompt_tokens": 152730,
+    "total_tokens": 169813,
+    "usage_events": 52
+  }
+}

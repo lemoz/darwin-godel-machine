@@ -1,0 +1,23 @@
+{
+  "source_archive_tar": "docs/live-runs/lcb-self-elicitation-broad8-20260714-1/workers/sebc-e1-20260714b-gpt56-sol-w01/archive.tar.gz",
+  "target_archive": ".dgm-live-runs/heldout-transfer-20260715/gpt56-task-transfer/archive",
+  "total_agents": 11,
+  "valid_agents": 11,
+  "top_score": 0.9166666666666666,
+  "focus_agents": [
+    {
+      "agent_id": "1d3acbeb-28a6-446c-81a0-57606128c572",
+      "average_score": 0.75,
+      "generation": 0,
+      "parent_id": null,
+      "source_path": ".dgm-live-runs/heldout-transfer-20260715/gpt56-task-transfer/archive/1d3acbeb-28a6-446c-81a0-57606128c572"
+    },
+    {
+      "agent_id": "25f8a677-dcaa-465a-99db-7cf546aa3dd1",
+      "average_score": 0.9166666666666666,
+      "generation": 1,
+      "parent_id": "1d3acbeb-28a6-446c-81a0-57606128c572",
+      "source_path": ".dgm-live-runs/heldout-transfer-20260715/gpt56-task-transfer/archive/25f8a677-dcaa-465a-99db-7cf546aa3dd1"
+    }
+  ]
+}

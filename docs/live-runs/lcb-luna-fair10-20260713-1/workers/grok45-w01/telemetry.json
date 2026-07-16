@@ -1,0 +1,196 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "ff436e96-53f1-4942-8c0a-db219ce555a0",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "created_at": "2026-07-13T14:29:34.082532",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 10
+      },
+      {
+        "agent_id": "ce38ca5d-7f51-4394-86fe-e0a313f475ae",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-13T14:41:01.475157",
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "ff436e96-53f1-4942-8c0a-db219ce555a0",
+        "solved_count": 11
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {
+        "changed": 1
+      }
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc390_d": 2
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 2,
+    "improvement_rate": 1.0,
+    "runtime_hours": 0.3795876536111111,
+    "successful_improvements": 1,
+    "total_agents_created": 1,
+    "total_generations": 1
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 1,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc390_d": 2
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 9.182807017543857,
+      "count": 114,
+      "max": 118.24
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 115,
+    "model": "x-ai/grok-4.5",
+    "model_from_log": "x-ai/grok-4.5",
+    "name": "openrouter",
+    "timeout_count": 1
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/luna-runner-matrix/evolution/grok45/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/luna-fair10-p15-20260713a-grok45-w01/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/luna-runner-matrix/evolution/grok45/results/dgm_report_20260713_144101.json",
+    "end_time": "2026-07-13T14:41:01.484000",
+    "line_count": 3331,
+    "observed_runtime_seconds": 1382.023,
+    "scorecard": "/var/tmp/dgm-live-runs/luna-fair10-p15-20260713a-grok45-w01/artifacts/scorecard.json",
+    "start_time": "2026-07-13T14:17:59.461000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.8333333333333334,
+    "best_average_delta": 0.08333333333333326,
+    "generation_best_scores": [
+      {
+        "agent_id": "ff436e96-53f1-4942-8c0a-db219ce555a0",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 10
+      },
+      {
+        "agent_id": "ce38ca5d-7f51-4394-86fe-e0a313f475ae",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "solved_count": 11
+      }
+    ],
+    "has_improvement": true,
+    "has_regression": false,
+    "improvement_count": 1,
+    "improvements": [
+      {
+        "average_delta": 0.08333333333333326,
+        "benchmark_improvements": [
+          "livecodebench_abc388_e"
+        ],
+        "benchmark_regressions": [],
+        "child_id": "ce38ca5d-7f51-4394-86fe-e0a313f475ae",
+        "parent_id": "ff436e96-53f1-4942-8c0a-db219ce555a0"
+      }
+    ],
+    "loop_order_agents": [
+      {
+        "agent_id": "ff436e96-53f1-4942-8c0a-db219ce555a0",
+        "average_score": 0.8333333333333334,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 10
+      },
+      {
+        "agent_id": "ce38ca5d-7f51-4394-86fe-e0a313f475ae",
+        "average_score": 0.9166666666666666,
+        "benchmark_count": 12,
+        "generation": 1,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": "ff436e96-53f1-4942-8c0a-db219ce555a0",
+        "solved_count": 11
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [
+        "ce38ca5d-7f51-4394-86fe-e0a313f475ae"
+      ],
+      "changed_count": 1,
+      "noop_agents": [],
+      "noop_count": 0,
+      "status_counts": {
+        "changed": 1
+      },
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "ce38ca5d-7f51-4394-86fe-e0a313f475ae",
+    "top_score": 0.9166666666666666,
+    "total_agents": 2,
+    "total_benchmark_improvements": 1,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 11,
+    "valid_agents": 2
+  },
+  "tokens": {
+    "by_model": {
+      "openai/gpt-5.6-luna": {
+        "completion_tokens": 460,
+        "estimated_cost_usd": 0.013697,
+        "input_price_per_mtok": 1.0,
+        "output_price_per_mtok": 6.0,
+        "prompt_tokens": 10937,
+        "total_tokens": 11397,
+        "usage_events": 3
+      },
+      "x-ai/grok-4.5": {
+        "completion_tokens": 108310,
+        "estimated_cost_usd": 1.34544,
+        "input_price_per_mtok": 2.0,
+        "output_price_per_mtok": 6.0,
+        "prompt_tokens": 347790,
+        "total_tokens": 456100,
+        "usage_events": 111
+      }
+    },
+    "completion_tokens": 108770,
+    "estimated_cost_usd": 1.359137,
+    "input_price_per_mtok": 2.0,
+    "output_price_per_mtok": 6.0,
+    "prompt_tokens": 358727,
+    "total_tokens": 467497,
+    "usage_events": 114
+  }
+}

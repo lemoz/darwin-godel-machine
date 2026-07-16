@@ -1,0 +1,42 @@
+{
+  "summary": {
+    "total_generations": 0,
+    "runtime_hours": 0.21834534444444442,
+    "total_agents_created": 0,
+    "successful_improvements": 0,
+    "improvement_rate": 0.0,
+    "consecutive_noop_mutations": 0,
+    "failure_mode_counts": {
+      "no-op": 0,
+      "malformed edit": 0,
+      "invalid Python": 0,
+      "unsafe complexity": 0,
+      "timeout/provider failure": 0,
+      "hidden-test failure": 0,
+      "completion/protocol failure": 0
+    },
+    "final_archive_size": 1
+  },
+  "top_agents": [
+    {
+      "agent_id": "c4eaa651-1b0a-403f-8815-2c5a7a5c6608",
+      "score": 0.6666666666666666,
+      "generation": 0,
+      "benchmark_scores": {
+        "livecodebench_abc387_b": 1.0,
+        "livecodebench_abc388_b": 1.0,
+        "livecodebench_abc389_a": 1.0,
+        "livecodebench_abc390_b": 1.0,
+        "livecodebench_abc387_c": 1.0,
+        "livecodebench_abc388_d": 0.0,
+        "livecodebench_abc388_c": 1.0,
+        "livecodebench_abc389_d": 0.0,
+        "livecodebench_abc390_d": 1.0,
+        "livecodebench_abc388_e": 1.0,
+        "livecodebench_abc389_e": 0.0,
+        "livecodebench_abc390_e": 0.0
+      }
+    }
+  ],
+  "performance_trajectory": []
+}

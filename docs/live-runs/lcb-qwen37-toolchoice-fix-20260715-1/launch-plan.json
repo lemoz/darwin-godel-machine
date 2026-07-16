@@ -1,0 +1,51 @@
+{
+  "base_run_id": "qwenfix-q1-20260715a",
+  "generated_manifest": "config/generated/self_elicitation_matrix/manifest.json",
+  "generations_per_worker": 1,
+  "machine_type": "e2-standard-2",
+  "matrix": "config/livecodebench_self_elicitation_matrix.yaml",
+  "max_budget_usd": 5.0,
+  "max_concurrency": 1,
+  "model_count": 1,
+  "name": "cloud_runner_matrix_plan",
+  "phase": "evolution",
+  "project": "doittogether-prod",
+  "scheduling": "worker_round_robin",
+  "schema_version": 1,
+  "source": {
+    "commit": "679d79004fdaca485ca83073ebe07aa1477f064c",
+    "mutation_mode": "self",
+    "mutation_model": "self",
+    "repo_url": "https://github.com/lemoz/darwin-godel-machine.git",
+    "seed_mode": "fresh_native"
+  },
+  "status": "planned",
+  "total_generation_attempt_ceiling": 1,
+  "worker_plans": [
+    {
+      "artifact_dir": ".dgm-live-runs/qwen37-toolchoice-fix-20260715/cloud-artifacts/qwenfix-q1-20260715a-qwen37-max",
+      "config": "config/generated/self_elicitation_matrix/qwen37-max-evolution.yaml",
+      "gcs_uri": "gs://dgm-live-runs-doittogether-prod/qwen37-toolchoice-fix-20260715/qwenfix-q1-20260715a-qwen37-max",
+      "model": "qwen/qwen3.7-max",
+      "model_slug": "qwen37-max",
+      "mutation_mode": "self",
+      "mutation_model": "qwen/qwen3.7-max",
+      "plan_path": ".dgm-live-runs/qwen37-toolchoice-fix-20260715/plans/qwenfix-q1-20260715a-qwen37-max-plan.json",
+      "run_id": "qwenfix-q1-20260715a-qwen37-max",
+      "vm": {
+        "boot_disk_size_gb": 100,
+        "ephemeral": true,
+        "image_family": "debian-12",
+        "image_project": "debian-cloud",
+        "machine_type": "e2-standard-2",
+        "name": "dgm-qwenfix-q1-20260715a-qwen37-max",
+        "project": "doittogether-prod",
+        "zone": "us-central1-a"
+      },
+      "worker_id": 1
+    }
+  ],
+  "workers": 1,
+  "workers_per_model": 1,
+  "zone": "us-central1-a"
+}

@@ -62,6 +62,7 @@ class CompletionRequest:
     temperature: Optional[float] = None
     tools: Optional[List[Dict[str, Any]]] = None
     system_prompt: Optional[str] = None
+    tool_choice: Optional[str] = None
 
 
 class ApiHandler(ABC):

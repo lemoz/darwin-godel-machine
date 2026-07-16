@@ -110,6 +110,75 @@ live_run:
     assert estimate["request_ceiling_without_retries"] == 37
 
 
+def test_estimate_live_run_cost_prices_distinct_mutation_provider(tmp_path):
+    config = tmp_path / "hybrid.yaml"
+    config.write_text(
+        """
+fm_providers:
+  primary: gemma
+  gemma:
+    handler: openai_compatible
+    model: google/gemma-3-27b-it
+    max_tokens: 100
+  sol_mutator:
+    handler: openai_compatible
+    model: openai/gpt-5.6-sol
+    max_tokens: 1000
+agents:
+  max_steps: 2
+self_modification:
+  fm_provider: sol_mutator
+  max_steps: 3
+benchmarks:
+  enabled: [bench_one]
+live_run:
+  recommended_generations: 1
+""",
+        encoding="utf-8",
+    )
+
+    estimate = estimate_live_run_cost(
+        config_path=config,
+        input_price_per_mtok=1,
+        output_price_per_mtok=2,
+        mutation_input_price_per_mtok=5,
+        mutation_output_price_per_mtok=10,
+        assumed_input_tokens_per_call=1000,
+        max_budget=1,
+    )
+
+    assert estimate["provider"] == "gemma"
+    assert estimate["mutation_provider"] == "sol_mutator"
+    assert estimate["evaluation_request_ceiling"] == 4
+    assert estimate["mutation_request_ceiling"] == 3
+    assert estimate["estimated_total_cost_usd"] == pytest.approx(0.0498)
+
+
+def test_estimate_live_run_cost_requires_distinct_mutation_prices(tmp_path):
+    config = tmp_path / "hybrid.yaml"
+    config.write_text(
+        """
+fm_providers:
+  primary: gemma
+  gemma: {model: gemma, max_tokens: 100}
+  frontier: {model: frontier, max_tokens: 100}
+agents: {max_steps: 1}
+self_modification: {fm_provider: frontier, max_steps: 1}
+benchmarks: {enabled: [bench]}
+live_run: {recommended_generations: 1}
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(CostEstimateError, match="requires mutation input"):
+        estimate_live_run_cost(
+            config_path=config,
+            input_price_per_mtok=1,
+            output_price_per_mtok=1,
+            assumed_input_tokens_per_call=1000,
+        )
+
+
 def test_estimate_live_run_cost_rejects_zero_price():
     project_root = Path(__file__).resolve().parents[2]
 

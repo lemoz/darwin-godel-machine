@@ -120,6 +120,137 @@ class TestAgentInit:
         agent = Agent(cfg)
         assert isinstance(agent.fm_handler, OpenAICompatibleHandler)
 
+    def test_required_tool_policy_releases_after_self_modification_change(self, tmp_path):
+        cfg = _make_config(tmp_path)
+        cfg.fm_config = {**FM_CONFIG, "tool_choice_policy": "required_until_workspace_change"}
+        agent = Agent(cfg)
+        task = Task(task_id="self_modify_canary_0", description="modify")
+        before = agent._snapshot_agent_code_files()
+
+        assert agent._tool_choice_for_step(
+            task=task,
+            is_self_modification=True,
+            initial_agent_code_snapshot=before,
+        ) == "required"
+
+        (tmp_path / "agent.py").write_text("class Agent:\n    pass\n", encoding="utf-8")
+        assert agent._tool_choice_for_step(
+            task=task,
+            is_self_modification=True,
+            initial_agent_code_snapshot=before,
+        ) is None
+
+    def test_required_tool_policy_releases_after_benchmark_solution(self, tmp_path):
+        cfg = _make_config(tmp_path)
+        cfg.fm_config = {**FM_CONFIG, "tool_choice_policy": "required_until_workspace_change"}
+        agent = Agent(cfg)
+        task = Task(
+            task_id="benchmark_canary",
+            description="solve",
+            metadata={"benchmark": "canary"},
+        )
+
+        assert agent._tool_choice_for_step(
+            task=task,
+            is_self_modification=False,
+            initial_agent_code_snapshot={},
+        ) == "required"
+
+        (tmp_path / "solution.py").write_text("print(42)\n", encoding="utf-8")
+        assert agent._tool_choice_for_step(
+            task=task,
+            is_self_modification=False,
+            initial_agent_code_snapshot={},
+        ) is None
+
+    async def test_read_then_write_policy_starts_with_bounded_read_schema(self, tmp_path):
+        cfg = _make_config(tmp_path)
+        cfg.fm_config = {
+            **FM_CONFIG,
+            "tool_choice_policy": "required_read_then_workspace_change",
+        }
+        agent = Agent(cfg)
+        task = Task(task_id="self_modify_canary_0", description="modify")
+        (tmp_path / "agent.py").write_text(
+            "class Agent:\n    pass\n",
+            encoding="utf-8",
+        )
+
+        schemas = agent._tool_schemas_for_step(is_self_modification=True)
+        assert [schema["name"] for schema in schemas] == ["edit"]
+        params = schemas[0]["parameters"]
+        assert params["properties"]["action"]["enum"] == ["read"]
+        assert params["required"] == [
+            "action",
+            "file_path",
+            "line_number",
+            "line_count",
+        ]
+
+        await agent._execute_tool_calls(
+            [ToolCall(
+                tool_name="edit",
+                parameters={
+                    "action": "read",
+                    "file_path": "agent.py",
+                    "line_number": 1,
+                    "line_count": 2,
+                },
+            )],
+            task,
+        )
+
+        assert agent._self_modification_read_observed is True
+        write_schemas = agent._tool_schemas_for_step(is_self_modification=True)
+        assert [schema["name"] for schema in write_schemas] == ["edit"]
+        assert write_schemas[0]["parameters"]["properties"]["action"]["enum"] == [
+            "line_replace",
+            "modify",
+            "write",
+        ]
+
+        await agent._execute_tool_calls(
+            [ToolCall(
+                tool_name="edit",
+                parameters={
+                    "action": "line_replace",
+                    "file_path": "agent.py",
+                    "line_number": 2,
+                    "line_count": 1,
+                    "content_lines": ["    changed = True"],
+                },
+            )],
+            task,
+        )
+
+        assert agent._self_modification_write_observed is True
+        assert len(agent._tool_schemas_for_step(is_self_modification=True)) == 2
+
+    def test_auto_read_then_write_policy_keeps_staged_schema_without_forcing_choice(
+        self,
+        tmp_path,
+    ):
+        cfg = _make_config(tmp_path)
+        cfg.fm_config = {
+            **FM_CONFIG,
+            "tool_choice_policy": "auto_read_then_workspace_change",
+        }
+        agent = Agent(cfg)
+        task = Task(task_id="self_modify_canary_0", description="modify")
+        before = agent._snapshot_agent_code_files()
+
+        schemas = agent._tool_schemas_for_step(is_self_modification=True)
+
+        assert [schema["name"] for schema in schemas] == ["edit"]
+        assert schemas[0]["parameters"]["properties"]["action"]["enum"] == [
+            "read"
+        ]
+        assert agent._tool_choice_for_step(
+            task=task,
+            is_self_modification=True,
+            initial_agent_code_snapshot=before,
+        ) is None
+
     async def test_close_releases_provider_client(self, tmp_path):
         agent = Agent(_make_config(tmp_path))
         closed = {}
@@ -645,6 +776,45 @@ class TestAgentSolveTask:
         assert "content_lines as a JSON array of plain strings" in nudge
         assert "Do not nest arrays or objects" in nudge
 
+    def test_nested_content_lines_are_tagged_as_malformed_edit(self):
+        tool_call = ToolCall(
+            tool_name="edit",
+            parameters={
+                "action": "write",
+                "file_path": "solution.py",
+                "content_lines": [["print(1)"]],
+            },
+        )
+        result = ToolResult(
+            status=ToolExecutionStatus.ERROR,
+            output="",
+            error=(
+                "content_lines parameter must contain only strings in a flat "
+                "array for write action; found list"
+            ),
+        )
+
+        assert (
+            self.agent._classify_tool_failure(tool_call, result)
+            == "malformed edit"
+        )
+
+    def test_python_syntax_edit_is_tagged_separately(self):
+        tool_call = ToolCall(
+            tool_name="edit",
+            parameters={"action": "write", "file_path": "solution.py"},
+        )
+        result = ToolResult(
+            status=ToolExecutionStatus.ERROR,
+            output="",
+            error="Rejected write: content has a syntax error at line 1",
+        )
+
+        assert (
+            self.agent._classify_tool_failure(tool_call, result)
+            == "invalid Python"
+        )
+
     def test_benchmark_tool_registry_param_error_gets_repair_nudge(self):
         task = Task(
             task_id="benchmark_livecodebench_example",
@@ -1016,6 +1186,44 @@ class TestAgentSolveTask:
         assert kind == "unsafe_verification"
         assert "BENCHMARK UNSAFE COMPLEXITY BLOCK" in text
         assert "Do not finalize from public samples alone" in text
+
+    def test_benchmark_timeout_parameter_is_not_timeout_evidence(self):
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={
+                    "command": "python3 solution.py << 'EOF'\n1\nEOF",
+                    "timeout": 30,
+                    "capture_output": True,
+                },
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.SUCCESS,
+                output="1\n",
+            ),
+        )
+
+        assert not self.agent._events_include_unsafe_benchmark_evidence([event])
+
+    def test_benchmark_timeout_result_remains_unsafe_evidence(self):
+        event = ToolExecutionEvent(
+            tool_call=ToolCall(
+                tool_name="bash",
+                parameters={
+                    "command": "python3 solution.py",
+                    "timeout": 30,
+                },
+                call_id="toolu_bash",
+            ),
+            result=ToolResult(
+                status=ToolExecutionStatus.TIMEOUT,
+                output="",
+                error="Command timed out after 30 seconds",
+            ),
+        )
+
+        assert self.agent._events_include_unsafe_benchmark_evidence([event])
 
     def test_benchmark_repeated_edit_failures_get_fresh_source_reset(self):
         task = Task(

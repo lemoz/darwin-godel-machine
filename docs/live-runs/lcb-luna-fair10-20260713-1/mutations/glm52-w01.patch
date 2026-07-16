@@ -1,0 +1,11 @@
+--- parent/agent.py
++++ child/agent.py
+@@ -54,7 +54,7 @@
+     fm_config: Dict[str, Any]
+     working_directory: str
+     tool_timeout: int = 30
+-    max_iterations: int = 10
++    max_iterations: int = 14
+     memory_limit: Optional[int] = None
+     sandbox_manager: Optional[Any] = None
+     use_sandbox: bool = False
