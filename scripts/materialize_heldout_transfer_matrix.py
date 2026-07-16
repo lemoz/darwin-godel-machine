@@ -50,7 +50,12 @@ def _preflight_commands(
     config_label: str,
     archive: str,
 ) -> list[str]:
-    agent_args = " ".join(f"--agent-id {agent['id']}" for agent in model["agents"])
+    seed_agent_args = " ".join(
+        f"--focus-agent-id {agent['id']}" for agent in model["agents"]
+    )
+    rescore_agent_args = " ".join(
+        f"--agent-id {agent['id']}" for agent in model["agents"]
+    )
     seed_manifest = f"{archive}/seed-manifest.json"
     transfer_manifest = f"{archive}/transfer.json"
     return [
@@ -62,11 +67,12 @@ def _preflight_commands(
         (
             'PATH="$PWD/.venv/bin:$PATH" python scripts/seed_archive_from_proof.py '
             f"--archive-tar {model['proof_archive']} --target-archive {archive} "
-            f"{agent_args} --min-focus-score 0 --output {seed_manifest} --force"
+            f"{seed_agent_args} --min-focus-score 0 --output {seed_manifest} --force"
         ),
         (
             'PATH="$PWD/.venv/bin:$PATH" python scripts/rescore_archive_agents.py '
-            f"--config {config_label} {agent_args} --replicates {model['replicates']} "
+            f"--config {config_label} {rescore_agent_args} "
+            f"--replicates {model['replicates']} "
             f"--prune-unselected --output {transfer_manifest}"
         ),
     ]
