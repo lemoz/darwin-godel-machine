@@ -1,0 +1,45 @@
+{
+  "budget_exceeded": false,
+  "budget_scope": "key",
+  "executions": [
+    {
+      "error": "Command '['gcloud', 'compute', 'ssh', 'dgm-qwenfix-q1-20260715a-qwen37-max', '--project', 'doittogether-prod', '--zone', 'us-central1-a', '--command', 'sudo bash -lc \\'set -e\\nSTARTUP_LOG=/var/tmp/dgm-live-runs/qwenfix-q1-20260715a-qwen37-max/artifacts/startup.log\\nEXIT_CODE=/var/tmp/dgm-live-runs/qwenfix-q1-20260715a-qwen37-max/artifacts/exit_code\\nwhile [ ! -f \"$STARTUP_LOG\" ] && [ ! -f \"$EXIT_CODE\" ]; do\\n  journalctl -u google-startup-scripts.service -n 80 --no-pager || true\\n  sleep 10\\ndone\\nif [ -f \"$STARTUP_LOG\" ]; then\\n  tail -n +1 -F \"$STARTUP_LOG\" &\\n  TAIL_PID=$!\\nfi\\nwhile [ ! -f \"$EXIT_CODE\" ]; do\\n  sleep 10\\ndone\\nif [ -n \"${TAIL_PID:-}\" ]; then\\n  kill \"$TAIL_PID\" >/dev/null 2>&1 || true\\nfi\\ncat \"$EXIT_CODE\"\\'']' returned non-zero exit status 1.",
+      "run_id": "qwenfix-q1-20260715a-qwen37-max",
+      "status": "failed"
+    }
+  ],
+  "gcs_recovered_workers": [
+    "qwenfix-q1-20260715a-qwen37-max"
+  ],
+  "models": [
+    {
+      "model": "qwen/qwen3.7-max",
+      "model_slug": "qwen37-max",
+      "top_score": 0.75,
+      "workers": [
+        {
+          "artifact_dir": ".dgm-live-runs/qwen37-toolchoice-fix-20260715/cloud-artifacts/qwenfix-q1-20260715a-qwen37-max",
+          "exit_code": 0,
+          "gcs_uri": "gs://dgm-live-runs-doittogether-prod/qwen37-toolchoice-fix-20260715/qwenfix-q1-20260715a-qwen37-max",
+          "has_scorecard": true,
+          "model_cost_usd": 0.367511,
+          "run_id": "qwenfix-q1-20260715a-qwen37-max",
+          "top_score": 0.75,
+          "total_tokens": 231057
+        }
+      ],
+      "workers_with_scorecards": 1
+    }
+  ],
+  "models_with_scorecards": 1,
+  "name": "cloud_runner_matrix_aggregate",
+  "openrouter_usage_delta_usd": 0.0,
+  "openrouter_usage_end_usd": 7.993400875,
+  "openrouter_usage_start_usd": 7.993400875,
+  "phase": "evolution",
+  "schema_version": 1,
+  "status": "failed",
+  "total_model_cost_usd_from_telemetry": 0.367511,
+  "total_tokens": 231057,
+  "workers_with_scorecards": 1
+}

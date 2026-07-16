@@ -1,0 +1,172 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "created_at": "2026-07-16T00:02:46.799498",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "34ea8faa-00cf-4563-9abe-90aba4db13b7",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "created_at": "2026-07-16T00:02:58.632931",
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+        "solved_count": 0
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {
+        "noop": 1
+      }
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 1,
+    "final_archive_size": 2,
+    "improvement_rate": 0.0,
+    "runtime_hours": 0.3763110288888889,
+    "successful_improvements": 0,
+    "total_agents_created": 0,
+    "total_generations": 1
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 5,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc388_e": 1,
+      "livecodebench_abc390_d": 1,
+      "livecodebench_abc390_e": 1
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": "https://openrouter.ai/api/v1",
+    "completion_latency_seconds": {
+      "average": 11.890000000000002,
+      "count": 57,
+      "max": 91.71
+    },
+    "configured_timeout_seconds": 120.0,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 62,
+    "model": "qwen/qwen3.7-max",
+    "model_from_log": "qwen/qwen3.7-max",
+    "name": "openrouter",
+    "timeout_count": 5
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen37-max/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/qwenfix-q1-20260715a-qwen37-max/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen37-max/results/dgm_report_20260716_000258.json",
+    "end_time": "2026-07-16T00:02:58.638000",
+    "line_count": 1812,
+    "observed_runtime_seconds": 1370.156,
+    "scorecard": "/var/tmp/dgm-live-runs/qwenfix-q1-20260715a-qwen37-max/artifacts/scorecard.json",
+    "start_time": "2026-07-15T23:40:08.482000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.75,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 9
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": false,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+        "average_score": 0.75,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "34ea8faa-00cf-4563-9abe-90aba4db13b7",
+        "average_score": 0.0,
+        "benchmark_count": 0,
+        "generation": 1,
+        "has_code_changes": false,
+        "is_valid": false,
+        "mutation_status": "noop",
+        "parent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+        "solved_count": 0
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [],
+      "changed_count": 0,
+      "noop_agents": [
+        "34ea8faa-00cf-4563-9abe-90aba4db13b7"
+      ],
+      "noop_count": 1,
+      "status_counts": {
+        "noop": 1
+      },
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+    "top_score": 0.75,
+    "total_agents": 2,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 0,
+    "valid_agents": 1
+  },
+  "tokens": {
+    "by_model": {
+      "qwen/qwen3.7-max": {
+        "completion_tokens": 31476,
+        "estimated_cost_usd": 0.367511,
+        "input_price_per_mtok": 1.25,
+        "output_price_per_mtok": 3.75,
+        "prompt_tokens": 199581,
+        "total_tokens": 231057,
+        "usage_events": 57
+      }
+    },
+    "completion_tokens": 31476,
+    "estimated_cost_usd": 0.367511,
+    "input_price_per_mtok": 1.25,
+    "output_price_per_mtok": 3.75,
+    "prompt_tokens": 199581,
+    "total_tokens": 231057,
+    "usage_events": 57
+  }
+}

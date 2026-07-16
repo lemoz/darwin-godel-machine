@@ -1,0 +1,156 @@
+{
+  "archive": {
+    "loop_order_agents": [
+      {
+        "agent_id": "62c3c6ab-011f-4087-8471-046e80db1b55",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T17:11:35.164061",
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "e5e0ae17-ee62-43ac-942f-03c07becfe01",
+        "average_score": 0.7916666666666666,
+        "benchmark_count": 12,
+        "created_at": "2026-07-14T17:21:40.385283",
+        "generation": 0,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": null,
+        "solved_count": 10
+      }
+    ],
+    "mutation_summary": {
+      "status_counts": {}
+    },
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc392_d": 2,
+      "livecodebench_abc392_f": 2,
+      "livecodebench_abc394_c": 1
+    }
+  },
+  "dgm_report": {
+    "consecutive_noop_mutations": 0,
+    "final_archive_size": 2,
+    "improvement_rate": 0.0,
+    "runtime_hours": 2.0805555555555556e-07,
+    "successful_improvements": 0,
+    "total_agents_created": 0,
+    "total_generations": 0
+  },
+  "failure_reason_summary": {
+    "empty_response_count": 0,
+    "error_count": 0,
+    "provider_api_error_count": 0,
+    "provider_timeout_count": 0,
+    "resource_guard_rejections": 0,
+    "traceback_count": 0,
+    "zero_score_counts_by_benchmark": {
+      "livecodebench_abc392_d": 2,
+      "livecodebench_abc392_f": 2,
+      "livecodebench_abc394_c": 1
+    }
+  },
+  "provider": {
+    "api_error_count": 0,
+    "base_url_from_log": null,
+    "completion_latency_seconds": {
+      "average": null,
+      "count": 0,
+      "max": null
+    },
+    "configured_timeout_seconds": null,
+    "empty_response_count": 0,
+    "finish_reasons": {},
+    "http_post_count": 0,
+    "model": "openai/gpt-5.6-sol",
+    "model_from_log": null,
+    "name": "openrouter",
+    "timeout_count": 0
+  },
+  "run": {
+    "archive_metadata": ".dgm-live-runs/heldout-transfer-20260715/gpt56-generic-transfer/archive/archive_metadata.json",
+    "completed": true,
+    "controller_log": "/var/tmp/dgm-live-runs/heldout-t2-20260716b-gpt56-generic-transfer/artifacts/controller.log",
+    "dgm_report": ".dgm-live-runs/heldout-transfer-20260715/gpt56-generic-transfer/results/dgm_report_20260716_010245.json",
+    "end_time": "2026-07-16T01:02:45.436000",
+    "line_count": 41,
+    "observed_runtime_seconds": 3.529,
+    "scorecard": "/var/tmp/dgm-live-runs/heldout-t2-20260716b-gpt56-generic-transfer/artifacts/scorecard.json",
+    "start_time": "2026-07-16T01:02:41.907000"
+  },
+  "schema_version": 1,
+  "score": {
+    "base_score": 0.7916666666666666,
+    "best_average_delta": 0.0,
+    "generation_best_scores": [
+      {
+        "agent_id": "e5e0ae17-ee62-43ac-942f-03c07becfe01",
+        "average_score": 0.7916666666666666,
+        "benchmark_count": 12,
+        "generation": 0,
+        "solved_count": 10
+      }
+    ],
+    "has_improvement": false,
+    "has_regression": false,
+    "improvement_count": 0,
+    "improvements": [],
+    "loop_order_agents": [
+      {
+        "agent_id": "62c3c6ab-011f-4087-8471-046e80db1b55",
+        "average_score": 0.6666666666666666,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": null,
+        "is_valid": true,
+        "mutation_status": null,
+        "parent_id": null,
+        "solved_count": 9
+      },
+      {
+        "agent_id": "e5e0ae17-ee62-43ac-942f-03c07becfe01",
+        "average_score": 0.7916666666666666,
+        "benchmark_count": 12,
+        "generation": 0,
+        "has_code_changes": true,
+        "is_valid": true,
+        "mutation_status": "changed",
+        "parent_id": null,
+        "solved_count": 10
+      }
+    ],
+    "mutation_summary": {
+      "changed_agents": [],
+      "changed_count": 0,
+      "noop_agents": [],
+      "noop_count": 0,
+      "status_counts": {},
+      "unknown_agents": [],
+      "unknown_count": 0
+    },
+    "top_agent_id": "e5e0ae17-ee62-43ac-942f-03c07becfe01",
+    "top_score": 0.7916666666666666,
+    "total_agents": 2,
+    "total_benchmark_improvements": 0,
+    "total_benchmark_regressions": 0,
+    "total_benchmark_unchanged": 0,
+    "valid_agents": 2
+  },
+  "tokens": {
+    "by_model": {},
+    "completion_tokens": 0,
+    "estimated_cost_usd": 0.0,
+    "input_price_per_mtok": 5.0,
+    "output_price_per_mtok": 30.0,
+    "prompt_tokens": 0,
+    "total_tokens": 0,
+    "usage_events": 0
+  }
+}

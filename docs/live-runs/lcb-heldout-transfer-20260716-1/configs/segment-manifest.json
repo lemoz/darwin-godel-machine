@@ -1,0 +1,177 @@
+{
+  "approval_required": true,
+  "benchmark_count": 12,
+  "benchmark_names": [
+    "livecodebench_abc391_a",
+    "livecodebench_abc392_a",
+    "livecodebench_abc393_a",
+    "livecodebench_abc394_a",
+    "livecodebench_abc391_d",
+    "livecodebench_abc392_d",
+    "livecodebench_abc392_c",
+    "livecodebench_abc394_c",
+    "livecodebench_abc394_d",
+    "livecodebench_abc391_e",
+    "livecodebench_abc392_f",
+    "livecodebench_abc394_e"
+  ],
+  "config": "config/livecodebench_segment_heldout12.yaml",
+  "difficulty_counts": {
+    "easy": 4,
+    "hard": 3,
+    "medium": 5
+  },
+  "live_calls_performed": 0,
+  "manifest_path": ".dgm-live-runs/livecodebench-heldout12/manifest.json",
+  "name": "livecodebench_segment",
+  "output_dir": ".dgm-live-runs/livecodebench-heldout12/benchmarks",
+  "per_problem_timeout_seconds": 10,
+  "private_test_count": 480,
+  "problems": [
+    {
+      "benchmark": "livecodebench_abc391_a",
+      "contest_date": "2025-02-01T00:00:00",
+      "difficulty": "easy",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc391_a",
+      "question_title": "Lucky Direction",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc392_a",
+      "contest_date": "2025-02-08T00:00:00",
+      "difficulty": "easy",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc392_a",
+      "question_title": "Shuffled Equation",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc393_a",
+      "contest_date": "2025-02-15T00:00:00",
+      "difficulty": "easy",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc393_a",
+      "question_title": "Poisonous Oyster",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc394_a",
+      "contest_date": "2025-02-22T00:00:00",
+      "difficulty": "easy",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc394_a",
+      "question_title": "22222",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc391_d",
+      "contest_date": "2025-02-01T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc391_d",
+      "question_title": "Gravity",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc392_d",
+      "contest_date": "2025-02-08T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc392_d",
+      "question_title": "Doubles",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc392_c",
+      "contest_date": "2025-02-08T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc392_c",
+      "question_title": "Bib",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc394_c",
+      "contest_date": "2025-02-22T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc394_c",
+      "question_title": "Debug",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc394_d",
+      "contest_date": "2025-02-22T00:00:00",
+      "difficulty": "medium",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 3,
+      "question_id": "abc394_d",
+      "question_title": "Colorful Bracket Sequence",
+      "total_test_count": 43
+    },
+    {
+      "benchmark": "livecodebench_abc391_e",
+      "contest_date": "2025-02-01T00:00:00",
+      "difficulty": "hard",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc391_e",
+      "question_title": "Hierarchical Majority Vote",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc392_f",
+      "contest_date": "2025-02-08T00:00:00",
+      "difficulty": "hard",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc392_f",
+      "question_title": "Insert",
+      "total_test_count": 42
+    },
+    {
+      "benchmark": "livecodebench_abc394_e",
+      "contest_date": "2025-02-22T00:00:00",
+      "difficulty": "hard",
+      "platform": "atcoder",
+      "private_test_count": 40,
+      "public_test_count": 2,
+      "question_id": "abc394_e",
+      "question_title": "Palindromic Shortest Path",
+      "total_test_count": 42
+    }
+  ],
+  "public_test_count": 27,
+  "segment_id": "release_v6_atcoder_heldout12",
+  "source": {
+    "dataset": "livecodebench/code_generation_lite",
+    "gcs_uri": "gs://dgm-live-runs-doittogether-prod/datasets/livecodebench/code_generation_lite/release_v6/test6.jsonl",
+    "sha256": "bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5",
+    "source_file": "test6.jsonl",
+    "url": "https://huggingface.co/datasets/livecodebench/code_generation_lite/resolve/main/test6.jsonl",
+    "version_label": "release_v6"
+  },
+  "status": "ok",
+  "test_policy": "public examples are prompt-visible; public plus private tests are scored",
+  "total_test_count": 507
+}

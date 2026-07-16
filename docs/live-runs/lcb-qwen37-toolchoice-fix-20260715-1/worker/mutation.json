@@ -1,0 +1,148 @@
+{
+  "added_files": [],
+  "admission": {
+    "admitted": false,
+    "failure_mode": "no-op",
+    "protected_symbol_changes": [],
+    "reasons": [
+      "mutation changed no executable Python agent files"
+    ]
+  },
+  "artifact_paths": {
+    "metadata": ".dgm_metadata/mutation.json",
+    "patch": ".dgm_metadata/mutation.patch"
+  },
+  "changed_code_files": [],
+  "changed_files": [],
+  "child_manifest": {
+    "__init__.py": {
+      "sha256": "b0282b5a3552d18e886661a33da1a28f0e63015abbcfaed927cb62e32311854e",
+      "size_bytes": 293
+    },
+    "agent.py": {
+      "sha256": "0f7d4d1d89f06057dad6e08d917ba9b071e465f317f6c9908a1f19e64fdadc31",
+      "size_bytes": 84172
+    },
+    "fm_interface/__init__.py": {
+      "sha256": "a4bac7380083485b46179eef7e68c3577fe02db87ecccad8846731f79b2759a3",
+      "size_bytes": 748
+    },
+    "fm_interface/api_handler.py": {
+      "sha256": "53ef8c9eb671ca60580227d7539df2e960ac77c12e4e31ccaa21470e840aba42",
+      "size_bytes": 5649
+    },
+    "fm_interface/message_formatter.py": {
+      "sha256": "a3025e12c49684ab150194bb3a9d9fba861772950c3c6480c83c4576edac7f18",
+      "size_bytes": 11778
+    },
+    "fm_interface/providers/__init__.py": {
+      "sha256": "1cd1747416b8257207c04d95d2bd0f183302b22534c0cdbd615e8f47e7c7e932",
+      "size_bytes": 375
+    },
+    "fm_interface/providers/anthropic.py": {
+      "sha256": "2b9f8987d2c72b39ffcd92208a0f577cc57580c9e27d18aa40a33fa99c7f8243",
+      "size_bytes": 14651
+    },
+    "fm_interface/providers/gemini.py": {
+      "sha256": "45a06b02ad5fce5787169989342c6fe1bf4361a060e433febfe54fbccf6ecf8f",
+      "size_bytes": 11183
+    },
+    "fm_interface/providers/openai_compatible.py": {
+      "sha256": "ce82569496b3670d525b1cfe15f334bdffff9fc7bd7e8446077a684de3988087",
+      "size_bytes": 18204
+    },
+    "fm_interface/providers/test_anthropic_format.py": {
+      "sha256": "70ae241243f8c8796d7f80ad9334def93062a734aa7eaa181ad37949cb4f073f",
+      "size_bytes": 12129
+    },
+    "tools/__init__.py": {
+      "sha256": "4d3f5bdfd43767ada7994d8f2ee9177e807eaa9a59b1341f575cf46b94ab6925",
+      "size_bytes": 480
+    },
+    "tools/base_tool.py": {
+      "sha256": "1c3f607ff4b9313b7f7a0aa52a06d169861686a59723af7eb3cb99fc2b31025f",
+      "size_bytes": 11391
+    },
+    "tools/bash_tool.py": {
+      "sha256": "0ce628b730571bcca5564b78d7ca06886ec26d1442dfa718665f229bc1fda6f3",
+      "size_bytes": 21673
+    },
+    "tools/edit_tool.py": {
+      "sha256": "215e85999e38078d3829699c141b6de1bce4793a32f514e54a3f5e6d4cc7ebdd",
+      "size_bytes": 48043
+    }
+  },
+  "child_tree_sha256": "e36a5728c76f02b622bd60fb384e006d4df074d48ed27edadbf724a18fd18f34",
+  "failure_modes": {},
+  "has_changes": false,
+  "has_code_changes": false,
+  "modified_files": [],
+  "mutation_status": "noop",
+  "parent_agent_id": "c7cb1a00-9879-4363-b91e-bceba065b3ff",
+  "parent_manifest": {
+    "__init__.py": {
+      "sha256": "b0282b5a3552d18e886661a33da1a28f0e63015abbcfaed927cb62e32311854e",
+      "size_bytes": 293
+    },
+    "agent.py": {
+      "sha256": "0f7d4d1d89f06057dad6e08d917ba9b071e465f317f6c9908a1f19e64fdadc31",
+      "size_bytes": 84172
+    },
+    "fm_interface/__init__.py": {
+      "sha256": "a4bac7380083485b46179eef7e68c3577fe02db87ecccad8846731f79b2759a3",
+      "size_bytes": 748
+    },
+    "fm_interface/api_handler.py": {
+      "sha256": "53ef8c9eb671ca60580227d7539df2e960ac77c12e4e31ccaa21470e840aba42",
+      "size_bytes": 5649
+    },
+    "fm_interface/message_formatter.py": {
+      "sha256": "a3025e12c49684ab150194bb3a9d9fba861772950c3c6480c83c4576edac7f18",
+      "size_bytes": 11778
+    },
+    "fm_interface/providers/__init__.py": {
+      "sha256": "1cd1747416b8257207c04d95d2bd0f183302b22534c0cdbd615e8f47e7c7e932",
+      "size_bytes": 375
+    },
+    "fm_interface/providers/anthropic.py": {
+      "sha256": "2b9f8987d2c72b39ffcd92208a0f577cc57580c9e27d18aa40a33fa99c7f8243",
+      "size_bytes": 14651
+    },
+    "fm_interface/providers/gemini.py": {
+      "sha256": "45a06b02ad5fce5787169989342c6fe1bf4361a060e433febfe54fbccf6ecf8f",
+      "size_bytes": 11183
+    },
+    "fm_interface/providers/openai_compatible.py": {
+      "sha256": "ce82569496b3670d525b1cfe15f334bdffff9fc7bd7e8446077a684de3988087",
+      "size_bytes": 18204
+    },
+    "fm_interface/providers/test_anthropic_format.py": {
+      "sha256": "70ae241243f8c8796d7f80ad9334def93062a734aa7eaa181ad37949cb4f073f",
+      "size_bytes": 12129
+    },
+    "tools/__init__.py": {
+      "sha256": "4d3f5bdfd43767ada7994d8f2ee9177e807eaa9a59b1341f575cf46b94ab6925",
+      "size_bytes": 480
+    },
+    "tools/base_tool.py": {
+      "sha256": "1c3f607ff4b9313b7f7a0aa52a06d169861686a59723af7eb3cb99fc2b31025f",
+      "size_bytes": 11391
+    },
+    "tools/bash_tool.py": {
+      "sha256": "0ce628b730571bcca5564b78d7ca06886ec26d1442dfa718665f229bc1fda6f3",
+      "size_bytes": 21673
+    },
+    "tools/edit_tool.py": {
+      "sha256": "215e85999e38078d3829699c141b6de1bce4793a32f514e54a3f5e6d4cc7ebdd",
+      "size_bytes": 48043
+    }
+  },
+  "parent_source_path": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen37-max/archive/c7cb1a00-9879-4363-b91e-bceba065b3ff",
+  "parent_tree_sha256": "e36a5728c76f02b622bd60fb384e006d4df074d48ed27edadbf724a18fd18f34",
+  "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "patch_size_bytes": 0,
+  "removed_files": [],
+  "schema_version": 2,
+  "task_id": "self_modify_c7cb1a00-9879-4363-b91e-bceba065b3ff_1",
+  "workspace_dir": ".dgm-live-runs/self-elicitation-broad-credible-20260714/evolution/qwen37-max/workspace/self_modify_c7cb1a00-9879-4363-b91e-bceba065b3ff_1"
+}

@@ -1,0 +1,30 @@
+{
+  "source_archive_tar": "docs/live-runs/lcb-self-elicitation-broad8-20260714-1/workers/sebc-e1-20260714b-gemini35-flash-w01/archive.tar.gz",
+  "target_archive": ".dgm-live-runs/heldout-transfer-20260715/gemini35-transfer/archive",
+  "total_agents": 16,
+  "valid_agents": 13,
+  "top_score": 0.8333333333333334,
+  "focus_agents": [
+    {
+      "agent_id": "ea98b448-ee41-472d-9c7e-6d2adfffa344",
+      "average_score": 0.5833333333333334,
+      "generation": 0,
+      "parent_id": null,
+      "source_path": ".dgm-live-runs/heldout-transfer-20260715/gemini35-transfer/archive/ea98b448-ee41-472d-9c7e-6d2adfffa344"
+    },
+    {
+      "agent_id": "b4061d8a-bc4b-4d87-9fcc-bd405a768711",
+      "average_score": 0.75,
+      "generation": 1,
+      "parent_id": "ea98b448-ee41-472d-9c7e-6d2adfffa344",
+      "source_path": ".dgm-live-runs/heldout-transfer-20260715/gemini35-transfer/archive/b4061d8a-bc4b-4d87-9fcc-bd405a768711"
+    },
+    {
+      "agent_id": "93d22ff9-cc23-4935-b029-8bf755ab9dbe",
+      "average_score": 0.8333333333333334,
+      "generation": 2,
+      "parent_id": "b4061d8a-bc4b-4d87-9fcc-bd405a768711",
+      "source_path": ".dgm-live-runs/heldout-transfer-20260715/gemini35-transfer/archive/93d22ff9-cc23-4935-b029-8bf755ab9dbe"
+    }
+  ]
+}

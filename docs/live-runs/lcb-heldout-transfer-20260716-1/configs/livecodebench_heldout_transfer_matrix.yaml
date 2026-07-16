@@ -1,0 +1,111 @@
+schema_version: 1
+name: livecodebench_heldout_transfer
+run_root: heldout-transfer-20260715
+
+segment:
+  config: config/livecodebench_segment_heldout12.yaml
+  manifest_path: .dgm-live-runs/livecodebench-heldout12/manifest.json
+  segment_id: release_v6_atcoder_heldout12
+  benchmark_count: 12
+  benchmarks:
+    - livecodebench_abc391_a
+    - livecodebench_abc392_a
+    - livecodebench_abc393_a
+    - livecodebench_abc394_a
+    - livecodebench_abc391_d
+    - livecodebench_abc392_d
+    - livecodebench_abc392_c
+    - livecodebench_abc394_c
+    - livecodebench_abc394_d
+    - livecodebench_abc391_e
+    - livecodebench_abc392_f
+    - livecodebench_abc394_e
+
+calibration:
+  generations: 0
+  max_concurrency: 4
+  max_openrouter_budget_usd: 60
+  budget_poll_seconds: 5
+
+# The cloud fleet planner resolves this metadata even though zero generations
+# means no mutation call is made during transfer evaluation.
+mutation:
+  mode: self
+  provider_key: self_mutator
+  handler: openai_compatible
+  api_key: ${OPENROUTER_API_KEY}
+  base_url: https://openrouter.ai/api/v1
+  max_tokens: 1024
+  temperature: 0.2
+  timeout: 120
+  timeout_retries: 0
+  tool_choice_policy: required_read_then_workspace_change
+  max_agent_iterations: 24
+
+runner_defaults:
+  handler: openai_compatible
+  api_key: ${OPENROUTER_API_KEY}
+  base_url: https://openrouter.ai/api/v1
+  max_tokens: 2048
+  temperature: 0.1
+  timeout: 120
+  timeout_retries: 1
+  timeout_retry_delay: 1
+
+cloud:
+  project: doittogether-prod
+  zone: us-central1-a
+  machine_type: e2-standard-2
+  boot_disk_size_gb: 100
+
+models:
+  - slug: gemini35-transfer
+    model: google/gemini-3.5-flash
+    vendor: Google
+    input_price_per_mtok: 1.5
+    output_price_per_mtok: 9.0
+    proof_archive: docs/live-runs/lcb-self-elicitation-broad8-20260714-1/workers/sebc-e1-20260714b-gemini35-flash-w01/archive.tar.gz
+    replicates: 2
+    agents:
+      - id: ea98b448-ee41-472d-9c7e-6d2adfffa344
+        label: native
+      - id: b4061d8a-bc4b-4d87-9fcc-bd405a768711
+        label: solver-policy-7-to-9
+      - id: 93d22ff9-cc23-4935-b029-8bf755ab9dbe
+        label: selected-top-7-to-10
+  - slug: gpt56-task-transfer
+    model: openai/gpt-5.6-sol
+    vendor: OpenAI
+    input_price_per_mtok: 5.0
+    output_price_per_mtok: 30.0
+    proof_archive: docs/live-runs/lcb-self-elicitation-broad8-20260714-1/workers/sebc-e1-20260714b-gpt56-sol-w01/archive.tar.gz
+    replicates: 2
+    agents:
+      - id: 1d3acbeb-28a6-446c-81a0-57606128c572
+        label: native
+      - id: 25f8a677-dcaa-465a-99db-7cf546aa3dd1
+        label: task-hints-9-to-11
+  - slug: gpt56-generic-transfer
+    model: openai/gpt-5.6-sol
+    vendor: OpenAI
+    input_price_per_mtok: 5.0
+    output_price_per_mtok: 30.0
+    proof_archive: docs/live-runs/lcb-self-elicitation-broad8-20260714-1/workers/sebc-e1-20260714b-gpt56-sol-w02/archive.tar.gz
+    replicates: 2
+    agents:
+      - id: 62c3c6ab-011f-4087-8471-046e80db1b55
+        label: native
+      - id: e5e0ae17-ee62-43ac-942f-03c07becfe01
+        label: generic-verification-9-to-10
+  - slug: fable5-transfer
+    model: anthropic/claude-fable-5
+    vendor: Anthropic
+    input_price_per_mtok: 10.0
+    output_price_per_mtok: 50.0
+    proof_archive: docs/live-runs/lcb-self-elicitation-broad8-20260714-1/workers/sebc-e1-20260714b-fable5-w01/archive.tar.gz
+    replicates: 2
+    agents:
+      - id: 3bfd53fe-1ab7-4d98-8730-37b1abb0ed6e
+        label: native
+      - id: 90379c3a-10fc-4cdd-9f4c-82d2006c8e83
+        label: hard-problem-strategy-8-to-10

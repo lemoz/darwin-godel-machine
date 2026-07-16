@@ -1,0 +1,46 @@
+{
+  "calibrated_agents": [
+    {
+      "agent_id": "1d3acbeb-28a6-446c-81a0-57606128c572",
+      "average_score": 0.75,
+      "benchmark_scores": {
+        "livecodebench_abc391_a": 1.0,
+        "livecodebench_abc391_d": 1.0,
+        "livecodebench_abc391_e": 0.5,
+        "livecodebench_abc392_a": 1.0,
+        "livecodebench_abc392_c": 1.0,
+        "livecodebench_abc392_d": 0.0,
+        "livecodebench_abc392_f": 0.0,
+        "livecodebench_abc393_a": 1.0,
+        "livecodebench_abc394_a": 1.0,
+        "livecodebench_abc394_c": 0.5,
+        "livecodebench_abc394_d": 1.0,
+        "livecodebench_abc394_e": 1.0
+      }
+    },
+    {
+      "agent_id": "25f8a677-dcaa-465a-99db-7cf546aa3dd1",
+      "average_score": 0.8333333333333334,
+      "benchmark_scores": {
+        "livecodebench_abc391_a": 1.0,
+        "livecodebench_abc391_d": 1.0,
+        "livecodebench_abc391_e": 1.0,
+        "livecodebench_abc392_a": 1.0,
+        "livecodebench_abc392_c": 1.0,
+        "livecodebench_abc392_d": 0.0,
+        "livecodebench_abc392_f": 0.0,
+        "livecodebench_abc393_a": 1.0,
+        "livecodebench_abc394_a": 1.0,
+        "livecodebench_abc394_c": 1.0,
+        "livecodebench_abc394_d": 1.0,
+        "livecodebench_abc394_e": 1.0
+      }
+    }
+  ],
+  "model": "openai/gpt-5.6-sol",
+  "primary_provider": "runner",
+  "pruned_unselected": true,
+  "removed_agent_count": 9,
+  "replicates": 2,
+  "schema_version": 1
+}
