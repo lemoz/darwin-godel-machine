@@ -173,6 +173,10 @@ finish() {{
   fi
   if [ -n "${{SELF_DELETE_PROJECT}}" ] && [ -n "${{SELF_DELETE_ZONE}}" ] \
     && [ -n "${{SELF_DELETE_VM_NAME}}" ]; then
+    # Give the controller time to observe EXIT_CODE_PATH, sync artifacts, and
+    # issue its normal teardown. This still preserves VM self-deletion when
+    # the controller disappears, without racing the SSH stream at completion.
+    sleep 30
     nohup gcloud compute instances delete "${{SELF_DELETE_VM_NAME}}" \
       --project "${{SELF_DELETE_PROJECT}}" \
       --zone "${{SELF_DELETE_ZONE}}" \

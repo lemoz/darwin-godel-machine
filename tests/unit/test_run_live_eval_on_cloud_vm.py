@@ -86,6 +86,7 @@ def test_build_cloud_vm_plan_contains_create_sync_and_teardown_commands(tmp_path
     assert plan["artifacts"]["exit_code"] == "/var/tmp/dgm-live-runs/loop12-proof/artifacts/exit_code"
     assert "SELF_DELETE_VM_NAME=dgm-loop12-proof" in plan["startup_script"]
     assert "gcloud compute instances delete" in plan["startup_script"]
+    assert "sleep 30" in plan["startup_script"]
     assert plan["commands"]["create"][:4] == [
         "gcloud",
         "compute",
