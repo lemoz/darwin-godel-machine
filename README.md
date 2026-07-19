@@ -8,20 +8,47 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-beta-orange.svg)
 
-## Current Proof On Main
+## Held-Out Self-Improvement Result
 
-This repository now includes a committed, reproducible proof bundle for a full
-live DGM run:
+We tested whether models could improve the coding agents used to invoke them.
+GPT-5.6 Sol, Gemini 3.5 Flash, Claude Fable 5, and Qwen ran mutation searches
+on a 12-problem LiveCodeBench segment. We then froze selected mutations and
+evaluated them twice on a disjoint 12-problem segment containing 507 tests,
+including 480 private tests.
 
-- **Run**: `lcb50-qwen3-hardened-20260630-1`
-- **Execution**: 50 DGM loop iterations on a disposable GCP VM
-- **Benchmark**: 12-problem LiveCodeBench code-generation-lite segment with
-  private scored tests
-- **Model path**: OpenRouter `qwen/qwen3-coder`
-- **Result**: score moved from `5/12` to `8/12`
-- **Evidence**: plan, logs, telemetry, archive, scorecard, checksums, and VM
-  teardown proof are committed under
-  [`docs/live-runs/lcb50-qwen3-hardened-20260630-1/`](docs/live-runs/lcb50-qwen3-hardened-20260630-1/)
+Scores are expected solved problems out of 12, averaged across two independent
+evaluations:
+
+| Runner and selected mutation | Native | Mutated | Delta |
+| --- | ---: | ---: | ---: |
+| Gemini 3.5 Flash, selected top | 7.5 | 8.5 | **+1.0** |
+| GPT-5.6 Sol, task hints | 9.0 | 10.0 | **+1.0** |
+| GPT-5.6 Sol, generic verification | 8.0 | 9.5 | **+1.5** |
+| Claude Fable 5, hard-problem strategy | 7.5 | 8.5 | **+1.0** |
+
+All four selected mutations preserved all four easy tasks and improved at
+least one hard task. Selection mattered: an earlier Gemini mutation regressed
+from `7.5` to `7.0`, and Qwen produced no improving mutation that qualified for
+held-out replay. The committed artifacts also include empty responses,
+malformed tool calls, timeouts, and hidden-test failures.
+
+This is evidence that model-authored agent changes can transfer to unseen
+problems and recover part of a model's self-elicitation overhang. It is one
+mechanism required for recursive self-improvement, not evidence of open-ended
+recursive self-improvement. The result covers one held-out 12-problem segment
+and two evaluations per agent.
+
+Read the full protocol, per-task results, reliability findings, and checksummed
+artifacts in the
+[`lcb-heldout-transfer-20260716-1` proof bundle](docs/live-runs/lcb-heldout-transfer-20260716-1/).
+
+### Earlier End-to-End Proof
+
+The earlier `lcb50-qwen3-hardened-20260630-1` run proved the complete live DGM
+loop on a disposable GCP VM. Across 50 generations, Qwen3 Coder moved from
+`5/12` to `8/12`. Its plan, logs, telemetry, archive, scorecard, checksums, and
+VM teardown proof are committed in
+[`docs/live-runs/lcb50-qwen3-hardened-20260630-1/`](docs/live-runs/lcb50-qwen3-hardened-20260630-1/).
 
 Use these entry points first:
 
@@ -86,16 +113,19 @@ checks that the full-process sandbox runner exposes the explicit network,
 secret pass-through, discard-changes, and optional audit-artifact flags used for
 safer local runs.
 
-4. **Inspect the committed live proof:**
+4. **Inspect the committed held-out proof:**
 ```bash
-python -m json.tool docs/live-runs/lcb50-qwen3-hardened-20260630-1/telemetry.json | sed -n '1,120p'
-shasum -a 256 -c docs/live-runs/lcb50-qwen3-hardened-20260630-1/artifact_hashes.sha256
+(
+  cd docs/live-runs/lcb-heldout-transfer-20260716-1
+  python -m json.tool summary.json | sed -n '1,160p'
+  shasum -a 256 -c checksums.sha256
+)
 ```
 
 For most readers, the shorter path is to open
-[`docs/live-runs/lcb50-qwen3-hardened-20260630-1/README.md`](docs/live-runs/lcb50-qwen3-hardened-20260630-1/README.md).
-The raw telemetry and scorecard are already committed; the command above is a
-quick sanity check for the current proof bundle.
+[`docs/live-runs/lcb-heldout-transfer-20260716-1/README.md`](docs/live-runs/lcb-heldout-transfer-20260716-1/README.md).
+The normalized results and integrity manifest are committed; the commands above
+provide a quick sanity check for the current proof bundle.
 
 5. **Configure API keys:**
 ```bash
